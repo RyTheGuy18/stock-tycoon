@@ -229,7 +229,9 @@ const STOCKS=[
  {s:"RAMX",n:"Kestrel Memory",p:64,vol:.0024,beta:1.4,spr:.003,un:2000},
  {s:"EVCO",n:"Volta Motors",p:95,vol:.0028,beta:1.5,spr:.003,un:6500},
  {s:"AIQ",n:"Synapse AI",p:140,vol:.003,beta:1.6,spr:.003,un:15000}];
-STOCKS.forEach((d,i)=>{ d.sid=i<16?i:i+1; }); // random seeds per stock; 16 belongs to the index fund
+STOCKS.forEach((d,i)=>{ d.sid=i<16?i:i+1; });
+// delisted in v6.2: they stay in the list (so stock numbers and saves don't break) but can't be seen or traded
+const GONE=["HODL","MEGA","SODA","WAVE","RAIL","AURM"]; STOCKS.forEach(d=>{ if(GONE.includes(d.s)) d.gone=1; }); // random seeds per stock; 16 belongs to the index fund
 const SECN={PNNY:"Pawn shops",BRGR:"Restaurants",SODA:"Drinks",BREW:"Coffee",WAVE:"Telecom",SOLR:"Solar energy",EVCO:"Electric cars",BANK:"Banking",RAIL:"Freight rail",FLYR:"Airlines",MEDX:"Pharma",HODL:"Crypto",OILX:"Oil",AURM:"Gold mining",ORBT:"Space",CHIP:"Chips",RAMX:"Memory chips",ROBO:"Robotics",AIQ:"AI",SKYD:"Cloud",MEGA:"Conglomerate",SHOP:"Retail",GAME:"Video games"};
 STOCKS.forEach(d=>{d.tr=1.2e-7;d.ar=.97;d.sdh=d.vol*36;}); STOCKS[0].sdh=STOCKS[0].vol*2; STOCKS[0].ar=.5; STOCKS[0].lv=1;
 // ---- time-of-day behavior ----
@@ -241,7 +243,7 @@ function setupRituals(){ STOCKS.forEach((d,i)=>{ d.od=i===0?0:REV.includes(d.s)?
     const m=60*(8+Math.floor(r()*((3480-2*L)/60-8))); d.rit.push({h,m,L,dir:r()<.5?1:-1,D:RK*d.sto*Math.sqrt(L)}); }
   d.rit.sort((a,b)=>(a.h*3600+a.m)-(b.h*3600+b.m)); d.oD=d.od?OK*d.sto*Math.sqrt(600):0; }); }
 setupRituals();
-const Lsg=(i,h)=>h<H0?(SER[i].lv?dayLevel(h):Math.log(SER[i].p)):L(i,h); // launch-day opens keep their original direction
+const Lsg=(i,h)=>h<H0?(SER[i].lv?dayLevel(h):Math.log(SER[i].p)):h>=H1?L(i,h)+evo(i,h*HN):L(i,h); // from H1, the open follows the real 24h price change (incl. news), which is what players see // launch-day opens keep their original direction
 const openSign=(i,h)=>(Lsg(i,h)>=Lsg(i,h-24)?1:-1)*SER[i].od;
 const IDX={s:"TTI",sid:16,n:"Tycoon Total Index",p:100,vol:.00006,beta:.5,spr:0,tr:Math.log(1.11)/604800,ar:.97,sdh:.0025,idx:1};
 const SER=STOCKS.concat([IDX]), II=SER.length-1, BYSYM={}; SER.forEach((d,i)=>{d.i=i;BYSYM[d.s]=d;});
@@ -268,10 +270,10 @@ function sched(i,h){ const key=i+":"+h; let s=SC.get(key); if(s) return s;
   const d=SER[i], eps=[];
   if(!d.idx){ const r=RNG("e"+d.sid+":"+h); for(let sl=0;sl<3;sl++) if(r()<.45){ const e=makeEp(d,r,h); e.st=sl*1200+1+Math.floor(r()*(1199-epLen(e))); eps.push(e);} }
   const mr=RNG("m:"+h); const cr=mr()<1/60?1+Math.floor(mr()*3400):null;
-  let ee=0; for(const e of eps) for(const p of e.ph) ee+=p[0]*(p[3]?p[1]:p[1]*d.vol);
+  let ee=0, eeP=0; for(const e of eps) for(const p of e.ph){ const m=p[0]*(p[3]?p[1]:p[1]*d.vol); ee+=m; if(p[3]&&h>=H1) eeP+=.78*m; } // part of a collapse/squeeze sticks
   if(cr!=null) ee+=Math.log(.82)*d.beta;
   if(d.od&&((h%24)+24)%24===OPEN_H) ee+=openSign(i,h)*d.oD;
-  s={eps,cr,ee}; SC.set(key,s); if(SC.size>3000) SC.delete(SC.keys().next().value); return s; }
+  s={eps,cr,ee,eeP}; SC.set(key,s); if(SC.size>3000) SC.delete(SC.keys().next().value); return s; }
 // hourly anchors (log-price), mean-reverting around a long-run trend
 const AN=SER.map(()=>[0]), AE=SER.map(()=>[]); const CALM=.22; // from H1 on, hour-to-hour drift is calmer so normal days move a few %, and news/moods stand out
 // before launch (H0) the walk runs backwards from the launch level, so long charts have history.
@@ -283,7 +285,7 @@ function Lpre(i,h){ const d=SER[i], b=AB[i], j=H0-h;
 function L(i,h){ const d=SER[i], a=AN[i], k=h-H0; if(k<0) return Lpre(i,h);
   while(a.length<=k){ const j=a.length-1, hh=H0+j, ee=sched(i,hh).ee, g=d.sdh*G(RNG("a"+d.sid+":"+hh));
     if(hh+1<H1) a.push(d.ar*(a[j]+ee)+g);
-    else { const ae=AE[i], ej=ae[j]||0, en=.6*(ej+ee); ae[j+1]=en; a.push(d.ar*(a[j]-ej)+g*(d.idx||d.lv?1:CALM)+en); } } // from H1 on, pattern after-effects fade within hours instead of piling up
+    else { const sc=sched(i,hh), ae=AE[i], ej=ae[j]||0, en=.6*(ej+ee-sc.eeP); ae[j+1]=en; a.push(d.ar*(a[j]-ej+sc.eeP)+g*(d.idx||d.lv?1:CALM)+en); } } // from H1 on, pattern after-effects fade within hours instead of piling up
   return (d.lv?dayLevel(h):Math.log(d.p)+d.tr*3600*k)+a[k]+d.beta*MKT(h); }
 // ---------- market moods: stretches of 1-3 days where the whole market drifts up (bull) or down (bear) ----------
 // Starts at H1 so prices before it never change. Days run from 06:00 UTC (midnight Central).
@@ -325,9 +327,9 @@ const SCEN=[
  {k:"f",dir:-1,t:"AI bubble fears: tech investors rush for the exits",fx:{AIQ:1,RAMX:.7,CHIP:.7,ROBO:.6,SKYD:.5,"*":.08}},
  {k:"s",dir:1,t:"Memory chip shortage: RAM prices keep climbing",fx:{RAMX:1,CHIP:.35,GAME:-.25}},
  {k:"s",dir:-1,t:"RAM glut: warehouses full of unsold memory chips",fx:{RAMX:1,CHIP:.3}},
- {k:"f",dir:1,t:"Oil supply shock: crude prices spike",fx:{OILX:1,FLYR:-.6,EVCO:.35,RAIL:-.2}},
+ {k:"f",dir:1,t:"Oil supply shock: crude prices spike",fx:{OILX:1,FLYR:-.6,EVCO:.35}},
  {k:"s",dir:-1,t:"Oil glut: crude prices slide for days",fx:{OILX:1,FLYR:-.5,EVCO:.2}},
- {k:"s",dir:-1,t:"Bad harvest sends coffee bean prices soaring, cafés squeezed",fx:{BREW:1,SODA:.15}},
+ {k:"s",dir:-1,t:"Bad harvest sends coffee bean prices soaring, cafés squeezed",fx:{BREW:1,BRGR:.15}},
  {k:"f",dir:1,t:"Daily Grind's holiday drink goes viral, lines out the door",fx:{BREW:1}},
  {k:"s",dir:1,t:"Central bank cuts interest rates: markets cheer",fx:{"*":.3,BANK:-.2,SHOP:.35,EVCO:.35}},
  {k:"s",dir:-1,t:"Recession fears grow as shoppers pull back",fx:{"*":.25,SHOP:.7,FLYR:.6,BRGR:.3,BREW:.3}},
@@ -335,8 +337,8 @@ const SCEN=[
  {k:"f",dir:-1,t:"Orbit Aerospace rocket explodes on the launch pad",fx:{ORBT:1}},
  {k:"f",dir:1,t:"Medexa's new drug gets approved",fx:{MEDX:1}},
  {k:"f",dir:-1,t:"Medexa's big drug fails its final trial",fx:{MEDX:1}},
- {k:"f",dir:1,t:"Crypto mania: HodlCoin is all over social media",fx:{HODL:1,PNNY:.3}},
- {k:"f",dir:-1,t:"Crypto exchange collapses: HodlCoin in freefall",fx:{HODL:1,PNNY:.2,BANK:.1}},
+ {k:"s",dir:1,t:"Pawn shops boom as people sell old gadgets for cash",fx:{PNNY:1,SHOP:-.15}},
+ {k:"f",dir:-1,t:"Burgerline food poisoning scare at dozens of locations",fx:{BRGR:1}},
  {k:"f",dir:-1,t:"Volta Motors recalls 2 million cars",fx:{EVCO:1,SOLR:.2}},
  {k:"s",dir:1,t:"Volta Motors deliveries smash records",fx:{EVCO:1,SOLR:.3,RAMX:.15}},
  {k:"f",dir:1,t:"Pixelforge's new game breaks sales records",fx:{GAME:1,RAMX:.15,CHIP:.1}},
@@ -345,12 +347,12 @@ const SCEN=[
  {k:"f",dir:-1,t:"Granite Trust hit with a fraud investigation",fx:{BANK:1,"*":.06}},
  {k:"s",dir:1,t:"Cartwheel posts record holiday sales",fx:{SHOP:1,BRGR:.15}},
  {k:"s",dir:1,t:"Big new solar subsidies announced",fx:{SOLR:1,EVCO:.3,OILX:-.2}},
- {k:"s",dir:1,t:"Nervous investors pile into gold",fx:{AURM:1,"*":-.06}},
- {k:"f",dir:-1,t:"Rail workers strike, freight grinds to a halt",fx:{RAIL:1,SHOP:.15}},
- {k:"s",dir:1,t:"Megacorp announces a huge stock buyback",fx:{MEGA:1}},
+ {k:"s",dir:1,t:"Kestrel Memory opens a giant new chip factory",fx:{RAMX:1,CHIP:.2}},
+ {k:"f",dir:-1,t:"Cartwheel hit by a huge customer data breach",fx:{SHOP:1}},
+ {k:"f",dir:-1,t:"Skyline Airlines grounds its jets after a safety scare",fx:{FLYR:1,OILX:-.1}},
  {k:"f",dir:1,t:"Burgerline's new menu goes viral",fx:{BRGR:1}},
- {k:"s",dir:-1,t:"New sugar tax hits soda makers",fx:{SODA:1,BREW:.15}},
- {k:"f",dir:-1,t:"Wavecell suffers a nationwide outage",fx:{WAVE:1}},
+ {k:"f",dir:1,t:"Synapse AI releases its smartest model yet",fx:{AIQ:1,SKYD:.3,RAMX:.25,CHIP:.2}},
+ {k:"s",dir:1,t:"Daily Grind announces 500 new stores",fx:{BREW:1}},
  {k:"s",dir:1,t:"Skyward Cloud lands the biggest cloud deal ever",fx:{SKYD:1,CHIP:.2,RAMX:.2}},
  {k:"f",dir:1,t:"Axion's humanoid robot demo stuns the world",fx:{ROBO:1,AIQ:.3,CHIP:.15}}];
 const EVSLOT=21600, EVS=new Map(), EVL=new Map();
@@ -390,7 +392,7 @@ function candles(i,tf,n,now){ const out=[], ofs=tf>=86400?dayOfs():0, last=Math.
     if(miss){ out.unshift([null,null,null,null,0,s0]); continue; }
     const k=[o,h,l,c,v,s0]; if(done){ CC.set(key,k); if(CC.size>20000) CC.delete(CC.keys().next().value); } out.unshift(k); }
   return out; }
-function newsSince(t0,t1){ const out=[]; for(let h=Math.floor(t0/HN);h<=Math.floor(t1/HN);h++) SER.forEach((d,i)=>{ const s=sched(i,h);
+function newsSince(t0,t1){ const out=[]; for(let h=Math.floor(t0/HN);h<=Math.floor(t1/HN);h++) SER.forEach((d,i)=>{ if(d.gone) return; const s=sched(i,h);
   s.eps.forEach(e=>{ const at=h*HN+e.st; if(e.nw&&at>t0&&at<=t1) out.push({at,s:d.s,t:e.nw.replace("{n}",d.n)+" ("+d.s+")"}); });
   if(i===0&&s.cr!=null){ const at=h*HN+s.cr; if(at>t0&&at<=t1) out.push({at,s:"*",t:"📉 Market crash: panic selling everywhere"}); } });
   for(let sl=Math.floor(t0/EVSLOT);sl<=Math.floor(t1/EVSLOT);sl++){ const e=bigEv(sl); if(e&&e.t0>t0&&e.t0<=t1) out.push({at:e.t0,s:"*",big:1,ev:e,t:(e.sc.dir>0?"🚀":"🚨")+" BREAKING: "+e.sc.t}); }
@@ -424,12 +426,12 @@ const UPS=[{id:"phone",n:"Business phone line",c:150,d:"+10% job pay",pay:1.1},{
  {id:"crew",n:"Second crew",c:250000,d:"Jobs take another 30% less time",spd:.7},{id:"fran",n:"Franchise license",c:1e6,d:"Job pay ×2",pay:2}].sort((a,b)=>a.c-b.c);
 // ---------- knowledge (permanent) ----------
 const KNOW=[
- {id:"vol",n:"Read the volume bars",c:10,t:"Which jumps are real, and which are noise.",d:"Watch the <b>10s chart</b>. When you see <b>3 green candles in a row</b> and <b>each one's volume bar is at least 2½× the normal bars</b> before it, buy right away and <b>sell 3 minutes later</b>. Won <b>82%</b> in testing.<br><br>On PNNY, SOLR, HODL and ORBT, if <b>any</b> of those bars is 7× or bigger, it's a pump starting, not a breakout: don't buy (see Pump and dump). Pops on normal volume are noise; ignore them."},
+ {id:"vol",n:"Read the volume bars",c:10,t:"Which jumps are real, and which are noise.",d:"Watch the <b>10s chart</b>. When you see <b>3 green candles in a row</b> and <b>each one's volume bar is at least 2½× the normal bars</b> before it, buy right away and <b>sell 3 minutes later</b>. Won <b>82%</b> in testing.<br><br>On PNNY, SOLR and ORBT, if <b>any</b> of those bars is 7× or bigger, it's a pump starting, not a breakout: don't buy (see Pump and dump). Pops on normal volume are noise; ignore them."},
  {id:"news",n:"Report vs. rumor",c:40,t:"Two headlines that look alike but move opposite ways.",d:"<b>“…beats earnings, raises outlook”</b>: buy about 10 seconds after it appears and <b>sell 5 minutes later</b> (won <b>85%</b>).<br><br><b>“Rumor: … in buyout talks”</b>: it pops first. Wait about <b>1 minute</b>, <b>short it</b>, then cover 5 minutes later (won <b>86%</b>)."},
- {id:"open",n:"The morning open",c:60,t:"Why the first 10 minutes of the morning matter most.",d:"At <b>{OPEN}</b> every day, every stock except PNNY makes a big 10-minute move on heavy volume. Most stocks <b>follow their 24-hour trend</b>: right at {OPEN}, look at the <b>24h</b> change next to the price. If it's green, <b>buy</b>; if it's red, <b>short</b>. Close 10 minutes later. Won <b>89%</b> on trend-following stocks.<br><br>A few stocks do the opposite. Their own lessons tell you which."},
+ {id:"open",n:"The morning open",c:60,t:"Why the first 10 minutes of the morning matter most.",d:"At <b>{OPEN}</b> every day, every stock except PNNY makes a big 10-minute move on heavy volume. Most stocks <b>follow their 24-hour trend</b>: right at {OPEN}, look at the <b>24h</b> change next to the price. If it's green, <b>buy</b>; if it's red, <b>short</b>. Close 10 minutes later. Won about <b>85%</b> on trend-following stocks. Breaking news can still wreck a trade, so use a stop loss.<br><br>A few stocks do the opposite. Their own lessons tell you which."},
  {id:"coil",n:"The coiled spring",c:120,t:"What a stock does right before a big move.",d:"On the 10s chart, look for <b>5 or more tiny candles in a row with very short volume bars</b>. If the next candle is <b>green with a volume bar 2½× normal or bigger</b>, buy it and <b>sell 3 minutes later</b>. Won <b>89%</b>."},
- {id:"dip",n:"Capitulation vs. dead cat",c:300,t:"Which crashes bounce back, and which keep falling.",d:"<b>Capitulation:</b> on a steady stock (BRGR, SODA, BREW, SHOP, WAVE, BANK, RAIL, MEDX, OILX, MEGA), <b>3 red 10s candles in a row, each with 4× normal volume, and no headline</b>. Wait for volume to drop back under 2×, then <b>buy and sell 4 minutes later</b> (won <b>82%</b>).<br><br><b>Dead cat:</b> the drop comes with an <b>“under investigation”</b> headline. <b>Short about 65 seconds after the headline</b> and cover 4 minutes later (won <b>90%</b>)."},
- {id:"pump",n:"Pump and dump",c:800,t:"Why cheap stocks spike, and what comes next.",d:"Only on PNNY, SOLR, HODL and ORBT. <b>3 green 10s candles in a row, each with 7× normal volume or more, and no headline</b> means a pump. <b>Wait 30 seconds, short it, and cover 4 minutes later</b>. Won <b>97%</b>, averaging +16%. Never buy into one."},
+ {id:"dip",n:"Capitulation vs. dead cat",c:300,t:"Which crashes bounce back, and which keep falling.",d:"<b>Capitulation:</b> on a steady stock (BRGR, BREW, SHOP, BANK, MEDX, OILX), <b>3 red 10s candles in a row, each with 4× normal volume, and no headline</b>. Wait for volume to drop back under 2×, then <b>buy and sell 4 minutes later</b> (won <b>82%</b>).<br><br><b>Dead cat:</b> the drop comes with an <b>“under investigation”</b> headline. <b>Short about 65 seconds after the headline</b> and cover 4 minutes later (won <b>90%</b>)."},
+ {id:"pump",n:"Pump and dump",c:800,t:"Why cheap stocks spike, and what comes next.",d:"Only on PNNY, SOLR and ORBT. <b>3 green 10s candles in a row, each with 7× normal volume or more, and no headline</b> means a pump. <b>Wait 30 seconds, short it, and cover 4 minutes later</b>. Won <b>97%</b>, averaging +16%. Never buy into one."},
  {id:"flush",n:"The 3-hour flush",c:3000,t:"A dip that happens on a schedule.",d:"At the top of every 3rd hour ({FLUSH}), every stock dips over 2 minutes, then fully recovers over the next 3. Steady stocks dip about 1½–2%; jumpy ones dip more (PNNY about 12%). <b>Buy at :02 past the hour and sell at :05</b>. Won <b>85%</b> across every stock."},
  {id:"flags",n:"Red flag: collapses",c:8000,t:"The headline that comes right before a stock implodes.",d:"<b>“…auditor resigns, filings delayed”</b> means a collapse of −50% to −93% starts <b>2 to 3 minutes later</b>. Sell any shares right away. Watch for the <b>first red 10s candle with 4× normal volume</b>, <b>short it</b>, and cover about <b>50 seconds later</b>. Won <b>96%</b>, averaging +61%."},
  {id:"squeeze",n:"Red flag: squeezes",c:15000,t:"The headline that comes right before a stock rockets.",d:"<b>“Short interest in … hits a record high”</b> means a squeeze of +80% to +170% starts <b>1½ to 2½ minutes later</b>. Cover any shorts immediately. Wait for the <b>first green 10s candle with 4× normal volume</b>, <b>buy it</b>, and sell about <b>50 seconds later</b>. Won <b>100%</b>, averaging +97%."},
@@ -448,13 +450,13 @@ const SK=[]; STOCKS.forEach(d=>{ let k=0; const cost=()=>Math.max(5,Math.round((
     SK.push({id:d.s+"_r"+j,sym:d.s,n:nm,c:cost(),t:`A move ${d.s} makes at the same time every day.`,
     d:`Every day at <b>${lt(R.h,R.m)}</b> your time, ${d.s} <b>${up?"climbs":"drops"} about ${pc(R.D)}%</b> over ${R.L/60} minutes, then ${up?"drops":"climbs"} right back over the next ${R.L/60}.<br><br><b>${up?"Buy":"Short"}</b> at ${lt(R.h,R.m)} and close at ${lt(R.h,R.m+R.L)}. Then <b>${up?"short":"buy"}</b> and close at ${lt(R.h,R.m+2*R.L)}. Each half won 80%+ in testing.`}); }); });
 // longer-timeframe lessons (10m–1D charts): bought in order, permanent
-const JUMPY=["SOLR","HODL","AURM","ORBT","CHIP","ROBO","SKYD"], snapPct=d=>Math.round((Math.exp(2*d.vol*Math.sqrt(1800))-1)*100);
+const JUMPY=["SOLR","ORBT","CHIP","ROBO","SKYD","RAMX","EVCO","AIQ"], snapPct=d=>Math.round((Math.exp(2*d.vol*Math.sqrt(1800))-1)*100);
 const LONG=[
- {id:"pnreset",ch:"1h chart",n:"PNNY's midnight reset",c:250,t:"PNNY picks a brand-new price every night.",d:()=>`Every night PNNY settles on a new everyday price, anywhere from about $0.90 to $6. It slides there between <b>${lt(5)}</b> and <b>${lt(6)}</b> your time. The new price is random, so a high PNNY usually falls and a low one usually rises.<br><br>At ${lt(5)}: if PNNY is <b>$3.50 or higher, short it</b>. If it's <b>$1.60 or lower, buy it</b>. In between, skip the night. Close just after ${lt(6)}. Won about <b>84%</b> in testing.`},
+ {id:"pnreset",ch:"1h chart",n:"PNNY's midnight reset",c:250,t:"PNNY picks a brand-new price every night.",d:()=>`Every night PNNY settles on a new everyday price, anywhere from about $0.90 to $6. It slides there between <b>${lt(5)}</b> and <b>${lt(6)}</b> your time. The new price is random, so a high PNNY usually falls and a low one usually rises.<br><br>At ${lt(5)}: if PNNY is <b>$3.50 or higher, short it</b>. If it's <b>$1.60 or lower, buy it</b>. In between, skip the night. Close just after ${lt(6)}. Wins about <b>70%</b> of nights, and the wins are big.`},
  {id:"pnsnap",ch:"1h chart",n:"PNNY always comes home",c:600,t:"However wild PNNY gets during an hour, it ends up back on track.",d:()=>`On the <b>1h chart</b>, watch the current candle. At <b>:30 past any hour</b>, compare PNNY's price to where that candle opened.<br><br>If it's <b>50% or more above</b> the open, <b>short</b>. If it's <b>50% or more below</b>, <b>buy</b>. Close at <b>:59</b>. Won <b>92%</b>, about 3 or 4 chances a day.`},
  {id:"crashidx",ch:"Index fund",n:"Crash sale on the index",c:2500,t:"The one time the index fund goes on sale.",d:()=>`A <b>“Market crash”</b> drags the index fund down too, but it climbs back over the next day. Wait <b>2 minutes</b> after the headline for the drop to finish, <b>deposit into the index fund</b>, and <b>withdraw 12 hours later</b>. Won <b>92%</b>, about +4.5% each time. Crashes come roughly every 2½ days.`},
- {id:"snap",ch:"1h chart",n:"The hourly snap-back",c:6000,t:"Jumpy stocks overshoot during the hour, then drift back.",d:()=>`On the <b>1h chart</b> at <b>:30 past the hour</b>, check how far the current candle has moved from its open. If it's past the stock's number below, bet on it coming back: <b>short</b> if it's up, <b>buy</b> if it's down. Close at <b>:59</b>. Won <b>79%</b> on these jumpy stocks; steady ones only win about 70%, so skip them.<br><br>${JUMPY.map(s=>`<b>${s}</b> ±${snapPct(BYSYM[s])}%`).join(" · ")}`},
- {id:"wreck",ch:"1h chart",n:"Buy the wreckage",c:20000,t:"What a stock does in the hours after it collapses.",d:()=>`A collapse overshoots, and the stock spends the next several hours crawling back. After the <b>“auditor resigns”</b> headline and the huge red candle, wait until the volume calms down, about <b>3 to 4 minutes after the drop ends</b>. Then <b>buy and hold for 6 hours</b>. Won <b>82%</b>, averaging about +60%.`}];
+ {id:"snap",ch:"1h chart",n:"The hourly snap-back",c:6000,t:"Jumpy stocks overshoot during the hour, then drift back.",d:()=>`On the <b>1h chart</b> at <b>:30 past the hour</b>, check how far the current candle has moved from its open. If it's past the stock's number below, bet on it coming back: <b>short</b> if it's up, <b>buy</b> if it's down. Close at <b>:59</b>. Won about <b>90%</b> on these jumpy stocks; steady ones only win about 70%, so skip them.<br><br>${JUMPY.map(s=>`<b>${s}</b> ±${snapPct(BYSYM[s])}%`).join(" · ")}`},
+ {id:"wreck",ch:"1h chart",n:"Buy the wreckage",c:20000,t:"What a stock does in the hours after it collapses.",d:()=>`A collapse overshoots, and the stock spends the next several hours crawling back. After the <b>“auditor resigns”</b> headline and the huge red candle, wait until the volume calms down, about <b>3 to 4 minutes after the drop ends</b>. Then <b>buy and hold for 6 hours</b>. It usually wins, averaging about +70%, but part of the crash never comes back.`}];
 const ALLK=KNOW.concat(SK,LONG);
 // ---------- story milestones (permanent perks) ----------
 const MS=[
@@ -515,7 +517,7 @@ const P=sym=>S.pos[sym]||(S.pos[sym]={l:0,lc:0,s:0,se:0});
 function posVal(){ let v=0; if(S.vb) for(const id in S.vb) v+=vbVal(S.vb[id]); for(const k in S.pos){ const p=S.pos[k]; if(p.l) v+=p.l*bid(k); if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-ask(k))); } return v; }
 const fundVal=()=>S.fu*price(II,NOW);
 const liquid=()=>S.cash+posVal(), netWorth=()=>liquid()+fundVal();
-const inDebt=()=>S.cash<-.005, unlocked=d=>S.bestNW>=d.un;
+const inDebt=()=>S.cash<-.005, unlocked=d=>!d.gone&&S.bestNW>=d.un;
 const prof=()=>S.prof?PB[S.prof]:null;
 function pst(id){ id=id||S.prof; return S.profs[id]||(S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:0,up:{}}); }
 function tier(id){ const s=pst(id); for(let t=s.own;t>=0;t--) if(!s.br[t]) return t; return -1; }
@@ -704,7 +706,7 @@ function buildTrade(){
   <h3>Index fund · TTI</h3><div id="fundc" class="card"></div></div></div></div>`;
   chips(); upd(); fundCard(); newsCard(); }
 function chips(){ const c=$("chips"); if(!c) return; const sl=c.scrollLeft;
-  c.innerHTML=STOCKS.slice().sort((a,b)=>a.un-b.un).map(d=>{ if(!unlocked(d)) return `<button class="chip lock" data-lk="${d.un}"><b>${d.s}</b><small>🔒${money(d.un)}</small></button>`;
+  c.innerHTML=STOCKS.filter(d=>!d.gone).sort((a,b)=>a.un-b.un).map(d=>{ if(!unlocked(d)) return `<button class="chip lock" data-lk="${d.un}"><b>${d.s}</b><small>🔒${money(d.un)}</small></button>`;
     const p=S.pos[d.s], dot=p&&p.l?'<span class="dot" style="background:#16c784"></span>':p&&p.s?'<span class="dot" style="background:#ea3943"></span>':"";
     return `<button class="chip ${S.sel===d.s?"on":""}" data-sym="${d.s}"><b>${d.s}${dot}</b><small id="c-${d.s}"></small></button>`; }).join(""); c.scrollLeft=sl; }
 function chg(sym){ const i=BYSYM[sym].i; return (sp(sym)/price(i,NOW-3600)-1)*100; }
@@ -741,7 +743,7 @@ function newsCard(){ const el=$("newsc"); if(!el) return; const g=regimeAt(Math.
   const mood=!g||!g.type?`<span class="pill">😐 Calm market</span>`:`<span class="pill ${g.type>0?"ok":"bad"}">${g.type>0?"📈 Bull run":"📉 Bear market"} · day ${day-g.d0+1} of ${g.d1-g.d0}</span>`;
   const items=newsSince(NOW-86400*2,NOW).filter(x=>x.ev).slice(0,3);
   el.innerHTML=`<div class="row" style="margin-bottom:${items.length?6:0}px"><div class="g t">Market mood</div>${mood}</div>`+(items.length?items.map(x=>{ const e=x.ev, live=NOW-e.t0<e.T;
-    const fx=Object.entries(e.sc.fx).filter(([k])=>k!=="*"&&BYSYM[k]).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,4).map(([k,w])=>{ const up=w*e.sc.dir>0; return `<span class="m ${up?"up":"dn"}" style="font-size:11.5px">${up?"▲":"▼"}${k}</span>`; }).join(" ");
+    const fx=Object.entries(e.sc.fx).filter(([k])=>k!=="*"&&BYSYM[k]&&!BYSYM[k].gone).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,4).map(([k,w])=>{ const up=w*e.sc.dir>0; return `<span class="m ${up?"up":"dn"}" style="font-size:11.5px">${up?"▲":"▼"}${k}</span>`; }).join(" ");
     return `<div class="li" style="display:block"><div style="font-size:13px">${x.t.replace("BREAKING: ","")}</div><div class="t">${dur(NOW-x.at)} ago${live?` · <b style="color:var(--gold)">${e.sc.k==="f"?"moving now":"still unfolding"}</b>`:e.sc.k==="s"&&NOW-e.t0<e.T?" · unfolding over days":""} · ${fx}</div></div>`; }).join(""):`<div class="t" style="margin-top:4px">No big stories in the last 2 days. When one breaks, you'll get an alert.</div>`); }
 function fundCard(){ const el=$("fundc"); if(!el) return; const v=fundVal(), g=v-S.fbasis, ip=price(II,NOW), w=(ip/price(II,NOW-86400)-1)*100;
   el.innerHTML=`<div class="row"><div class="g"><div class="b m">${money(v)} <span class="m ${g>=0?"up":"dn"}" style="font-size:12px">${S.fu>0?sg(g)+" all-time":""}</span></div><div class="t">Tracks the whole market. Averages about +11% a week, with dips. Survives going broke. Index ${w>=0?"+":""}${w.toFixed(2)}% today</div></div></div>
@@ -805,7 +807,7 @@ function buildStore(){
     h+=`<h3>Longer charts · ${LONG.filter(k=>S.know[k.id]).length}/${LONG.length}</h3><div class="t" style="margin:0 3px 8px">Slower trades for the 10m to 1D charts. Fewer chances, bigger swings.</div>`;
     LONG.forEach((k,i)=>{ h+=kc(k,i===0||S.know[LONG[i-1].id]); });
     STOCKS.filter(unlocked).forEach(d=>{ const ks=SK.filter(k=>k.sym===d.s); h+=`<h3>${d.s} · ${d.n} · ${ks.filter(k=>S.know[k.id]).length}/${ks.length}</h3>`; ks.forEach(k=>h+=kc(k,true)); });
-    const lk=STOCKS.filter(d=>!unlocked(d)); if(lk.length) h+=`<div class="t" style="margin:8px 3px">🔒 ${SK.filter(k=>lk.some(d=>d.s===k.sym)).length} more lessons unlock as you unlock ${lk.map(d=>d.s).join(", ")}.</div>`;
+    const lk=STOCKS.filter(d=>!unlocked(d)&&!d.gone); if(lk.length) h+=`<div class="t" style="margin:8px 3px">🔒 ${SK.filter(k=>lk.some(d=>d.s===k.sym)).length} more lessons unlock as you unlock ${lk.map(d=>d.s).join(", ")}.</div>`;
     main.innerHTML=h+"</div>"; return; }
   const p=prof();
   if(p){ const s=pst(), t=tier();
@@ -885,6 +887,10 @@ function profPicker(first){ modal(first?"Get a job":"Pick a profession",(first?`
   PROFS.map(x=>`<button class="opt" data-pp="${x.id}"><b>${x.i} ${x.n}</b><div class="t">Borrow: ${x.gear[0]} · "${x.jobs[0].n}" pays ${money(x.jobs[0].pay)}</div></button>`).join(""),first?[]:[["Cancel","ghost"]]);
   if(first) $("modal").dataset.lock=1; }
 function lunchMoney(){ if(S.lunch||S.momDone) return; S.lunch=1; S.cash+=2; life("👩 Mom gave you $2 of lunch money"); setTimeout(()=>{ toast("👩 Mom slipped you $2 of lunch money. Enough for a real share of PNNY.","good"); sfx('pay'); },1500); }
+function delistCheck(){ STOCKS.forEach(d=>{ if(!d.gone) return; const p=S.pos[d.s], pr=price(d.i,NOW);
+    if(p&&(p.l||p.s)){ let pl=0; if(p.l){ pl=p.l*(pr-p.lc); S.cash+=p.l*pr; } if(p.s){ pl=Math.max(p.s*(p.se-pr),-p.s*p.se); S.cash+=p.s*p.se+pl; } S.pos[d.s]={l:0,lc:0,s:0,se:0}; life(`📉 ${d.s} was delisted. Your trade closed at ${px(pr)} (${sg(pl)})`); }
+    if(S.ord) delete S.ord[d.s]; const c=S.comp; if(c&&c.pos&&c.pos[d.s]){ const q=c.pos[d.s]; if(q.l) c.cash+=q.l*pr; if(q.s) c.cash+=q.s*q.se+Math.max(q.s*(q.se-pr),-q.s*q.se); delete c.pos[d.s]; } });
+  if(!BYSYM[S.sel]||BYSYM[S.sel].gone) S.sel="PNNY"; }
 function chooseProf(id){ S.prof=id; pst(id); lunchMoney(); closeModal(); toast(PB[id].i+" You're doing "+PB[id].n+" now"); build(); if(!S.tut) setTimeout(tutorial,500); }
 function jobPicker(){ const p=prof(), t=tier(), s=pst(), m=payMult(p.id);
   modal(p.i+" Jobs",`<div class="t" style="margin-bottom:6px">${p.gear[t]} · ${Math.round(GBRK[t]*100)}% chance it breaks · ★${s.rep} rep pays ×${m.toFixed(2)}</div>`+
@@ -1020,7 +1026,7 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
     try{ const ref=N.db.doc("saves/"+u.uid), sn=await ref.get(), other=S.owner&&S.owner!==u.uid;
       if(sn.exists){ const d=sn.data(); if(d&&typeof d.save==="string"&&(other||(d.savedAt||0)>(S.savedAt||0)+3000)){ S=Object.assign(fresh(),JSON.parse(d.save)); closeModal(); catchUp(); toast("Loaded your saved game"); } }
       else if(other){ S=fresh(); NOW=nowSec(); S.lastT=NOW; S.lastNews=NOW; }
-      S.owner=u.uid; const m=myCard(); if(/^Trader\d+$/.test(m.name||"")) m.name=u.username;
+      S.owner=u.uid; delistCheck(); const m=myCard(); if(/^Trader\d+$/.test(m.name||"")) m.name=u.username;
       save(); DB=N.db; UID=u.uid; cref=ref; clast="";
       cloudSt="Signed in as @"+u.username+" · progress saves to your account";
       if(!NETON){ NETON=true; setInterval(pubProfile,300000); setInterval(flowSync,15000); setInterval(tipSync,15000); }
@@ -1269,7 +1275,7 @@ async function tipSync(){ if(!DB||!UID||tipBusy) return; tipBusy=true; const now
     S.tipIn=(S.tipIn||[]).filter(x=>now-x.t<3600); S.tipPaid=S.tipPaid||{};
     q.docs.forEach(doc=>{ if(doc.id===UID) return; const x=doc.data()||{}, nm=esc(x.name||'A friend')||'A friend', code=String(x.code||'').slice(0,6);
       if(Array.isArray(x.to)&&x.to.includes(me)&&Array.isArray(x.tips)) x.tips.forEach(r=>{ if(!Array.isArray(r)) return; const id=String(r[0]).slice(0,12), t=Math.floor(+r[1]), i=+r[2], dir=+r[3];
-        if(!(now-t<300&&t<=now+60)||!Number.isInteger(i)||i<0||i>=STOCKS.length||(dir!==1&&dir!==-1)||S.tipIn.some(y=>y.id===id)) return;
+        if(!(now-t<300&&t<=now+60)||!Number.isInteger(i)||i<0||i>=STOCKS.length||STOCKS[i].gone||(dir!==1&&dir!==-1)||S.tipIn.some(y=>y.id===id)) return;
         S.tipIn.push({id,code,name:nm,i,dir,t}); if(S.tipIn.length>20) S.tipIn.shift();
         sfx('ping'); toast(`💡 ${nm} tips ${STOCKS[i].s} ${dir>0?'▲ up':'▼ down'}${unlocked(STOCKS[i])?'':' (locked for you)'}`); });
       if(Array.isArray(x.cr)) x.cr.forEach(c=>{ if(!Array.isArray(c)||String(c[1])!==me) return; const id=String(c[0]), pl=Math.min(1e8,+c[2]||0), key=doc.id+':'+id;
@@ -1404,7 +1410,7 @@ addEventListener("pagehide",save); addEventListener("resize",()=>tab==="trade"&&
 // boot
 for(const id in S.profs){ const u=S.profs[id].up||{}; ["book","resup"].forEach(k=>{ if(u[k]){ A(k).own=1; delete u[k]; } }); }
 NOW=nowSec(); if(!isNew) catchUp(); else { S.lastT=NOW; S.lastNews=NOW; }
-if(S.prof) lunchMoney();
+delistCheck(); if(S.prof) lunchMoney();
 if(!S.mt&&S.prof){ S.mt={}; TEXTS.forEach(([id,c])=>{ if(c()) S.mt[id]=1; }); }
 save(); build(); if($("modal").classList.contains("hide")) intro();
 setInterval(loop,250); setInterval(csave,60000); setTimeout(cinit,0); setInterval(installHint,30000);

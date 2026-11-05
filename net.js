@@ -13,7 +13,10 @@ if (!firebaseConfig || !firebaseConfig.apiKey) {
     const A = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
     const F = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
     const app = initializeApp(firebaseConfig);
-    const auth = A.getAuth(app);
+    // No popup/redirect helper (it loads a hidden frame that iPhone Safari can block, which made sign-in hang).
+    // Save the sign-in in IndexedDB, falling back to local storage.
+    const auth = A.initializeAuth(app, { persistence: [A.indexedDBLocalPersistence, A.browserLocalPersistence] });
+    const within = (p, ms) => Promise.race([p, new Promise((_, j) => setTimeout(() => j({ code: "timeout" }), ms))]);
     const fs = F.getFirestore(app);
 
     // Usernames are turned into a private login address. No email is ever sent to it.
@@ -49,6 +52,7 @@ if (!firebaseConfig || !firebaseConfig.apiKey) {
       if (c.includes("weak-password")) return "Password needs at least 6 characters.";
       if (c.includes("too-many-requests")) return "Too many tries. Wait a minute and try again.";
       if (c.includes("network")) return "No connection. Check your internet.";
+      if (c === "timeout") return "The server took too long. Check your connection and try again.";
       return "Something went wrong (" + (c || "unknown") + ").";
     };
     const pairId = (a, b) => [a, b].sort().join("_");
@@ -65,14 +69,14 @@ if (!firebaseConfig || !firebaseConfig.apiKey) {
         name = norm(name);
         if (!okName(name)) throw new Error("Usernames are 3–16 letters, numbers or _.");
         try {
-          const cred = await A.createUserWithEmailAndPassword(auth, email(name), pw);
-          await F.setDoc(F.doc(fs, "usernames/" + name), { uid: cred.user.uid, at: Date.now() });
+          const cred = await within(A.createUserWithEmailAndPassword(auth, email(name), pw), 20000);
+          within(F.setDoc(F.doc(fs, "usernames/" + name), { uid: cred.user.uid, at: Date.now() }), 20000).catch((e) => console.warn("username save", e));
         } catch (e) { throw new Error(err(e)); }
       },
       async signIn(name, pw) {
         name = norm(name);
         if (!okName(name)) throw new Error("Wrong username or password.");
-        try { await A.signInWithEmailAndPassword(auth, email(name), pw); } catch (e) { throw new Error(err(e)); }
+        try { await within(A.signInWithEmailAndPassword(auth, email(name), pw), 20000); } catch (e) { throw new Error(err(e)); }
       },
       async changePassword(pw) {
         try { await A.updatePassword(auth.currentUser, pw); } catch (e) {
@@ -81,6 +85,10 @@ if (!firebaseConfig || !firebaseConfig.apiKey) {
         }
       },
       signOut: () => A.signOut(auth),
+      // make sure friends can find this player by username (fills in a sign-up that was interrupted)
+      async claimName(name, uid) {
+        try { const r = F.doc(fs, "usernames/" + norm(name)); const s = await F.getDoc(r); if (!s.exists()) await F.setDoc(r, { uid, at: Date.now() }); } catch (_) {}
+      },
       async findUser(name) {
         name = norm(name);
         if (!okName(name)) return null;

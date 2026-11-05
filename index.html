@@ -912,7 +912,7 @@ function netReady(){ return NETP||(NETP=new Promise(r=>{ if('NET' in window) ret
 async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode: online features aren't set up"; return; }
   N.onUser(async u=>{
     if(!u){ DB=null; UID=null; UNAME=""; cref=null; socialStop(); cloudSt="Not signed in: saved on this device only"; if(!S.authSkip) showAuth(); if(tab==="friends") buildFriends(); return; }
-    hideAuth(); UNAME=u.username;
+    hideAuth(); UNAME=u.username; N.claimName&&N.claimName(u.username,u.uid);
     try{ const ref=N.db.doc("saves/"+u.uid), sn=await ref.get(), other=S.owner&&S.owner!==u.uid;
       if(sn.exists){ const d=sn.data(); if(d&&typeof d.save==="string"&&(other||(d.savedAt||0)>(S.savedAt||0)+3000)){ S=Object.assign(fresh(),JSON.parse(d.save)); closeModal(); catchUp(); toast("Loaded your saved game"); } }
       else if(other){ S=fresh(); NOW=nowSec(); S.lastT=NOW; S.lastNews=NOW; }
@@ -939,7 +939,7 @@ function showAuth(){ if($('auth')||!window.NET) return; const el=document.create
     if(b.dataset.ago){ const u=$('au_u').value, p=$('au_p').value, er=$('au_e'); er.textContent='';
       if(p.length<6){ er.textContent='Password needs at least 6 characters.'; return; }
       b.disabled=true; b.textContent='One sec…';
-      try{ mode==='in'?await window.NET.signIn(u,p):await window.NET.signUp(u,p); S.authSkip=0; sfx('unlock'); }
+      try{ mode==='in'?await window.NET.signIn(u,p):await window.NET.signUp(u,p); S.authSkip=0; sfx('unlock'); hideAuth(); }
       catch(x){ er.textContent=x.message; sfx('loss'); b.disabled=false; b.textContent=mode==='in'?'Sign in':'Create account'; } } };
   el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ const g=el.querySelector('[data-ago]'); g&&g.click(); } }); }
 function hideAuth(){ const el=$('auth'); if(el) el.remove(); }

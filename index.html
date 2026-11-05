@@ -410,31 +410,27 @@ function newsSince(t0,t1){ const out=[]; for(let h=Math.floor(t0/HN);h<=Math.flo
 // ---------- professions ----------
 const GCOST=[0,40,250,1200,6000,30000,150000], GBRK=[.15,.08,.05,.035,.025,.015,.01], GSPD=[1.25,1,.9,.8,.7,.6,.5], FUSE=[0,.5,1,2,4,8,15];
 const JT=[0,0,1,2,3,4,5,6], JMIN=[15,30,45,60,90,120,180,240], JRATE=[10,10,22,50,110,240,520,1100];
-// What each job actually pays in real life (before reputation and upgrades). Durations are unchanged.
-const JPAY={
- lawn: [15,35,60,120,450,700,1800,3500],   // small yard → corner lot → church lawn → HOA contract → landscaping → sports complex → city parks → golf course
- dog:  [15,20,30,75,120,250,600,3000],
- car:  [15,30,60,150,400,1000,1800,4000],
- deliv:[8,25,60,90,150,300,900,3000],
- photo:[20,40,150,250,500,2500,3500,6000],
- handy:[15,35,60,130,450,900,2000,4500],
- paint:[20,40,150,450,900,1500,3000,5000],
- pool: [10,30,60,200,450,700,1500,3500],
- phone:[15,50,90,150,250,800,1800,3500],
- move: [20,60,200,500,700,1500,2500,5000]};
+// Job ladder (same for every profession): real-life pay that climbs slowly. Each job after the first has to be
+// learned: a one-time training cost plus enough reputation (jobs done in that profession). Gear tiers gate them too.
+// Skills are permanent, even if you go broke. Durations are in minutes before the 0.8 speed-up and perks.
+const PAY16=[2,3,5,9,15,25,40,65,110,180,300,500,800,1300,2200,3500];
+const MIN16=[15,20,20,25,30,35,45,50,60,75,90,105,120,150,180,240];
+const JT16=[0,0,0,1,1,1,2,2,3,3,4,4,5,5,6,6];
+const RQ16=[0,3,6,10,15,21,28,36,46,58,75,95,120,150,185,225];
+const TC16=[0,10,20,30,55,90,150,240,450,800,1500,2800,5000,9000,16000,30000];
 const PD=[
-["lawn","Lawn Care","🌱","Gas","gal",4,"Mom's rusty reel mower|Used push mower|Self-propelled mower|Riding mower|Zero-turn mower|Landscaping trailer rig|Commercial fleet","Trim Mrs. Jenkins' yard|Mow a corner lot|Mow the church lawn|HOA weekly contract|Landscape a backyard|Mow a sports complex|City parks contract|Golf course contract"],
-["dog","Dog Walking","🐕","Treats","bags",3,"Mom's frayed leash|Sturdy leash|Double leash + pouch|Pack-walk gear|Used minivan|Boarding kennel space|Doggy daycare building","Walk a chihuahua|Walk a hyper lab|Two-dog walk|Overnight pet sit|Pack walk for 6|Weekend boarding|Daycare day|Luxury pet resort contract"],
-["car","Car Detailing","🚗","Soap","bottles",5,"Mom's bucket & sponge|Hose kit + towels|Pressure washer|Polisher + ceramic kit|Detailing trailer|Mobile detailing van|Detail shop lease","Rinse a neighbor's truck|Hand wash a sedan|Wash & vacuum|Interior deep clean|Paint correction|Ceramic coating|Dealership lot contract|Exotic car collection"],
-["deliv","Food Delivery","🛵","Gas","gal",4,"Your old bike|Used e-bike|Used scooter|Beat-up hatchback|Cargo van|Small delivery fleet|Regional depot","Deliver one pizza|Lunch rush run|Dinner rush shift|Catering drop-off|Grocery route|Same-day courier route|Regional freight run|Corporate logistics contract"],
-["photo","Photography","📷","Batteries","packs",6,"Mom's point-and-shoot|Used DSLR kit|Prime lens + flash|Full-frame body|Drone + gimbal|Studio lighting kit|Production studio","Friend's senior pics|Garage-sale listing|Real estate listing|Family portraits|Luxury home + drone|Wedding|Commercial brand shoot|Magazine campaign"],
-["handy","Handyman","🔨","Parts","kits",4,"Mom's junk-drawer toolbox|Basic tool set|Cordless drill kit|Contractor tool set|Work van|Licensed crew gear|Construction yard","Hang a picture|Fix a squeaky door|Assemble furniture|Install a ceiling fan|Deck repair|Bathroom remodel|Kitchen remodel|Build an addition"],
-["paint","House Painting","🎨","Paint","gal",8,"Mom's crusty brushes|Roller & tray set|Ladder + drop cloths|Paint sprayer|Scaffolding|Painting crew gear|Commercial rig","Paint a fence section|Touch up a porch|Paint a bedroom|Paint a whole interior|House exterior|Apartment unit turnovers|Commercial building|Downtown high-rise"],
-["pool","Pool Cleaning","🏊","Chlorine","jugs",5,"Mom's leaky skimmer|Telescoping pole kit|Vacuum + test kit|Robotic cleaner|Service truck|Repair & equipment kit|Pool company fleet","Skim a kiddie pool|Skim a backyard pool|Weekly pool service|Green-to-clean rescue|Pump replacement|Neighborhood route|Hotel pool contract|Water park contract"],
-["phone","Phone Repair","📱","Parts","sets",10,"Mom's eyeglass screwdriver|Cheap repair kit|Pro repair station|Microsoldering rig|Mall kiosk|Repair storefront|Repair franchise","Clean a charging port|Swap a battery|Replace a cracked screen|Water-damage repair|Board-level repair|School tablet batch|Business fleet contract|Carrier warranty contract"],
-["move","Moving Help","📦","Truck gas","gal",4,"Mom's wobbly hand truck|Heavy-duty dolly|Used pickup|Box truck|Moving crew gear|Two-truck crew|Moving company","Carry a couch upstairs|Move a dorm room|Apartment move|Full house move|Piano move|Long-distance move|Office relocation|Corporate HQ relocation"]];
+["lawn","Lawn Care","🌱","Gas","gal",4,"Mom's rusty reel mower|Used push mower|Self-propelled mower|Riding mower|Zero-turn mower|Landscaping trailer rig|Commercial fleet","Pull weeds in Mom's garden|Rake the neighbor's leaves|Trim Mrs. Jenkins' yard|Mow a small front yard|Mow a corner lot|Mow & edge a backyard|Mow the church lawn|Weekly lawns for 3 neighbors|HOA common areas|Spring cleanup + mulch|Landscape a backyard|Office park contract|Mow a sports complex|School district grounds|City parks contract|Golf course contract"],
+["dog","Dog Walking","🐕","Treats","bags",3,"Mom's frayed leash|Sturdy leash|Double leash + pouch|Pack-walk gear|Used minivan|Boarding kennel space|Doggy daycare building","Feed the neighbor's cat|Walk a chihuahua|Walk a hyper lab|Two-dog walk|Puppy potty-break visits|Pet sit for the day|Overnight pet sit|Pack walk for 4|Pack walk for 6|Dog training session|Weekend boarding|Grooming + boarding package|Daycare day|Vet clinic kennel contract|Kennel club event|Luxury pet resort contract"],
+["car","Car Detailing","🚗","Soap","bottles",5,"Mom's bucket & sponge|Hose kit + towels|Pressure washer|Polisher + ceramic kit|Detailing trailer|Mobile detailing van|Detail shop lease","Rinse Mom's car|Rinse a neighbor's truck|Hand wash a sedan|Wash & tire shine|Wash & vacuum|Wash, vacuum & wax|Interior deep clean|Headlight restoration|Full detail|Engine bay + full detail|Paint correction|Fleet wash for a plumber|Ceramic coating|Car show prep|Dealership lot contract|Exotic car collection"],
+["deliv","Food Delivery","🛵","Gas","gal",4,"Your old bike|Used e-bike|Used scooter|Beat-up hatchback|Cargo van|Small delivery fleet|Regional depot","Carry groceries for Mom|Deliver one pizza|Drop off a takeout order|Lunch rush run|Pharmacy pickups|Dinner rush shift|Late-night double shift|Catering drop-off|Grocery route|Valentine's florist route|Same-day courier route|Medical lab courier route|Retail restock route|Regional freight run|Overnight freight contract|Corporate logistics contract"],
+["photo","Photography","📷","Batteries","packs",6,"Mom's point-and-shoot|Used DSLR kit|Prime lens + flash|Full-frame body|Drone + gimbal|Studio lighting kit|Production studio","Snap Mom's Facebook pics|Friend's profile pic|Garage-sale listing|Marketplace product photos|Friend's senior pics|Pet portraits|Family portraits|Realtor headshots|Real estate listing|Event coverage|Luxury home + drone|Restaurant menu shoot|Elopement shoot|Wedding|Commercial brand shoot|Magazine campaign"],
+["handy","Handyman","🔨","Parts","kits",4,"Mom's junk-drawer toolbox|Basic tool set|Cordless drill kit|Contractor tool set|Work van|Licensed crew gear|Construction yard","Change Mom's lightbulbs|Hang a picture|Fix a squeaky door|Unclog a sink|Assemble furniture|Patch drywall|Install a ceiling fan|Replace a faucet|Hang new doors|Fence repair|Deck repair|Tile a backsplash|Bathroom remodel|Finish a basement|Kitchen remodel|Build an addition"],
+["paint","House Painting","🎨","Paint","gal",8,"Mom's crusty brushes|Roller & tray set|Ladder + drop cloths|Paint sprayer|Scaffolding|Painting crew gear|Commercial rig","Paint Mom's mailbox|Touch up trim|Paint a fence section|Paint a front door|Touch up a porch|Paint a shed|Paint a bedroom|Paint a kitchen|Refinish cabinets|Paint a whole interior|Deck stain + seal|House exterior|Apartment unit turnovers|Church sanctuary|Commercial building|Downtown high-rise"],
+["pool","Pool Cleaning","🏊","Chlorine","jugs",5,"Mom's leaky skimmer|Telescoping pole kit|Vacuum + test kit|Robotic cleaner|Service truck|Repair & equipment kit|Pool company fleet","Skim Mom's kiddie pool|Skim a neighbor's kiddie pool|Skim a backyard pool|Test & balance chemicals|Vacuum a backyard pool|Weekly pool service|Filter clean|Pool opening|Green-to-clean rescue|Pool closing|Pump replacement|Neighborhood route|Apartment complex pool|Hotel pool contract|Country club pools|Water park contract"],
+["phone","Phone Repair","📱","Parts","sets",10,"Mom's eyeglass screwdriver|Cheap repair kit|Pro repair station|Microsoldering rig|Mall kiosk|Repair storefront|Repair franchise","Set up Mom's new phone|Clean a charging port|Install a screen protector|Swap a battery|Replace a camera lens|Replace a cracked screen|Replace a charging port|Water-damage repair|Tablet screen repair|Board-level repair|Data recovery|School tablet batch|Small business fleet|Hospital device contract|Business fleet contract|Carrier warranty contract"],
+["move","Moving Help","📦","Truck gas","gal",4,"Mom's wobbly hand truck|Heavy-duty dolly|Used pickup|Box truck|Moving crew gear|Two-truck crew|Moving company","Carry Mom's boxes to the attic|Haul trash to the curb|Carry a couch upstairs|Help load a U-Haul|Move a dorm room|Junk removal run|Studio apartment move|Apartment move|Two-bedroom move|Piano move|Full house move|Estate cleanout|Long-distance move|Office relocation|Warehouse relocation|Corporate HQ relocation"]];
 const PROFS=PD.map((a,pi)=>({id:a[0],n:a[1],i:a[2],sup:a[3],unit:a[4],price:a[5],gear:a[6].split("|"),
-  jobs:a[7].split("|").map((nm,k)=>({n:nm,t:JT[k],min:JMIN[k],pay:JPAY[a[0]][k]}))}));
+  jobs:a[7].split("|").map((nm,k)=>({n:nm,t:JT16[k],min:MIN16[k],pay:PAY16[k],rq:RQ16[k],tc:TC16[k]}))}));
 const PB={}; PROFS.forEach(p=>PB[p.id]=p);
 const UPS=[{id:"phone",n:"Business phone line",c:150,d:"+10% job pay",pay:1.1},{id:"fly",n:"Flyers around town",c:30,d:"+15% job pay",pay:1.15},
  {id:"list",n:"Online listing",c:400,d:"+20% job pay",pay:1.2},{id:"maint",n:"Gear maintenance kit",c:600,d:"Gear breaks 40% less often",brk:.6},
@@ -512,6 +508,9 @@ function fresh(){ return {v:4,cash:0,fu:0,fbasis:0,fh:[],prof:null,profs:{},job:
 let S, isNew=false;
 try{ const r=localStorage.getItem(SAVE_KEY); S=r?Object.assign(fresh(),JSON.parse(r)):null; }catch(e){ S=null; }
 if(!S){ S=fresh(); isNew=true; }
+function jobMig(){ if(S.jobV===16) return; S.jobV=16; const OLD=[2,4,6,8,10,12,14,15];
+  for(const id in S.profs){ const s=S.profs[id]; if(s.sk!=null) continue; let k=0; for(let i=0;i<16;i++) if(JT16[i]<=(s.own||0)&&RQ16[i]<=(s.rep||0)) k=i; s.sk=k; }
+  if(S.job&&S.job.k<8&&!S.job.v16){ S.job.k=OLD[S.job.k]; S.job.v16=1; } }
 let NOW=nowSec();
 
 // ---------- derived ----------
@@ -654,13 +653,19 @@ function paperClose(){ const c=S.paper; if(NOW-c.t<15) return toast("Hold it at 
 
 // ---------- jobs ----------
 function jobTime(id,j,t){ return Math.round(j.min*60*.8*durMult(id,t)); }
-function startJob(k,auto){ const p=prof(), j=p.jobs[k], s=pst(), t=tier(p.id); if(S.job||t<j.t) return false;
+const skill=id=>pst(id).sk||0;
+function startJob(k,auto){ const p=prof(), j=p.jobs[k], s=pst(), t=tier(p.id); if(S.job||t<j.t||k>skill(p.id)) return false;
   const use=FUSE[t];
   if(use){ if(s.fuel+1e-9<use&&aOn("resup")){ const need=use*4-s.fuel, c=need*supP(p); if(S.cash>=c){ S.cash-=c; s.fuel+=need; resetPeak(); } }
     if(s.fuel+1e-9<use){ if(!auto) toast("Out of "+p.sup.toLowerCase()+". Refill in the Store."); return false; } s.fuel-=use; }
   S.job={p:p.id,k,t,start:NOW,end:NOW+jobTime(p.id,j,t),pay:Math.round(j.pay*payMult(p.id)*100)/100};
   if(!auto){ closeModal(); toast(`${p.i} Started: ${j.n}`); lunchMoney(); build(); } return true; }
-function bestJob(){ const p=prof(), t=tier(p.id); let b=-1; p.jobs.forEach((j,k)=>{ if(j.t<=t) b=k; }); return b; }
+function bestJob(){ const p=prof(), t=tier(p.id), sk=skill(p.id); let b=-1; p.jobs.forEach((j,k)=>{ if(j.t<=t&&k<=sk) b=k; }); return b; }
+// learn the next job: training cost + reputation (+ the gear tier to actually work it)
+function learnJob(k){ const p=prof(), s=pst(), j=p.jobs[k]; if(!j||k!==skill(p.id)+1) return;
+  if(s.rep<j.rq) return toast(`You need ★${j.rq} reputation first (you have ★${s.rep})`);
+  if(S.cash<j.tc) return toast(`Training costs ${money(j.tc)}`);
+  S.cash-=j.tc; s.sk=k; resetPeak(); life(`🎓 Learned: ${j.n}`); toast(`🎓 Learned a new job: ${j.n}`,"good"); sfx('unlock'); save(); jobPicker(); }
 function finishJob(){ const jb=S.job, p=PB[jb.p], j=p.jobs[jb.k], s=pst(jb.p); S.job=null;
   S.cash+=jb.pay; txInc(jb.pay); S.st.jobs++; S.st.jobPay+=jb.pay; s.rep++;
   if(aOn("inv")){ const a=jb.pay*aV("inv")/100; S.cash-=a; S.fu+=a/price(II,NOW); S.fbasis+=a; resetPeak(); }
@@ -712,10 +717,10 @@ function taxCard(){ const el=$("taxc"); if(!el) return; const tx=TX(), w=tx.w, b
 function broke(why){
   for(const k in S.pos) S.pos[k]={l:0,lc:0,s:0,se:0};
   S.cash=0; S.job=null; S.debtDue=0; S.liqPeak=0; S.st.broke++;
-  for(const id in S.profs){ const s=S.profs[id]; S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:s.rep,up:{}}; }
+  for(const id in S.profs){ const s=S.profs[id]; S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:s.rep,sk:s.sk||0,up:{}}; }
   S.auto={}; S.ord={}; S.vb={};
   life("💀 Went broke: "+why); sfx('broke');
-  const body=`<div class="mom">"${pick(["Your old room's still down there.","I'm not mad. I'm just… disappointed.","Come on home, kiddo. Again."])}"</div><p>${why}. Creditors took your cash, investments, gear, business upgrades and automations.</p><p>You keep your <b>index fund (${money(fundVal())})</b>, your <b>knowledge</b>, your <b>reputation</b> and your <b>life milestones</b>.</p>`;
+  const body=`<div class="mom">"${pick(["Your old room's still down there.","I'm not mad. I'm just… disappointed.","Come on home, kiddo. Again."])}"</div><p>${why}. Creditors took your cash, investments, gear, business upgrades and automations.</p><p>You keep your <b>index fund (${money(fundVal())})</b>, your <b>knowledge</b>, your <b>job skills</b>, your <b>reputation</b> and your <b>life milestones</b>.</p>`;
   if(SIM) AWAY_BROKE=body; else { modal("💀 You went broke",body,[["Start over","gold"]]); build(); } }
 function solvency(){
   for(const k in S.pos){ const p=S.pos[k]; if(p.s&&ask(k)>=2*p.se) cover(k,p.s,"⚠️ Margin call:"); }
@@ -958,7 +963,7 @@ function hdr(){ applyCos(); const c=$("cash"); c.textContent=money(S.cash); c.cl
 
 // ---------- modals ----------
 function modal(t,body,btns,cb){ const m=$("modal"); m.innerHTML=`<div class="box"><h2>${t}</h2>${body}${btns&&btns.length?`<div class="row" style="margin-top:12px">${btns.map((b,i)=>`<button class="btn g ${b[1]||""}" data-i="${i}">${b[0]}</button>`).join("")}</div>`:""}</div>`;
-  m.classList.remove("hide"); m.onclick=e=>{ const sxb=e.target.closest("[data-sx]"); if(sxb) return sx(sxb.dataset.sx); const o=e.target.closest("[data-pp],[data-jb],[data-op]"); if(o&&!o.disabled){ o.dataset.op?setOrder(o.dataset.op):o.dataset.pp?chooseProf(o.dataset.pp):startJob(+o.dataset.jb); return; }
+  m.classList.remove("hide"); m.onclick=e=>{ const sxb=e.target.closest("[data-sx]"); if(sxb) return sx(sxb.dataset.sx); const jl=e.target.closest("[data-jl]"); if(jl&&!jl.disabled) return learnJob(+jl.dataset.jl); const o=e.target.closest("[data-pp],[data-jb],[data-op]"); if(o&&!o.disabled){ o.dataset.op?setOrder(o.dataset.op):o.dataset.pp?chooseProf(o.dataset.pp):startJob(+o.dataset.jb); return; }
     const b=e.target.closest("[data-i]"); if(!b&&(e.target!==m||m.dataset.lock)) return; closeModal(); if(b&&btns[+b.dataset.i][2]) btns[+b.dataset.i][2](); }; }
 function closeModal(){ const m=$("modal"); m.classList.add("hide"); delete m.dataset.lock; }
 let tt; function toast(t,k){ if(SIM) return; const e=$("toast"); e.textContent=t; e.className="show "+(k||""); clearTimeout(tt); tt=setTimeout(()=>e.className="",/^(📱 Mom|👩)/.test(t)?4600:2600); }
@@ -967,14 +972,21 @@ function profPicker(first){ modal(first?"Get a job":"Pick a profession",(first?`
   if(first) $("modal").dataset.lock=1; }
 function lunchMoney(){ if(S.lunch) return; S.lunch=1; S.cash+=2; resetPeak&&resetPeak(); life("📱 Mom: proud of you, +$2 lunch money");
   setTimeout(()=>{ toast("📱 Mom: I'm so proud of you for getting out there! Here's $2 for lunch. 💛","good"); sfx('pay'); hdr(); },1500); }
-function delistCheck(){ STOCKS.forEach(d=>{ if(!d.gone) return; const p=S.pos[d.s], pr=price(d.i,NOW);
+function delistCheck(){ jobMig(); STOCKS.forEach(d=>{ if(!d.gone) return; const p=S.pos[d.s], pr=price(d.i,NOW);
     if(p&&(p.l||p.s)){ let pl=0; if(p.l){ pl=p.l*(pr-p.lc); S.cash+=p.l*pr; } if(p.s){ pl=Math.max(p.s*(p.se-pr),-p.s*p.se); S.cash+=p.s*p.se+pl; } S.pos[d.s]={l:0,lc:0,s:0,se:0}; life(`📉 ${d.s} was delisted. Your trade closed at ${px(pr)} (${sg(pl)})`); }
     if(S.ord) delete S.ord[d.s]; const c=S.comp; if(c&&c.pos&&c.pos[d.s]){ const q=c.pos[d.s]; if(q.l) c.cash+=q.l*pr; if(q.s) c.cash+=q.s*q.se+Math.max(q.s*(q.se-pr),-q.s*q.se); delete c.pos[d.s]; } });
   if(!BYSYM[S.sel]||BYSYM[S.sel].gone) S.sel="PNNY"; }
 function chooseProf(id){ S.prof=id; pst(id); closeModal(); toast(PB[id].i+" You're doing "+PB[id].n+" now"); build(); if(!S.tut) setTimeout(tutorial,500); }
-function jobPicker(){ const p=prof(), t=tier(), s=pst(), m=payMult(p.id);
-  modal(p.i+" Jobs",`<div class="t" style="margin-bottom:6px">${p.gear[t]} · ${Math.round(GBRK[t]*100)}% chance it breaks · ★${s.rep} rep pays ×${m.toFixed(2)}</div>`+
-   p.jobs.map((j,k)=>{ const ok=t>=j.t; return `<button class="opt" data-jb="${k}" ${ok?"":"disabled"}><div class="row"><div class="g"><b>${j.n}</b><div class="t">${ok?dur(jobTime(p.id,j,t))+(FUSE[t]?` · ${FUSE[t]} ${p.unit}`:""):"Needs "+p.gear[j.t]}</div></div><b class="m up">${money(j.pay*m)}</b></div></button>`; }).join(""),[["Close","ghost"]]); }
+function jobPicker(){ const p=prof(), t=tier(), s=pst(), m=payMult(p.id), sk=skill(p.id);
+  const rows=p.jobs.map((j,k)=>{ if(k>sk+2) return "";
+    if(k<=sk){ const ok=t>=j.t; return `<button class="opt" data-jb="${k}" ${ok?"":"disabled"}><div class="row"><div class="g"><b>${j.n}</b><div class="t">${ok?dur(jobTime(p.id,j,t))+(FUSE[t]?` · ${FUSE[t]} ${p.unit}`:""):"Needs "+p.gear[j.t]}</div></div><b class="m up">${money(j.pay*m)}</b></div></button>`; }
+    if(k===sk+1){ const repOk=s.rep>=j.rq, cashOk=S.cash>=j.tc;
+      return `<div class="opt" style="border-style:dashed"><div class="row"><div class="g"><b>🔒 ${j.n}</b><div class="t">Pays ${money(j.pay*m)} · ${dur(jobTime(p.id,j,Math.max(t,j.t)))}${t<j.t?` · needs ${p.gear[j.t]}`:""}</div>
+        <div class="t" style="margin-top:3px"><span class="${repOk?"up":"dn"}">★${j.rq} rep${repOk?" ✓":` (you have ${s.rep})`}</span> · training ${money(j.tc)}</div></div>
+        <button class="btn gold sm" data-jl="${k}" ${repOk&&cashOk?"":"disabled"}>Learn</button></div></div>`; }
+    return `<div class="opt" style="opacity:.45"><div class="row"><div class="g"><b>🔒 ${j.n}</b><div class="t">Pays ${money(j.pay*m)} · ★${j.rq} rep · ${money(j.tc)}</div></div></div></div>`; }).join("");
+  modal(p.i+" Jobs",`<div class="t" style="margin-bottom:6px">${p.gear[t]} · ${Math.round(GBRK[t]*100)}% chance it breaks · ★${s.rep} rep pays ×${m.toFixed(2)} · ${sk+1}/${p.jobs.length} jobs learned</div>`+rows+
+   (sk<p.jobs.length-3?`<div class="t" style="text-align:center;margin-top:6px">${p.jobs.length-sk-3} more jobs to learn after these</div>`:""),[["Close","ghost"]]); }
 
 // ---------- input ----------
 $("nav").onclick=e=>{ const b=e.target.closest("button"); if(b) setTab(b.dataset.tab); };

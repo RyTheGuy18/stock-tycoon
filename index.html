@@ -1295,7 +1295,7 @@ function placeTutWide(el,tg,scroll){ const tip=el.querySelector(".tip"), ring=el
   const place=v=>{ const gap=Math.min(v,MAX)*.9; ind.style.top=(main.offsetTop+gap/2-18)+"px"; ind.style.opacity=Math.min(1,v/GO); ind.querySelector("svg").style.transform=`rotate(${v*4}deg)`;
     main.style.transform=v?`translateY(${gap}px)`:""; };
   const reset=()=>{ main.style.transition=ind.style.transition="transform .25s,top .25s,opacity .25s"; place(0); setTimeout(()=>{ main.style.transition=ind.style.transition=""; },260); };
-  main.addEventListener("touchstart",e=>{ if(busy||$("tut")||main.scrollTop>0||e.touches.length>1||e.target.closest("#chart,canvas,input,textarea,.chw")) { y0=null; return; } y0=e.touches[0].clientY; d=0; },{passive:true});
+  main.addEventListener("touchstart",e=>{ if(busy||tab==="trade"||$("tut")||main.scrollTop>0||e.touches.length>1||e.target.closest("#chart,canvas,input,textarea,.chw")) { y0=null; return; } y0=e.touches[0].clientY; d=0; },{passive:true});
   main.addEventListener("touchmove",e=>{ if(y0===null) return; const dy=e.touches[0].clientY-y0; if(dy<=0||main.scrollTop>0){ if(d){ d=0; place(0); } return; }
     d=dy*.55; e.preventDefault(); place(d); },{passive:false});
   main.addEventListener("touchend",async()=>{ if(y0===null) return; y0=null; if(d<GO){ reset(); return; }

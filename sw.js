@@ -1,5 +1,5 @@
 // Stock Tycoon service worker: the game loads and runs offline; online features need a connection.
-const C = "tt-v17";
+const C = "tt-v18";
 const SHELL = ["./", "index.html", "net.js", "config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 self.addEventListener("install", (e) => {

@@ -32,7 +32,8 @@ header{padding:calc(env(safe-area-inset-top) + 8px) 12px 6px;border-bottom:1px s
 main{flex:1;overflow-y:auto;min-height:0;overscroll-behavior:contain}
 @media (display-mode: standalone){ html{height:min(100lvh,calc(100% + env(safe-area-inset-top)))} }
 #modal,#intro,#tut,#auth,#chat{position:absolute!important;top:0!important;bottom:0!important;height:auto!important}
-html.pwa nav{padding-bottom:max(env(safe-area-inset-bottom),14px)}
+html.pwa nav{padding-bottom:max(12px,calc(env(safe-area-inset-bottom) - 20px))} html.pwa nav button{padding:12px 0 0}
+html.tbar header{padding-top:calc(env(safe-area-inset-top) + 22px)} html.tbar #gear{top:calc(env(safe-area-inset-top) + 22px)}
 nav{display:flex;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;padding:8px 0;font-size:11px;color:var(--mut)}
 nav button span{display:block;opacity:.55} nav button span svg{width:23px;height:23px;display:block;margin:0 auto 3px}
@@ -1464,5 +1465,9 @@ async function appTag(){ try{ const r=await fetch("index.html",{method:"HEAD",ca
 async function checkUpdate(){ if(location.protocol!=="https:") return; const t=await appTag(); if(!t) return; if(APPTAG===null){ APPTAG=t; return; }
   if(t!==APPTAG){ APPTAG=t; save(); csave(); toast("Updating to the newest version…"); setTimeout(()=>location.reload(),900); } }
 checkUpdate(); setInterval(checkUpdate,300000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
-</script><script>if(navigator.standalone===true||matchMedia('(display-mode: standalone)').matches)document.documentElement.classList.add('pwa');</script>
+</script><script>(function(){ const de=document.documentElement;
+  if(!(navigator.standalone===true||matchMedia('(display-mode: standalone)').matches)) return; de.classList.add('pwa');
+  // iOS still drawing us under a see-through status bar? keep header text below its blur band
+  const p=document.createElement('div'); p.style.cssText='position:absolute;top:0;width:0;height:env(safe-area-inset-top);visibility:hidden';
+  document.body.appendChild(p); if(p.offsetHeight>0) de.classList.add('tbar'); p.remove(); })();</script>
 </body></html>

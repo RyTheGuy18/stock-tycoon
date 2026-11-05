@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Ticker Tycoon</title>
+<meta name="theme-color" content="#0e1319">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ticker Tycoon">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090c;--panel:#0e1319;--card:#121922;--c2:#18212c;--line:#1f2a36;--text:#e8eef4;--mut:#77879a;--up:#16c784;--dn:#ea3943;--gold:#f5b301;--pur:#a855f7}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+button,input{font:inherit;color:inherit;border:0}
+button{cursor:pointer;background:none}
+input{user-select:text;-webkit-user-select:text}
+.m{font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:560px;margin:0 auto}
+header{padding:calc(env(safe-area-inset-top) + 8px) 12px 6px;border-bottom:1px solid var(--line);background:var(--panel)}
+.hr{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;align-items:end}
+.l{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em}
+.hv{font-size:15px;font-weight:700}
+#cash{font-size:22px;color:var(--gold)} #cash.neg{color:var(--dn)}
+#home{font-size:11.5px;color:var(--mut);margin-top:3px}
+#debt{display:none;background:#3a1014;border:1px solid #6b1d24;color:#ffb4ba;font-size:12px;padding:6px 9px;border-radius:9px;margin-top:6px}
+main{flex:1;overflow-y:auto}
+nav{display:flex;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:8px 0;font-size:11px;color:var(--mut)}
+nav button span{display:block;font-size:18px;opacity:.5;filter:grayscale(1)}
+nav button.on{color:var(--text)} nav button.on span{opacity:1;filter:none}
+#chips{display:flex;gap:5px;overflow-x:auto;padding:8px 10px 4px;scrollbar-width:none}
+#chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:5px 8px;text-align:left}
+.chip b{display:block;font:700 12px "JetBrains Mono"} .chip small{font:11px "JetBrains Mono"}
+.chip.on{border-color:#3b82f6;background:#132036} .chip.lock{opacity:.4}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:3px;vertical-align:2px}
+.q{display:flex;justify-content:space-between;align-items:center;padding:2px 12px}
+#qp{font-size:24px;font-weight:700}
+.tf{display:flex;gap:4px;padding:4px 12px 2px}
+.tf button{flex:1;background:var(--c2);border-radius:7px;padding:5px 0;font-size:12px;color:var(--mut);font-family:"JetBrains Mono"}
+.tf button.on{background:var(--line);color:var(--text)}
+#chart{width:100%;height:36vh;min-height:230px;display:block}
+#news{font-size:12px;color:var(--mut);padding:5px 12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--panel)}
+.pad{padding:10px 10px 4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 11px;margin-bottom:8px}
+.row{display:flex;align-items:center;gap:8px}
+.g{flex:1;min-width:0}
+.t{font-size:12px;color:var(--mut);line-height:1.4}
+.b{font-weight:600}
+.up{color:var(--up)} .dn{color:var(--dn)}
+.btn{background:#3b82f6;color:#fff;border-radius:9px;padding:10px 6px;font-weight:700;font-size:13.5px}
+.btn small{display:block;font-weight:500;font-size:10.5px;opacity:.85}
+.buy{background:var(--up);color:#03250f} .sell{background:var(--dn);color:#fff} .short{background:var(--dn);color:#fff} .cover{background:#64748b;color:#fff}
+.gold{background:var(--gold);color:#2a1d00} .ghost{background:var(--c2);border:1px solid var(--line);color:var(--text)}
+.sm{padding:7px 10px;font-size:12.5px}
+.btn:disabled{opacity:.3}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.qty{display:flex;gap:5px;margin-bottom:6px}
+.qty button{background:var(--c2);border-radius:8px;padding:7px 12px;font-weight:700}
+.qty .mid{flex:1;text-align:center;background:var(--c2);border-radius:8px;padding:5px;font-size:12px;color:var(--mut)}
+.qty .mid b{display:block;color:var(--text);font-size:14px}
+h3{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;margin:12px 3px 6px;font-weight:600}
+.bar{height:6px;background:var(--c2);border-radius:99px;overflow:hidden;margin:6px 0 3px}
+.bar i{display:block;height:100%;background:var(--gold)} .bar.f i{background:#f97316}
+.pill{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:99px;background:var(--c2);color:var(--mut);margin-left:3px}
+.ok{background:#0f2e22;color:#7ee2b8} .bad{background:#3a1014;color:#ffb4ba}
+.li{font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.li:last-child{border:0}
+.seg{display:flex;background:var(--c2);border-radius:9px;padding:3px;margin-bottom:8px}
+.seg button{flex:1;padding:7px;border-radius:7px;font-size:13px;color:var(--mut)} .seg button.on{background:var(--line);color:var(--text)}
+.opt{display:block;width:100%;text-align:left;background:var(--c2);border:1px solid var(--line);border-radius:11px;padding:9px 11px;margin-bottom:6px}
+.opt:disabled{opacity:.4}
+.inp{width:100%;background:var(--c2);border:1px solid var(--line);border-radius:9px;padding:9px;font-family:"JetBrains Mono"}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.kv div{background:var(--c2);border-radius:8px;padding:6px 8px;font-size:11.5px;color:var(--mut)} .kv b{display:block;font-size:13px;color:var(--text)}
+.mom{background:var(--c2);border-left:3px solid var(--gold);border-radius:10px;padding:9px 11px;font-size:14px;line-height:1.45;margin:6px 0}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:14px;z-index:9}
+#modal.hide{display:none}
+#modal .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;max-width:400px;width:100%;max-height:86dvh;overflow-y:auto}
+#modal h2{margin:0 0 6px;font-size:19px}
+#modal p{color:var(--mut);font-size:14px;line-height:1.5;margin:6px 0} #modal p b{color:var(--text)}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 70px);transform:translateX(-50%);background:#1d2835;border:1px solid var(--line);padding:8px 13px;border-radius:11px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:10;max-width:92%;text-align:center}
+#toast.show{opacity:1} #toast.good{border-color:var(--up);background:#0d2a1e} #toast.bad{border-color:var(--dn);background:#2c1014}
+canvas.sp{width:100%;height:46px;display:block;margin:6px 0}
+#intro{position:fixed;inset:0;z-index:12;background:radial-gradient(120% 90% at 50% 0%,#1b2333,#07090c 70%);display:flex;flex-direction:column;max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 18px) 26px calc(env(safe-area-inset-bottom) + 22px)}
+#intro .skip{align-self:flex-end;color:var(--mut);font-size:13px;padding:6px}
+#intro .pg{flex:1;display:flex;flex-direction:column;justify-content:center;animation:fadeup .45s ease}
+#intro .ch{font-size:12px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+#intro p{font-size:17px;line-height:1.65;color:#dfe6ee;margin:0 0 16px;font-family:Georgia,"Times New Roman",serif}
+#intro .foot{display:flex;align-items:center;justify-content:space-between}
+#intro .dots span{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2a3646;margin-right:6px} #intro .dots span.on{background:#fff}
+.nextb{background:#fff;color:#0b0f14;border-radius:999px;padding:12px 20px;font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;box-shadow:0 6px 24px -8px rgba(255,255,255,.5)}
+.nextb:active{transform:scale(.96)}
+@keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+#tut{position:fixed;inset:0;z-index:11;background:rgba(0,0,0,.62);pointer-events:none}
+.tut-hl{position:relative;z-index:12;outline:2px solid var(--gold);outline-offset:4px;border-radius:10px;box-shadow:0 0 24px rgba(245,179,1,.45)}
+#tut .ring{position:fixed;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.62),0 0 18px rgba(245,179,1,.6)}
+#tut .tip{position:fixed;z-index:13;left:12px;right:12px;max-width:536px;margin:0 auto;background:#121922;border:1px solid var(--line);border-radius:14px;padding:14px;pointer-events:auto;animation:fadeup .3s ease}
+#tut .tip b{font-size:16px} #tut .tip p{font-size:14px;line-height:1.5;color:#c9d3de;margin:6px 0 12px}
+.scene{position:relative;border-radius:14px;overflow:hidden;margin-bottom:10px;height:150px;border:1px solid var(--line)}
+.scene svg{position:absolute;inset:0;width:100%;height:100%}
+.scap{position:absolute;left:0;right:0;bottom:0;padding:26px 12px 10px;background:linear-gradient(transparent,rgba(5,8,12,.9))}
+.scap b{font-size:20px;display:block} .sd{font-size:12.5px;color:#c9d3de;line-height:1.4;margin-top:2px}
+.tl{position:relative;padding-left:22px;margin-bottom:6px}
+.tl:before{content:"";position:absolute;left:7px;top:10px;bottom:10px;width:2px;background:var(--line)}
+.tn{position:relative;padding:8px 0}
+.tn:before{content:"";position:absolute;left:-20px;top:13px;width:10px;height:10px;border-radius:50%;border:2px solid #3a4a5c;background:var(--bg)}
+.tn.done:before{background:var(--gold);border-color:var(--gold)} .tn.done b{color:var(--mut);font-weight:600}
+.tn.cur:before{border-color:var(--gold);animation:dotp 1.8s ease-in-out infinite}
+@keyframes dotp{0%,100%{box-shadow:0 0 0 0 rgba(245,179,1,.5)}50%{box-shadow:0 0 0 6px rgba(245,179,1,0)}}
+.tn:not(.done):not(.cur){opacity:.55}
+.perk{display:inline-block;font-size:11px;color:#c8a24a;background:#1d1a10;border-radius:6px;padding:1px 6px;margin-top:3px}
+#gear{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 8px);background:none;color:var(--mut);font-size:19px;padding:2px 4px}
+header{position:relative}
+.pcard{border-radius:16px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+.pav{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;background:rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.35);flex:none}
+.pname{font-size:20px;font-weight:800} .ptag{font-size:13px;opacity:.85;margin-top:2px;font-style:italic}
+.pmeta{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px} .pmeta span{background:rgba(0,0,0,.28);border-radius:99px;padding:3px 9px;font-size:11.5px}
+.avgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px} .avgrid button{font-size:22px;padding:6px 0;border-radius:10px;background:var(--c2);border:1px solid var(--line)} .avgrid button.on{border-color:var(--gold);background:#2a2410}
+.swat{display:flex;gap:8px;flex-wrap:wrap} .swat button{width:34px;height:34px;border-radius:50%;border:2px solid transparent} .swat button.on{border-color:#fff}
+.lbl2{font-size:12px;color:var(--mut);margin:12px 2px 6px}
+.cosp{width:46px;height:34px;flex:none;display:flex;align-items:center;justify-content:center}
+.sw{width:42px;height:30px;border-radius:7px;border:1px solid;display:flex;align-items:flex-end;justify-content:center;gap:4px;padding:4px}
+.sw i{display:block;width:6px;border-radius:1px}
+.bdp{background:var(--c2);border-color:var(--line);border-radius:50%;width:30px}
+.clk{opacity:.55}
+body.mono{font-family:"JetBrains Mono",monospace}
+.bd-silver{border:2px solid #c9d1dc!important;box-shadow:0 0 10px rgba(201,209,220,.3)}
+.bd-gold{border:2px solid #f5b301!important;box-shadow:0 0 14px rgba(245,179,1,.45)}
+.bd-dia{border:2px solid #9fe8ff!important;animation:dia 3s linear infinite}
+@keyframes dia{0%,100%{border-color:#9fe8ff;box-shadow:0 0 14px rgba(159,232,255,.55)}33%{border-color:#f0abfc;box-shadow:0 0 14px rgba(240,171,252,.55)}66%{border-color:#fde68a;box-shadow:0 0 14px rgba(253,230,138,.55)}}
+.ptitle{display:inline-block;font-size:11px;font-weight:700;color:#f5d27a;background:rgba(0,0,0,.3);border-radius:6px;padding:2px 7px;margin-top:5px}
+.bz{position:fixed;left:0;top:0;z-index:14;font-size:24px;pointer-events:none}
+html,body{overscroll-behavior:none} body{-webkit-touch-callout:none} input.inp{font-size:16px}
+nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:var(--dn)}
+#auth{position:fixed;inset:0;z-index:20;background:radial-gradient(120% 90% at 50% 0%,#1b2333,#07090c 70%);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 20px) 22px calc(env(safe-area-inset-bottom) + 20px);overflow-y:auto}
+#auth .au{width:100%;max-width:380px} #auth h1{text-align:center;margin:4px 0 6px;font-size:28px;font-weight:800} .aulogo{font-size:46px;text-align:center}
+#chat{position:fixed;inset:0;z-index:8;background:var(--bg);display:flex;flex-direction:column;max-width:560px;margin:0 auto;height:100dvh}
+.chd{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;border-bottom:1px solid var(--line);background:var(--panel)}
+.chb{font-size:32px;line-height:1;padding:0 8px 4px 0;color:var(--text)}
+.chm{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
+.msg{max-width:78%;align-self:flex-start;background:var(--c2);border:1px solid var(--line);border-radius:16px 16px 16px 4px;padding:8px 11px;font-size:15px;line-height:1.35;user-select:text;-webkit-user-select:text;overflow-wrap:anywhere}
+.msg.me{align-self:flex-end;background:#1d4ed8;border-color:#1d4ed8;border-radius:16px 16px 4px 16px}
+.msg small{display:block;font-size:10px;opacity:.6;margin-top:2px}
+.chi{display:flex;gap:6px;padding:8px 10px calc(env(safe-area-inset-bottom) + 8px);border-top:1px solid var(--line);background:var(--panel)}
+</style></head><body>
+<div id="app">
+<header>
+  <div class="hr">
+    <div><div class="l">Cash</div><div id="cash" class="m hv">$0.00</div></div>
+    <div><div class="l">Index fund</div><div id="fund" class="m hv">$0.00</div></div>
+    <div><div class="l">Net worth</div><div id="nw" class="m hv">$0.00</div></div>
+  </div>
+  <div id="home"></div><button id="gear" aria-label="Settings">⚙︎</button><div id="debt"></div>
+</header>
+<main id="main"></main>
+<nav id="nav"><button data-tab="trade" class="on"><span>📈</span>Market</button><button data-tab="store"><span>🛒</span>Store</button><button data-tab="auto"><span>🤖</span>Automations</button><button data-tab="friends"><span>👥</span>Friends</button><button data-tab="me"><span>👤</span>Profile</button></nav>
+</div>
+<div id="modal" class="hide"></div><div id="toast"></div>
+<script type="module" src="net.js"></script>
+<script>
+"use strict";
+/* ===================== Ticker Tycoon v4 =====================
+   The market is a pure function of the clock: price(series, unixSecond).
+   Every device computes the same numbers from the same seeds.
+   ============================================================ */
+const SAVE_KEY="tickerTycoon.v4", CLOUD_DOC="save4";
+let FLUSH=.015; const flushD=d=>Math.max(FLUSH,1.2*d.vol*Math.sqrt(180)); // jumpy stocks dip deeper, so the flush is tradeable on all of them
+const H0=Math.floor(Date.UTC(2026,10,1)/3600000), HN=3600;
+
+// ---------- deterministic randomness ----------
+function h32(s){let a=0xdeadbeef,b=0x41c6ce57;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,2654435761);b=Math.imul(b^c,1597334677);}a=Math.imul(a^(a>>>16),2246822507)^Math.imul(b^(b>>>13),3266489909);b=Math.imul(b^(b>>>16),2246822507)^Math.imul(a^(a>>>13),3266489909);return[a>>>0,b>>>0];}
+function RNG(seed){let[a,b]=h32(seed),c=a^0x9e3779b9,d=b^0x85ebca6b;const f=()=>{a|=0;b|=0;c|=0;d|=0;const t=(a+b|0)+d|0;d=d+1|0;a=b^b>>>9;b=c+(c<<3)|0;c=c<<21|c>>>11;c=c+t|0;return(t>>>0)/4294967296;};for(let i=0;i<12;i++)f();return f;}
+const G=r=>Math.sqrt(-2*Math.log(r()||1e-12))*Math.cos(6.283185307179586*r());
+
+// ---------- series ----------
+const STOCKS=[
+ {s:"PNNY",n:"Penny Pete's Pawn",p:.6,vol:.0075,beta:.6,spr:.012,un:0,pump:1},
+ {s:"BRGR",n:"Burgerline",p:5,vol:.0014,beta:.8,spr:.004,un:25},
+ {s:"SODA",n:"Fizzco Beverages",p:61,vol:.0007,beta:.5,spr:.002,un:60},
+ {s:"WAVE",n:"Wavecell Telecom",p:34,vol:.0009,beta:.6,spr:.003,un:120},
+ {s:"SOLR",n:"Sunforge Solar",p:27,vol:.0024,beta:1.3,spr:.004,un:250,pump:1},
+ {s:"BANK",n:"Granite Trust",p:47,vol:.0011,beta:1.1,spr:.002,un:500},
+ {s:"RAIL",n:"Ironline Rail",p:112,vol:.0009,beta:.9,spr:.002,un:900},
+ {s:"MEDX",n:"Medexa Pharma",p:88,vol:.0016,beta:.7,spr:.003,un:1500},
+ {s:"HODL",n:"HodlCoin",p:.85,vol:.006,beta:.4,spr:.008,un:3000,pump:1},
+ {s:"OILX",n:"Blackwell Petroleum",p:73,vol:.0014,beta:.9,spr:.002,un:5000},
+ {s:"AURM",n:"Aurum Mining",p:39,vol:.0018,beta:.3,spr:.003,un:8000},
+ {s:"ORBT",n:"Orbit Aerospace",p:22,vol:.0035,beta:1.5,spr:.005,un:12000,pump:1},
+ {s:"CHIP",n:"Quantix Semiconductor",p:245,vol:.002,beta:1.4,spr:.002,un:20000},
+ {s:"ROBO",n:"Axion Robotics",p:156,vol:.0026,beta:1.5,spr:.003,un:35000},
+ {s:"SKYD",n:"Skyward Cloud",p:390,vol:.0019,beta:1.3,spr:.002,un:60000},
+ {s:"MEGA",n:"Megacorp Holdings",p:1850,vol:.0006,beta:.9,spr:.001,un:100000}];
+STOCKS.forEach(d=>{d.tr=1.2e-7;d.ar=.97;d.sdh=d.vol*36;}); STOCKS[0].sdh=STOCKS[0].vol*2; STOCKS[0].ar=.5; STOCKS[0].lv=1;
+// ---- time-of-day behavior ----
+// morning open (14:00 UTC): +1 follows its 24h trend, -1 reverses it, 0 = no special open (PNNY)
+const OPEN_H=14, REV=["SODA","WAVE","AURM","MEGA"]; let RK=1.65, OK=1.9;
+function setupRituals(){ STOCKS.forEach((d,i)=>{ d.od=i===0?0:REV.includes(d.s)?-1:1; d.sto=Math.sqrt(d.vol*d.vol+Math.pow(.0003*d.beta,2));
+  const r=RNG("rit"+i), n=i===0?6:3, used=new Set([OPEN_H]); d.rit=[];
+  while(d.rit.length<n){ const h=Math.floor(r()*24); if(used.has(h)) continue; used.add(h); const L=i===0?180:[180,240,300][Math.floor(r()*3)];
+    const m=60*(8+Math.floor(r()*((3480-2*L)/60-8))); d.rit.push({h,m,L,dir:r()<.5?1:-1,D:RK*d.sto*Math.sqrt(L)}); }
+  d.rit.sort((a,b)=>(a.h*3600+a.m)-(b.h*3600+b.m)); d.oD=d.od?OK*d.sto*Math.sqrt(600):0; }); }
+setupRituals();
+const Lsg=(i,h)=>h<H0?(SER[i].lv?dayLevel(h):Math.log(SER[i].p)):L(i,h); // launch-day opens keep their original direction
+const openSign=(i,h)=>(Lsg(i,h)>=Lsg(i,h-24)?1:-1)*SER[i].od;
+const IDX={s:"TTI",n:"Tycoon Total Index",p:100,vol:.00006,beta:.5,spr:0,tr:Math.log(1.11)/604800,ar:.97,sdh:.0025,idx:1};
+const SER=STOCKS.concat([IDX]), II=SER.length-1, BYSYM={}; SER.forEach((d,i)=>{d.i=i;BYSYM[d.s]=d;});
+
+// ---------- episodes: the learnable patterns ----------
+// phase [ticks, drift (×vol unless abs), volume×, abs?]
+function makeEp(d,r){
+  const w=[["breakout",3],["fakeout",3],["beat",1.4],["rumor",1.4],["deadcat",1.8],["collapse",.22],["squeeze",.25]];
+  if(d.vol<.0017) w.push(["capit",2]); if(d.pump) w.push(["pump",2.2]);
+  let x=r()*w.reduce((a,b)=>a+b[1],0), ty="breakout"; for(const k of w){x-=k[1]; if(x<=0){ty=k[0];break;}}
+  const E={breakout:{ph:[[60,0,.35,0,.3],[30,.28,3.6],[220,.1,1.7]]}, fakeout:{ph:[[40,.22,1.1],[150,-.08,1]]},
+    beat:{nw:"📊 {n} beats earnings, raises outlook",ph:[[6,1.2,6],[400,.09,1.8]]},
+    rumor:{nw:"💬 Rumor: {n} in buyout talks",ph:[[8,1,4],[60,.02,1.5],[320,-.08,1.1]]},
+    capit:{ph:[[30,-.38,5.5],[300,.12,1.5]]},
+    deadcat:{nw:"⚠️ Report: {n} under federal investigation",ph:[[25,-.42,3],[40,.17,.8],[260,-.1,1.3]]},
+    pump:{ph:[[60,.55,10],[240,-.2,1.8]]}};
+  if(ty==="collapse"){const f=.5+r()*.43; return {ty,nw:"🚨 {n}'s auditor resigns, filings delayed",ph:[[120+Math.floor(r()*60),-.02,1.6],[60,Math.log(1-f)/60,8,1],[200,0,1.8]]};}
+  if(ty==="squeeze"){const g=.8+r()*.9; return {ty,nw:"🩳 Short interest in {n} hits a record high",ph:[[90+Math.floor(r()*60),.03,1.6],[60,Math.log(1+g)/60,9,1],[500,-Math.log(1+g)*.55/500,1.8,1]]};}
+  return Object.assign({ty},E[ty]);
+}
+const epLen=e=>e.ph.reduce((a,p)=>a+p[0],0);
+const SC=new Map();
+function sched(i,h){ const key=i+":"+h; let s=SC.get(key); if(s) return s;
+  const d=SER[i], eps=[];
+  if(!d.idx){ const r=RNG("e"+i+":"+h); for(let sl=0;sl<3;sl++) if(r()<.45){ const e=makeEp(d,r); e.st=sl*1200+1+Math.floor(r()*(1199-epLen(e))); eps.push(e);} }
+  const mr=RNG("m:"+h); const cr=mr()<1/60?1+Math.floor(mr()*3400):null;
+  let ee=0; for(const e of eps) for(const p of e.ph) ee+=p[0]*(p[3]?p[1]:p[1]*d.vol);
+  if(cr!=null) ee+=Math.log(.82)*d.beta;
+  if(d.od&&((h%24)+24)%24===OPEN_H) ee+=openSign(i,h)*d.oD;
+  s={eps,cr,ee}; SC.set(key,s); if(SC.size>3000) SC.delete(SC.keys().next().value); return s; }
+// hourly anchors (log-price), mean-reverting around a long-run trend
+const AN=SER.map(()=>[0]);
+// before launch (H0) the walk runs backwards from the launch level, so long charts have history.
+// Nothing after H0 depends on these values.
+const AB=SER.map(()=>[0]);
+function Lpre(i,h){ const d=SER[i], b=AB[i], j=H0-h;
+  while(b.length<=j){ const q=b.length; b.push(d.ar*b[q-1]+d.sdh*G(RNG("ab"+i+":"+(H0-q)))); }
+  return (d.lv?dayLevel(h):Math.log(d.p)+d.tr*3600*(h-H0))+b[j]; }
+function L(i,h){ const d=SER[i], a=AN[i], k=h-H0; if(k<0) return Lpre(i,h);
+  while(a.length<=k){ const j=a.length-1; a.push(d.ar*(a[j]+sched(i,H0+j).ee)+d.sdh*G(RNG("a"+i+":"+(H0+j)))); }
+  return (d.lv?dayLevel(h):Math.log(d.p)+d.tr*3600*k)+a[k]; }
+// PNNY "mood" days: each day (midnight Central = 06:00 UTC) it settles around a random level between $0.90 and $6.
+// The switch happens over the last hour before midnight, so the transition can be caught.
+const pnnyDay=h=>Math.floor((h-6)/24);
+function dayLevel(h){ const u=RNG("lvl:"+pnnyDay(h))(); return Math.log(.9)+u*(Math.log(6)-Math.log(.9)); }
+const MP=new Map();
+function mpath(h){ let m=MP.get(h); if(m) return m; const r=RNG("mn:"+h); m=new Float64Array(HN+1); let v=9e-8;
+  for(let t=1;t<=HN;t++){ const e=Math.sqrt(v)*G(r)*(r()<.02?2.6:1); v=.02*9e-8+.06*e*e+.92*v; m[t]=m[t-1]+e; }
+  MP.set(h,m); if(MP.size>40) MP.delete(MP.keys().next().value); return m; }
+const CH=new Map();
+function chunk(i,h){ const key=i+":"+h; let c=CH.get(key); if(c) return c;
+  const d=SER[i], s=sched(i,h), mu=new Float64Array(HN+1), vm=new Float32Array(HN+1).fill(1), sm=new Float32Array(HN+1).fill(1);
+  for(const e of s.eps){ let t=e.st; for(const p of e.ph){ const m=p[3]?p[1]:p[1]*d.vol; for(let k=0;k<p[0];k++,t++){ mu[t]+=m; vm[t]*=p[2]; if(p[4]) sm[t]*=p[4]; } } }
+  // "3-hour flush": at the top of every UTC hour divisible by 3, stocks dip then fully recover
+  if(!d.idx&&h%3===0){ const a=Math.log(1-flushD(d))/120; for(let t=1;t<=120;t++){ mu[t]+=a; vm[t]*=2; } for(let t=121;t<=300;t++) mu[t]-=a*120/180; }
+  const dh=((h%24)+24)%24;
+  if(d.rit) for(const R of d.rit) if(R.h===dh){ const a=R.dir*R.D/R.L; for(let k=1;k<=R.L;k++){ mu[R.m+k]+=a; mu[R.m+R.L+k]-=a; vm[R.m+k]*=1.6; vm[R.m+R.L+k]*=1.6; } }
+  if(d.od&&dh===OPEN_H){ const a=openSign(i,h)*d.oD/600; for(let t=1;t<=600;t++){ mu[t]+=a; vm[t]*=3; } }
+  if(s.cr!=null) for(let k=0;k<90;k++){ mu[s.cr+k]+=Math.log(.82)/90*d.beta; vm[s.cr+k]*=4; }
+  const r=RNG("n"+i+":"+h), M=d.idx?null:mpath(h), X=new Float64Array(HN+1), E=new Float64Array(HN+1), V=new Float32Array(HN+1), tv=d.vol*d.vol; let v=tv;
+  for(let t=1;t<=HN;t++){ const e0=Math.sqrt(v)*G(r)*(r()<.02?2.6:1), e=e0*sm[t]; v=.02*tv+.06*e0*e0+.92*v;
+    X[t]=X[t-1]+e+(M?d.beta*(M[t]-M[t-1]):0); E[t]=E[t-1]+mu[t];
+    V[t]=(900+900*r())*vm[t]*(1+Math.abs(e)/d.vol*.25)*(d.p<5?40:d.p>500?.3:1); }
+  const L0=L(i,h), L1=L(i,h+1), P=new Float64Array(HN+1);
+  for(let t=0;t<=HN;t++) P[t]=Math.exp(L0+t/HN*(L1-L0-E[HN])+X[t]-t/HN*X[HN]+E[t]);
+  c={P,V}; CH.set(key,c); if(CH.size>120) CH.delete(CH.keys().next().value); return c; }
+function price(i,t){ const h=Math.floor(t/HN); return chunk(i,h).P[t-h*HN]; }
+function volAt(i,t){ const h=Math.floor(t/HN); return chunk(i,h).V[t-h*HN]; }
+// Chart timeframes: [candle seconds, label]
+const TFS=[[10,"10s"],[60,"1m"],[300,"5m"],[600,"10m"],[1800,"30m"],[3600,"1h"],[86400,"1D"]];
+// Finished candles never change, so they're cached. Hour summaries feed the 1h and 1D charts.
+const CC=new Map(), HSUM=new Map(); let BUDGET=Infinity;
+function hsum(i,h){ const key=i+":"+h; let s=HSUM.get(key); if(s) return s; if(performance.now()>BUDGET) return null;
+  const c=chunk(i,h), P=c.P, V=c.V; let hi=P[0],lo=P[0],v=0; for(let t=0;t<HN;t++){ const p=P[t]; if(p>hi)hi=p; if(p<lo)lo=p; v+=V[t]; }
+  s=[P[0],hi,lo,P[HN-1],v]; HSUM.set(key,s); if(HSUM.size>40000) HSUM.delete(HSUM.keys().next().value); return s; }
+const dayOfs=()=>Math.round(new Date().getTimezoneOffset()/60)*3600; // daily candles start at local midnight
+function candles(i,tf,n,now){ const out=[], ofs=tf>=86400?dayOfs():0, last=Math.floor((now-ofs)/tf)*tf+ofs;
+  for(let j=0;j<n;j++){ const s0=last-j*tf, e=Math.min(s0+tf-1,now), done=s0+tf-1<now, key=i+":"+tf+":"+s0; // newest first, so recent candles show first
+    if(done&&CC.has(key)){ out.unshift(CC.get(key)); continue; }
+    let o=null,h=-Infinity,l=Infinity,c=null,v=0,miss=false;
+    if(tf>=3600){ const h0=Math.floor(s0/HN), hn=Math.floor(e/HN);
+      for(let hh=h0;hh<=hn;hh++){ let s;
+        if(hh<hn||done) s=hsum(i,hh);
+        else { const b=hh*HN; let p0=pxi(i,b),hi2=p0,lo2=p0,p=p0,vv=0; for(let t2=b;t2<=e;t2++){ p=pxi(i,t2); if(p>hi2)hi2=p; if(p<lo2)lo2=p; vv+=volAt(i,t2); } s=[p0,hi2,lo2,p,vv]; }
+        if(!s){ miss=true; break; } if(o===null) o=s[0]; if(s[1]>h)h=s[1]; if(s[2]<l)l=s[2]; c=s[3]; v+=s[4]; } }
+    else { o=pxi(i,s0); h=l=c=o; for(let t2=s0;t2<=e;t2++){ const p=pxi(i,t2); if(p>h)h=p; if(p<l)l=p; c=p; v+=volAt(i,t2); } }
+    if(miss){ out.unshift([null,null,null,null,0,s0]); continue; }
+    const k=[o,h,l,c,v,s0]; if(done){ CC.set(key,k); if(CC.size>20000) CC.delete(CC.keys().next().value); } out.unshift(k); }
+  return out; }
+function newsSince(t0,t1){ const out=[]; for(let h=Math.floor(t0/HN);h<=Math.floor(t1/HN);h++) SER.forEach((d,i)=>{ const s=sched(i,h);
+  s.eps.forEach(e=>{ const at=h*HN+e.st; if(e.nw&&at>t0&&at<=t1) out.push({at,s:d.s,t:e.nw.replace("{n}",d.n)+" ("+d.s+")"}); });
+  if(i===0&&s.cr!=null){ const at=h*HN+s.cr; if(at>t0&&at<=t1) out.push({at,s:"*",t:"📉 Market crash: panic selling everywhere"}); } });
+  return out.sort((a,b)=>b.at-a.at); }
+
+// ---------- professions ----------
+const GCOST=[0,40,250,1200,6000,30000,150000], GBRK=[.15,.08,.05,.035,.025,.015,.01], GSPD=[1.25,1,.9,.8,.7,.6,.5], FUSE=[0,.5,1,2,4,8,15];
+const JT=[0,0,1,2,3,4,5,6], JMIN=[15,30,45,60,90,120,180,240], JRATE=[10,10,22,50,110,240,520,1100];
+const PD=[
+["lawn","Lawn Care","🌱","Gas","gal",4,"Mom's rusty reel mower|Used push mower|Self-propelled mower|Riding mower|Zero-turn mower|Landscaping trailer rig|Commercial fleet","Trim Mrs. Jenkins' yard|Mow a corner lot|Mow the church lawn|HOA weekly contract|Landscape a backyard|Mow a sports complex|City parks contract|Golf course contract"],
+["dog","Dog Walking","🐕","Treats","bags",3,"Mom's frayed leash|Sturdy leash|Double leash + pouch|Pack-walk gear|Used minivan|Boarding kennel space|Doggy daycare building","Walk a chihuahua|Walk a hyper lab|Two-dog walk|Overnight pet sit|Pack walk for 6|Weekend boarding|Daycare day|Luxury pet resort contract"],
+["car","Car Detailing","🚗","Soap","bottles",5,"Mom's bucket & sponge|Hose kit + towels|Pressure washer|Polisher + ceramic kit|Detailing trailer|Mobile detailing van|Detail shop lease","Rinse a neighbor's truck|Hand wash a sedan|Wash & vacuum|Interior deep clean|Paint correction|Ceramic coating|Dealership lot contract|Exotic car collection"],
+["deliv","Food Delivery","🛵","Gas","gal",4,"Your old bike|Used e-bike|Used scooter|Beat-up hatchback|Cargo van|Small delivery fleet|Regional depot","Deliver one pizza|Lunch rush run|Dinner rush shift|Catering drop-off|Grocery route|Same-day courier route|Regional freight run|Corporate logistics contract"],
+["photo","Photography","📷","Batteries","packs",6,"Mom's point-and-shoot|Used DSLR kit|Prime lens + flash|Full-frame body|Drone + gimbal|Studio lighting kit|Production studio","Friend's senior pics|Garage-sale listing|Real estate listing|Family portraits|Luxury home + drone|Wedding|Commercial brand shoot|Magazine campaign"],
+["handy","Handyman","🔨","Parts","kits",4,"Mom's junk-drawer toolbox|Basic tool set|Cordless drill kit|Contractor tool set|Work van|Licensed crew gear|Construction yard","Hang a picture|Fix a squeaky door|Assemble furniture|Install a ceiling fan|Deck repair|Bathroom remodel|Kitchen remodel|Build an addition"],
+["paint","House Painting","🎨","Paint","gal",8,"Mom's crusty brushes|Roller & tray set|Ladder + drop cloths|Paint sprayer|Scaffolding|Painting crew gear|Commercial rig","Paint a fence section|Touch up a porch|Paint a bedroom|Paint a whole interior|House exterior|Apartment unit turnovers|Commercial building|Downtown high-rise"],
+["pool","Pool Cleaning","🏊","Chlorine","jugs",5,"Mom's leaky skimmer|Telescoping pole kit|Vacuum + test kit|Robotic cleaner|Service truck|Repair & equipment kit|Pool company fleet","Skim a kiddie pool|Skim a backyard pool|Weekly pool service|Green-to-clean rescue|Pump replacement|Neighborhood route|Hotel pool contract|Water park contract"],
+["phone","Phone Repair","📱","Parts","sets",10,"Mom's eyeglass screwdriver|Cheap repair kit|Pro repair station|Microsoldering rig|Mall kiosk|Repair storefront|Repair franchise","Clean a charging port|Swap a battery|Replace a cracked screen|Water-damage repair|Board-level repair|School tablet batch|Business fleet contract|Carrier warranty contract"],
+["move","Moving Help","📦","Truck gas","gal",4,"Mom's wobbly hand truck|Heavy-duty dolly|Used pickup|Box truck|Moving crew gear|Two-truck crew|Moving company","Carry a couch upstairs|Move a dorm room|Apartment move|Full house move|Piano move|Long-distance move|Office relocation|Corporate HQ relocation"]];
+const PROFS=PD.map((a,pi)=>({id:a[0],n:a[1],i:a[2],sup:a[3],unit:a[4],price:a[5],gear:a[6].split("|"),
+  jobs:a[7].split("|").map((nm,k)=>({n:nm,t:JT[k],min:JMIN[k],pay:Math.round(JRATE[k]*JMIN[k]/60*(.9+((pi*7)%5)*.06)*100)/100}))}));
+const PB={}; PROFS.forEach(p=>PB[p.id]=p);
+const UPS=[{id:"phone",n:"Business phone line",c:150,d:"+10% job pay",pay:1.1},{id:"fly",n:"Flyers around town",c:30,d:"+15% job pay",pay:1.15},
+ {id:"list",n:"Online listing",c:400,d:"+20% job pay",pay:1.2},{id:"maint",n:"Gear maintenance kit",c:600,d:"Gear breaks 40% less often",brk:.6},
+
+ {id:"bulk",n:"Bulk supply deal",c:3000,d:"Supplies cost 40% less",sup:.6},{id:"uni",n:"Uniforms & truck wrap",c:6000,d:"+25% job pay",pay:1.25},
+ {id:"help",n:"Hire a helper",c:12000,d:"Jobs take 25% less time",spd:.75},{id:"insure",n:"Equipment insurance",c:25000,d:"Broken gear gets fixed for free, instantly"},
+ {id:"ads",n:"Regional ad campaign",c:40000,d:"+30% job pay",pay:1.3},{id:"llc",n:"Register an LLC",c:80000,d:"+40% job pay",pay:1.4},
+ {id:"crew",n:"Second crew",c:250000,d:"Jobs take another 30% less time",spd:.7},{id:"fran",n:"Franchise license",c:1e6,d:"Job pay ×2",pay:2}].sort((a,b)=>a.c-b.c);
+// ---------- knowledge (permanent) ----------
+const KNOW=[
+ {id:"vol",n:"Read the volume bars",c:10,t:"Which jumps are real, and which are noise.",d:"Watch the <b>10s chart</b>. When you see <b>3 green candles in a row</b> and <b>each one's volume bar is at least 2½× the normal bars</b> before it, buy right away and <b>sell 3 minutes later</b>. Won <b>82%</b> in testing.<br><br>On PNNY, SOLR, HODL and ORBT, if <b>any</b> of those bars is 7× or bigger, it's a pump starting, not a breakout: don't buy (see Pump and dump). Pops on normal volume are noise; ignore them."},
+ {id:"news",n:"Report vs. rumor",c:40,t:"Two headlines that look alike but move opposite ways.",d:"<b>“…beats earnings, raises outlook”</b>: buy about 10 seconds after it appears and <b>sell 5 minutes later</b> (won <b>85%</b>).<br><br><b>“Rumor: … in buyout talks”</b>: it pops first. Wait about <b>1 minute</b>, <b>short it</b>, then cover 5 minutes later (won <b>86%</b>)."},
+ {id:"open",n:"The morning open",c:60,t:"Why the first 10 minutes of the morning matter most.",d:"At <b>{OPEN}</b> every day, every stock except PNNY makes a big 10-minute move on heavy volume. Most stocks <b>follow their 24-hour trend</b>: right at {OPEN}, look at the <b>24h</b> change next to the price. If it's green, <b>buy</b>; if it's red, <b>short</b>. Close 10 minutes later. Won <b>89%</b> on trend-following stocks.<br><br>A few stocks do the opposite. Their own lessons tell you which."},
+ {id:"coil",n:"The coiled spring",c:120,t:"What a stock does right before a big move.",d:"On the 10s chart, look for <b>5 or more tiny candles in a row with very short volume bars</b>. If the next candle is <b>green with a volume bar 2½× normal or bigger</b>, buy it and <b>sell 3 minutes later</b>. Won <b>89%</b>."},
+ {id:"dip",n:"Capitulation vs. dead cat",c:300,t:"Which crashes bounce back, and which keep falling.",d:"<b>Capitulation:</b> on a steady stock (BRGR, SODA, WAVE, BANK, RAIL, MEDX, OILX, MEGA), <b>3 red 10s candles in a row, each with 4× normal volume, and no headline</b>. Wait for volume to drop back under 2×, then <b>buy and sell 4 minutes later</b> (won <b>82%</b>).<br><br><b>Dead cat:</b> the drop comes with an <b>“under investigation”</b> headline. <b>Short about 65 seconds after the headline</b> and cover 4 minutes later (won <b>90%</b>)."},
+ {id:"pump",n:"Pump and dump",c:800,t:"Why cheap stocks spike, and what comes next.",d:"Only on PNNY, SOLR, HODL and ORBT. <b>3 green 10s candles in a row, each with 7× normal volume or more, and no headline</b> means a pump. <b>Wait 30 seconds, short it, and cover 4 minutes later</b>. Won <b>97%</b>, averaging +16%. Never buy into one."},
+ {id:"flush",n:"The 3-hour flush",c:3000,t:"A dip that happens on a schedule.",d:"At the top of every 3rd hour ({FLUSH}), every stock dips over 2 minutes, then fully recovers over the next 3. Steady stocks dip about 1½–2%; jumpy ones dip more (PNNY about 12%). <b>Buy at :02 past the hour and sell at :05</b>. Won <b>85%</b> across every stock."},
+ {id:"flags",n:"Red flag: collapses",c:8000,t:"The headline that comes right before a stock implodes.",d:"<b>“…auditor resigns, filings delayed”</b> means a collapse of −50% to −93% starts <b>2 to 3 minutes later</b>. Sell any shares right away. Watch for the <b>first red 10s candle with 4× normal volume</b>, <b>short it</b>, and cover about <b>50 seconds later</b>. Won <b>96%</b>, averaging +61%."},
+ {id:"squeeze",n:"Red flag: squeezes",c:15000,t:"The headline that comes right before a stock rockets.",d:"<b>“Short interest in … hits a record high”</b> means a squeeze of +80% to +170% starts <b>1½ to 2½ minutes later</b>. Cover any shorts immediately. Wait for the <b>first green 10s candle with 4× normal volume</b>, <b>buy it</b>, and sell about <b>50 seconds later</b>. Won <b>100%</b>, averaging +97%."},
+ {id:"crash",n:"Market crashes",c:30000,t:"What to do when everything falls at once.",d:"<b>“Market crash”</b> drags every stock down about 18% over 90 seconds, and the jumpiest (ORBT, ROBO, SOLR, CHIP) fall the hardest. <b>Short a jumpy stock the moment the headline hits and cover 90 seconds later.</b> Don't sell your index fund: it recovers over the next day."}];
+const utcDay=()=>{ const n=new Date(); return [n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()]; }; // today, so daylight saving time is right
+function lt(h,sec){ const [y,m,d]=utcDay(); return new Date(Date.UTC(y,m,d,h,0,sec||0)).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}); }
+function flushTimes(){ return [0,3,6,9,12,15,18,21].map(h=>lt(h)).join(", "); }
+const kd=k=>typeof k.d==="function"?k.d():k.d.replace("{FLUSH}",flushTimes()+" your time").split("{OPEN}").join(lt(OPEN_H)+" your time");
+function tod(h){ const [y,m,d]=utcDay(), x=new Date(Date.UTC(y,m,d,h)).getHours(); return x<5?"late-night":x<11?"morning":x<14?"lunchtime":x<18?"afternoon":x<22?"evening":"late-night"; }
+const pc=D=>((Math.exp(D)-1)*100).toFixed(1);
+// stock-specific lessons: locked until you've unlocked the stock; priced by how expensive the stock is
+const SK=[]; STOCKS.forEach(d=>{ let k=0; const cost=()=>Math.max(5,Math.round((d.p*6+d.un*.4)*(1+.5*k++))), names={};
+  if(d.od) SK.push({id:d.s+"_open",sym:d.s,n:`${d.s} at the morning open`,c:cost(),t:`How ${d.s} moves when the market wakes up.`,
+    d:`At <b>${lt(OPEN_H)}</b> your time, ${d.s} makes its biggest move of the day: about <b>${pc(d.oD)}%</b> in 10 minutes. It <b>${d.od>0?"follows":"reverses"}</b> its 24-hour trend.<br><br>Right at ${lt(OPEN_H)}, check the <b>24h</b> change next to the price. If it's <b>green, ${d.od>0?"buy":"short"}</b>. If it's <b>red, ${d.od>0?"short":"buy"}</b>. Close at <b>${lt(OPEN_H,600)}</b>. Won 80%+ in testing.`});
+  d.rit.forEach((R,j)=>{ const up=R.dir>0, base=`${d.s}'s ${tod(R.h)} ${up?"pop":"dip"}`; names[base]=(names[base]||0)+1; const nm=names[base]>1?base+" #"+names[base]:base;
+    SK.push({id:d.s+"_r"+j,sym:d.s,n:nm,c:cost(),t:`A move ${d.s} makes at the same time every day.`,
+    d:`Every day at <b>${lt(R.h,R.m)}</b> your time, ${d.s} <b>${up?"climbs":"drops"} about ${pc(R.D)}%</b> over ${R.L/60} minutes, then ${up?"drops":"climbs"} right back over the next ${R.L/60}.<br><br><b>${up?"Buy":"Short"}</b> at ${lt(R.h,R.m)} and close at ${lt(R.h,R.m+R.L)}. Then <b>${up?"short":"buy"}</b> and close at ${lt(R.h,R.m+2*R.L)}. Each half won 80%+ in testing.`}); }); });
+// longer-timeframe lessons (10m–1D charts): bought in order, permanent
+const JUMPY=["SOLR","HODL","AURM","ORBT","CHIP","ROBO","SKYD"], snapPct=d=>Math.round((Math.exp(2*d.vol*Math.sqrt(1800))-1)*100);
+const LONG=[
+ {id:"pnreset",ch:"1h chart",n:"PNNY's midnight reset",c:250,t:"PNNY picks a brand-new price every night.",d:()=>`Every night PNNY settles on a new everyday price, anywhere from about $0.90 to $6. It slides there between <b>${lt(5)}</b> and <b>${lt(6)}</b> your time. The new price is random, so a high PNNY usually falls and a low one usually rises.<br><br>At ${lt(5)}: if PNNY is <b>$3.50 or higher, short it</b>. If it's <b>$1.60 or lower, buy it</b>. In between, skip the night. Close just after ${lt(6)}. Won about <b>84%</b> in testing.`},
+ {id:"pnsnap",ch:"1h chart",n:"PNNY always comes home",c:600,t:"However wild PNNY gets during an hour, it ends up back on track.",d:()=>`On the <b>1h chart</b>, watch the current candle. At <b>:30 past any hour</b>, compare PNNY's price to where that candle opened.<br><br>If it's <b>50% or more above</b> the open, <b>short</b>. If it's <b>50% or more below</b>, <b>buy</b>. Close at <b>:59</b>. Won <b>92%</b>, about 3 or 4 chances a day.`},
+ {id:"crashidx",ch:"Index fund",n:"Crash sale on the index",c:2500,t:"The one time the index fund goes on sale.",d:()=>`A <b>“Market crash”</b> drags the index fund down too, but it climbs back over the next day. Wait <b>2 minutes</b> after the headline for the drop to finish, <b>deposit into the index fund</b>, and <b>withdraw 12 hours later</b>. Won <b>92%</b>, about +4.5% each time. Crashes come roughly every 2½ days.`},
+ {id:"snap",ch:"1h chart",n:"The hourly snap-back",c:6000,t:"Jumpy stocks overshoot during the hour, then drift back.",d:()=>`On the <b>1h chart</b> at <b>:30 past the hour</b>, check how far the current candle has moved from its open. If it's past the stock's number below, bet on it coming back: <b>short</b> if it's up, <b>buy</b> if it's down. Close at <b>:59</b>. Won <b>79%</b> on these jumpy stocks; steady ones only win about 70%, so skip them.<br><br>${JUMPY.map(s=>`<b>${s}</b> ±${snapPct(BYSYM[s])}%`).join(" · ")}`},
+ {id:"wreck",ch:"1h chart",n:"Buy the wreckage",c:20000,t:"What a stock does in the hours after it collapses.",d:()=>`A collapse overshoots, and the stock spends the next several hours crawling back. After the <b>“auditor resigns”</b> headline and the huge red candle, wait until the volume calms down, about <b>3 to 4 minutes after the drop ends</b>. Then <b>buy and hold for 6 hours</b>. Won <b>82%</b>, averaging about +60%.`}];
+const ALLK=KNOW.concat(SK,LONG);
+// ---------- story milestones (permanent perks) ----------
+const MS=[
+ {id:"laptop",n:"Buy a decent used laptop",c:300,p:"Offline progress +4h",e:{off:4},mom:"Is that for homework or for those stock games?"},
+ {id:"car",n:"Buy a beater car",c:800,p:"Jobs 10% faster",e:{spd:.9},mom:"Don't you dare crash it. And don't think this means you're moving out."},
+ {id:"cc",n:"Pay off Mom's credit card",c:2000,p:"Bills 10% smaller",e:{bill:.9},mom:"You didn't have to do that, sweetie. …Thank you."},
+ {id:"apt",n:"Move into your own apartment",c:4000,p:"No more rent to Mom · bills 20% smaller · offline progress +8h",e:{bill:.8,off:8},mom:"Call me every Sunday. I mean it."},
+ {id:"vac",n:"Take your first real vacation",c:9000,p:"All job pay +10%",e:{pay:1.1},mom:"Send me pictures! And wear sunscreen."},
+ {id:"cert",n:"Earn a finance certification",c:20000,p:"All job pay +25%",e:{pay:1.25},mom:"A real certificate! I'm putting it on the fridge."},
+ {id:"truck",n:"Buy a brand-new truck",c:45000,p:"Jobs 15% faster",e:{spd:.85},mom:"New car smell! Can you drive me to church Sunday?"},
+ {id:"condo",n:"Buy a condo",c:100000,p:"All job pay +50% · no more rent",e:{pay:1.5},mom:"You own property now? Who ARE you?"},
+ {id:"acct",n:"Hire a personal accountant",c:250000,p:"Bills 50% smaller",e:{bill:.5},mom:"An accountant. My baby has an accountant."},
+ {id:"firm",n:"Open your own firm",c:500000,p:"All job pay ×2",e:{pay:2},mom:"I told everyone at church. Everyone."},
+ {id:"cabin",n:"Buy a lake cabin",c:1.2e6,p:"Offline progress +24h",e:{off:24},mom:"Can the whole family come up for the 4th of July?"},
+ {id:"house",n:"Buy your dream house",c:3e6,p:"No more random bills",e:{},mom:"It's beautiful, honey. Is that a guest room for me?"},
+ {id:"fund",n:"Start a scholarship fund",c:8e6,p:"All job pay +50%",e:{pay:1.5},mom:"Kids are going to college because of you. I'm crying."},
+ {id:"mom",n:"Buy Mom her own house",c:2e7,p:"All job pay ×2",e:{pay:2},mom:"…I don't know what to say. I'm proud of you."},
+ {id:"island",n:"Retire to a private island",c:1e8,p:"All job pay ×2 · the real ending",e:{pay:2},mom:"Don't forget where you started, kiddo. The basement misses you."}];
+const BILLS=[["📱 Phone bill",12,25,0],["🎁 Friend's birthday",10,30,0],["🚓 Speeding ticket",40,120,0],["🔧 Car repair",80,400,.08],["🏥 Urgent care",100,450,.1],["💻 Laptop died",150,600,.05],["🛒 Grocery money for Mom",10,40,0],["🦷 Dentist",60,250,.04]];
+
+// ---------- helpers ----------
+const $=id=>document.getElementById(id), U=["","K","M","B","T"];
+function money(n){ if(!isFinite(n))n=0; const g=n<0; n=Math.abs(n); let o; if(n<1000)o=n.toFixed(2); else{let i=0;while(n>=1000&&i<4){n/=1000;i++;} o=(n<10?n.toFixed(2):n<100?n.toFixed(1):n.toFixed(0))+U[i];} return (g?"-$":"$")+o; }
+const sg=n=>(n>=0?"+":"")+money(n);
+const px=p=>p<1?"$"+p.toFixed(4):p<10?"$"+p.toFixed(3):p<1000?"$"+p.toFixed(2):money(p);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function dur(s){s=Math.max(0,Math.floor(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);if(h>=24)return Math.floor(h/24)+"d "+h%24+"h";if(h)return h+"h "+m+"m";if(m)return m+"m "+(s%60)+"s";return s%60+"s";}
+const nowSec=()=>Math.floor(Date.now()/1000);
+
+// ---------- state ----------
+function fresh(){ return {v:4,cash:0,fu:0,fbasis:0,fh:[],prof:null,profs:{},job:null,paper:null,streak:0,momDone:false,pos:{},mk:{},debtDue:0,rentAt:0,liqPeak:0,bestNW:0,
+  know:{},ms:{},sel:"PNNY",tf:10,qty:1,hist:[],life:[],lastT:nowSec(),lastNews:nowSec(),
+  st:{jobs:0,jobPay:0,paper:0,paperWon:0,paperPay:0,trades:0,wins:0,realized:0,best:0,worst:0,bills:0,broke:0,breaks:0,played:0,started:Date.now()}}; }
+let S, isNew=false;
+try{ const r=localStorage.getItem(SAVE_KEY); S=r?Object.assign(fresh(),JSON.parse(r)):null; }catch(e){ S=null; }
+if(!S){ S=fresh(); isNew=true; }
+let NOW=nowSec();
+
+// ---------- derived ----------
+const sprMult=()=>0; // no spread: you fill exactly at the chart price
+// ---------- player flow: other players' trades nudge prices a little ----------
+// Each trade pushes its stock its way: the push builds over 20 s and fades over about 5 min.
+// One trade moves a stock at most 0.4x its normal 1-minute swing; all players together at most 1x.
+// Your own trades never move your own chart (no instant self-profit); they move everyone else's.
+let FLOWEV=[], FLOWSEEN=new Set(), MYFLOW=[], flowDirty=false, flowBusy=false;
+const LIQ=d=>Math.max(200,d.un*4,d.p*400); // dollars of trading that count as a full-size push
+function flowImp(i,t){ if(!FLOWEV.length) return 0; const u=SER[i].vol*Math.sqrt(60); let s=0;
+  for(const e of FLOWEV){ if(e.i!==i||t<=e.t) continue; const a=t-e.t; if(a>1800) continue; s+=e.dir*.4*u*Math.tanh(e.usd/LIQ(SER[i]))*Math.min(1,a/20)*Math.exp(-a/300); }
+  return u*Math.tanh(s/u); }
+const pxi=(i,t)=>{ const p=price(i,t); return FLOWEV.length?p*Math.exp(flowImp(i,t)):p; };
+const sp=sym=>pxi(BYSYM[sym].i,NOW);
+// Big orders fill a little worse than the chart (market impact). Tiny orders: basically nothing.
+const slip=(sym,usd)=>{ const d=BYSYM[sym]; return .4*d.vol*Math.sqrt(60)*Math.tanh(Math.max(0,usd)/LIQ(d)); };
+const fillBuy=(sym,q)=>{ const a=ask(sym); return a*Math.exp(slip(sym,q*a)); }, fillSell=(sym,q)=>{ const b=bid(sym); return b*Math.exp(-slip(sym,q*b)); };
+function maxQty(sym){ let q=Math.floor(Math.max(0,S.cash)/ask(sym)); while(q>1&&q*fillBuy(sym,q)>S.cash) q=Math.floor(q*.995); return q; }
+const bid=sym=>sp(sym)*(1-BYSYM[sym].spr*sprMult()/2), ask=sym=>sp(sym)*(1+BYSYM[sym].spr*sprMult()/2);
+const P=sym=>S.pos[sym]||(S.pos[sym]={l:0,lc:0,s:0,se:0});
+function posVal(){ let v=0; if(S.vb) for(const id in S.vb) v+=vbVal(S.vb[id]); for(const k in S.pos){ const p=S.pos[k]; if(p.l) v+=p.l*bid(k); if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-ask(k))); } return v; }
+const fundVal=()=>S.fu*price(II,NOW);
+const liquid=()=>S.cash+posVal(), netWorth=()=>liquid()+fundVal();
+const inDebt=()=>S.cash<-.005, unlocked=d=>S.bestNW>=d.un;
+const prof=()=>S.prof?PB[S.prof]:null;
+function pst(id){ id=id||S.prof; return S.profs[id]||(S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:0,up:{}}); }
+function tier(id){ const s=pst(id); for(let t=s.own;t>=0;t--) if(!s.br[t]) return t; return -1; }
+function eff(k,id){ let m=1; MS.forEach(x=>{ if(S.ms[x.id]&&x.e[k]) m*=x.e[k]; }); if(id) UPS.forEach(u=>{ if(pst(id).up[u.id]&&u[k]) m*=u[k]; }); return m; }
+function payMult(id){ return (1+.015*Math.min(pst(id).rep,200))*eff("pay",id); }
+const supP=p=>p.price*eff("sup",p.id);
+const durMult=(id,t)=>GSPD[t]*eff("spd",id);
+const offCap=()=>(16+MS.reduce((a,x)=>a+(S.ms[x.id]&&x.e.off||0),0))*3600;
+function resetPeak(){ S.liqPeak=liquid(); }
+function life(t){ S.life.unshift({t,at:NOW}); if(S.life.length>40) S.life.length=40; if(SIM) AWAY.push(t); }
+
+// ---------- trading: whole shares, P/L = shares × (exit − entry) ----------
+function mark(sym,k,p,pl){ const a=S.mk[sym]||(S.mk[sym]=[]); a.push({t:NOW,k,p,pl}); if(a.length>30) a.shift(); }
+function rec(sym,side,q,en,ex,pl){ S.hist.unshift({sym,side,q,en,ex,pl,pct:(side==="L"?ex/en-1:1-ex/en)*100,t:NOW}); if(S.hist.length>50) S.hist.length=50;
+  const s=S.st; s.trades++; s.realized+=pl; if(pl>0) s.wins++; s.best=Math.max(s.best,pl); s.worst=Math.min(s.worst,pl); }
+function trade(act,q){
+  const sym=S.sel, p=P(sym); q=Math.floor(q);
+  if((act==="buy"||act==="short")&&(p.l||p.s)) return toast("You already have a trade open in "+sym+". Close it first.");
+  if(act==="buy"||act==="short") p.bot=null;
+  if(act==="buy"){ const a=fillBuy(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*a>S.cash+1e-9) return toast("Not enough cash for "+q+" share"+(q>1?"s":""));
+    p.lc=(p.lc*p.l+q*a)/(p.l+q); p.l+=q; S.cash-=q*a; flowPush(sym,1,q*a); autoStops(sym); mark(sym,"B",sp(sym)); toast(`Bought ${q} ${sym} at ${px(a)} (${money(q*a)})`); }
+  if(act==="sell") sellLong(sym,Math.min(q,p.l));
+  if(act==="short"){ const b=fillSell(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*b>S.cash+1e-9) return toast("Not enough cash to back "+q+" share"+(q>1?"s":""));
+    p.se=(p.se*p.s+q*b)/(p.s+q); p.s+=q; S.cash-=q*b; flowPush(sym,-1,q*b); autoStops(sym); mark(sym,"X",sp(sym)); toast(`Shorted ${q} ${sym} at ${px(b)} (${money(q*b)} held as collateral)`); }
+  if(act==="cover"){ cover(sym,Math.min(q,p.s)); }
+  if((act==="buy"||act==="short")&&(p.l||p.s)){ sfx('open'); tipTag(sym,act==="buy"?1:-1); }
+  resetPeak(); chips(); build(true);
+}
+function ordBtns(side){ const o=ORD(S.sel), k1=side+"sl", k2=side+"tp"; return `<div class="t" style="margin-top:4px">Tap the chart to set a stop or target. Drag the line to move it.</div><div class="g2" style="margin:6px 0 4px"><button class="btn ghost sm" data-ord="${k1}">🛑 ${o[k1]?"Stop "+px(o[k1]):"Set stop loss"}</button><button class="btn ghost sm" data-ord="${k2}">🎯 ${o[k2]?"Target "+px(o[k2]):"Set take profit"}</button></div>`; }
+function sellLong(sym,q,why){ const p=P(sym); if(q<1) return; const b=fillSell(sym,q), pl=q*(b-p.lc), en=p.lc; S.cash+=q*b; flowPush(sym,-1,q*b); p.l-=q; if(!p.l) p.lc=0;
+  rec(sym,"L",q,en,b,pl); mark(sym,"S",sp(sym),pl); winFx(pl); tipCredit(sym,pl); toast(`${why||"Sold"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`); chips(); }
+// ---------- automations (lost if you go broke) ----------
+const AUTOS=[
+ {id:"asl",cat:"Trading",n:"Default stop loss",c:50,d:"Every new trade automatically gets a stop loss this far from your entry.",set:[1,20,1,5,"% from entry"]},
+ {id:"atp",cat:"Trading",n:"Default take profit",c:100,d:"Every new trade automatically gets a take profit this far from your entry.",set:[1,30,1,5,"% from entry"]},
+ {id:"trail",cat:"Trading",n:"Trailing stop",c:1200,d:"Your stop loss follows the price as it moves your way, always staying this far behind it. Locks in gains.",set:[1,15,1,3,"% behind"]},
+ {id:"rit",cat:"Trading",n:"Routine bot",c:5000,d:"Trades the daily routines you've learned for you, both halves, even while you're away. Uses this much of your cash per trade. The bot keeps 10% of any profit.",set:[5,50,5,10,"% of cash"]},
+ {id:"openb",cat:"Trading",n:"Morning-open bot",c:12000,d:"At the morning open, trades every stock whose open lesson you've learned. Uses this much of your cash per stock. Keeps 10% of any profit.",set:[5,50,5,10,"% of cash"]},
+ {id:"pscalp",cat:"PNNY",n:"Penny Scalper",c:8,d:"Trades PNNY's 6 daily routines (both halves).",set:[5,50,5,10,"% of cash per trade"]},
+ {id:"pflush",cat:"PNNY",n:"Flush Catcher",c:20,d:"Buys PNNY at :02 every 3rd hour and sells at :05.",set:[5,50,5,10,"% of cash per trade"]},
+ {id:"ppump",cat:"PNNY",n:"Pump Sniper",c:35,d:"Shorts PNNY 30 seconds into a pump and covers when it dumps.",set:[5,50,5,10,"% of cash per trade"]},
+ {id:"pswing",cat:"PNNY",n:"Breakout Rider",c:60,d:"Buys PNNY breakouts right after the volume surge and rides them for 3 minutes.",set:[5,50,5,10,"% of cash per trade"]},
+ {id:"resup",cat:"Hustle",n:"Auto-resupply",c:150,d:"Tops up your supplies before a job when you're running low."},
+ {id:"book",cat:"Hustle",n:"Booking app",c:600,d:"When a job ends, automatically starts your best job, even while you're away. Pairs well with Auto-resupply."},
+ {id:"inv",cat:"Hustle",n:"Paycheck auto-invest",c:300,d:"Puts part of every job paycheck straight into the index fund.",set:[5,100,5,20,"% of pay"]},
+ {id:"fix",cat:"Hustle",n:"Auto-repair",c:1500,d:"When gear breaks, pays to fix it on the spot so the Booking app can keep going."}];
+const A=id=>{ S.auto=S.auto||{}; return S.auto[id]||(S.auto[id]={own:0,on:1,v:(AUTOS.find(x=>x.id===id).set||[])[3]}); };
+const aOn=id=>S.auto&&S.auto[id]&&S.auto[id].own&&S.auto[id].on;
+const aV=id=>A(id).v;
+function autoStops(sym){ const p=P(sym), o=ORD(sym);
+  if(p.l){ if(aOn("asl")) o.lsl=p.lc*(1-aV("asl")/100); if(aOn("atp")) o.ltp=p.lc*(1+aV("atp")/100); }
+  if(p.s){ if(aOn("asl")) o.ssl=p.se*(1+aV("asl")/100); if(aOn("atp")) o.stp=p.se*(1-aV("atp")/100); } }
+function botOpen(sym,dir,tag){ const p=P(sym); if(p.l||p.s||inDebt()) return; let q=Math.floor(Math.max(0,S.cash)*aV(tag)/100/sp(sym)/(1+slip(sym,S.cash*aV(tag)/100))); if(q<1) return; const pr=dir>0?fillBuy(sym,q):fillSell(sym,q);
+  if(dir>0){ p.lc=pr; p.l=q; mark(sym,"B",pr); } else { p.se=pr; p.s=q; mark(sym,"X",pr); } S.cash-=q*pr; flowPush(sym,dir,q*pr); p.bot=tag; autoStops(sym); resetPeak(); life(`🤖 ${tag==="rit"?"Routine":"Open"} bot ${dir>0?"bought":"shorted"} ${q} ${sym} at ${px(pr)}`); }
+function botClose(sym,tag){ const p=P(sym); if(p.bot!==tag||(!p.l&&!p.s)) return; const n=S.hist.length; p.l?sellLong(sym,p.l,"🤖 Bot sold"):cover(sym,p.s,"🤖 Bot covered"); p.bot=null;
+  const pl=S.hist[0]&&S.hist.length>=n?S.hist[0].pl:0; if(pl>0){ const fee=pl*.1; S.cash-=fee; } }
+// PNNY starter bots: open trades only while you're away; they use your real cash (the slider sets how much),
+// win most of the time, and bail out if a trade ever gets 20% against them
+const vbVal=v=>{ const pr=price(0,NOW); return v.dir>0?v.q*pr:Math.max(0,v.q*v.en+v.q*(v.en-pr)); };
+function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; const pr=price(0,NOW), h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
+  const open=(id,dir)=>{ if(!SIM||!aOn(id)||S.vb[id]||inDebt()) return; const q=Math.floor(Math.min(Math.max(0,S.cash)*aV(id)/100,25)/pr); if(q<1) return; S.cash-=q*pr; S.vb[id]={dir,q,en:pr}; resetPeak(); };
+  const close=id=>{ const v=S.vb[id]; if(!v) return; delete S.vb[id]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; S.st.botPay=(S.st.botPay||0)+pl; resetPeak(); };
+  for(const id in S.vb){ const v=S.vb[id]; if(vbVal(v)<=v.q*v.en*.8) close(id); }   // never more than 20% wrong
+  d.rit.forEach(R=>{ const t0=R.h*3600+R.m; if(sod===t0) open("pscalp",R.dir); else if(sod===t0+R.L){ close("pscalp"); open("pscalp",-R.dir); } else if(sod===t0+2*R.L) close("pscalp"); });
+  if(h%3===0){ if(k===120) open("pflush",1); else if(k===300) close("pflush"); }
+  sched(0,h).eps.forEach(e=>{ if(e.ty==="pump"){ if(k===e.st+60) open("ppump",-1); else if(k===e.st+300) close("ppump"); }
+    if(e.ty==="breakout"){ if(k===e.st+90) open("pswing",1); else if(k===e.st+270) close("pswing"); } }); }
+function runAutos(){ if(!S.auto) return; pennyBots(); const sod=((NOW%86400)+86400)%86400;
+  if(aOn("trail")) for(const sym in S.pos){ const p=S.pos[sym], o=ORD(sym), pr=sp(sym), tr=aV("trail")/100;
+    if(p.l){ const v=pr*(1-tr); if(!o.lsl||v>o.lsl) o.lsl=v; } if(p.s){ const v=pr*(1+tr); if(!o.ssl||v<o.ssl) o.ssl=v; } }
+  STOCKS.forEach((d,i)=>{ if(!unlocked(d)) return;
+    if(aOn("rit")) d.rit.forEach((R,j)=>{ if(!S.know[d.s+"_r"+j]) return; const t0=R.h*3600+R.m;
+      if(sod===t0) botOpen(d.s,R.dir,"rit"); else if(sod===t0+R.L){ botClose(d.s,"rit"); botOpen(d.s,-R.dir,"rit"); } else if(sod===t0+2*R.L) botClose(d.s,"rit"); });
+    if(aOn("openb")&&d.od&&S.know[d.s+"_open"]){ const t0=OPEN_H*3600+5;
+      if(sod===t0) botOpen(d.s,(price(i,NOW)>=price(i,NOW-86400)?1:-1)*d.od,"openb"); else if(sod===t0+600) botClose(d.s,"openb"); } }); }
+function buildAuto(){ let h=`<div class="pad"><div class="t" style="margin:0 3px 8px">Automations keep working while you're away. You lose them if you go broke.</div>`;
+  ["PNNY","Trading","Hustle"].forEach(cat=>{ h+=`<h3>${cat==="PNNY"?"🪙 PNNY starter bots · only work while you're away":cat==="Trading"?"📈 Trading":"🛠 Hustle"}</h3>`+(cat==="PNNY"?`<div class="t" style="margin:-2px 3px 8px">They trade with your real cash while the app is closed. They win most trades, but can lose, and they bail out if a trade gets 20% against them. Bet more for bigger wins and bigger losses (max $25 per trade). Net so far: <b class="${(S.st.botPay||0)>=0?"up":"dn"}">${sg(S.st.botPay||0)}</b></div>`:"");
+    AUTOS.filter(x=>x.cat===cat).forEach(x=>{ const a=A(x.id);
+      h+=`<div class="card"><div class="row"><div class="g"><div class="b">${x.n}</div><div class="t">${x.d}</div></div>${a.own?`<button class="btn ${a.on?"buy":"ghost"} sm" data-atog="${x.id}">${a.on?"ON":"OFF"}</button>`:`<button class="btn gold sm" data-abuy="${x.id}" data-cost="${x.c}">${money(x.c)}</button>`}</div>
+      ${a.own&&x.set?`<div class="t" style="margin-top:8px">Setting: <b style="color:var(--text)" id="av-${x.id}">${a.v}${x.set[4]}</b></div><input type="range" style="width:100%" min="${x.set[0]}" max="${x.set[1]}" step="${x.set[2]}" value="${a.v}" data-aset="${x.id}">`:""}</div>`; }); });
+  main.innerHTML=h+"</div>"; }
+// ---------- stop loss / take profit ----------
+const ORD=sym=>{ S.ord=S.ord||{}; return S.ord[sym]||(S.ord[sym]={}); };
+function checkOrders(){ if(!S.ord) return; for(const sym in S.ord){ const o=S.ord[sym], p=P(sym), pr=sp(sym);
+  if(p.l){ if(o.lsl&&pr<=o.lsl) sellLong(sym,p.l,"🛑 Stop loss:"); else if(o.ltp&&pr>=o.ltp) sellLong(sym,p.l,"🎯 Take profit:"); }
+  if(p.s){ if(o.ssl&&pr>=o.ssl) cover(sym,p.s,"🛑 Stop loss:"); else if(o.stp&&pr<=o.stp) cover(sym,p.s,"🎯 Take profit:"); }
+  if(!p.l){ delete o.lsl; delete o.ltp; } if(!p.s){ delete o.ssl; delete o.stp; } } }
+function orderModal(key){ const sym=S.sel, p=P(sym), lng=key[0]==="l", stop=key.slice(1)==="sl", en=lng?p.lc:p.se, now=sp(sym), o=ORD(sym);
+  const up=(lng&&!stop)||(!lng&&stop), ok=v=>up?v>now:v<now;
+  const chips=[1,2,3,5,10,20].map(x=>{ const v=en*(1+(up?x:-x)/100); return `<button class="btn ${stop?"sell":"buy"} sm" data-op="${key}:${v}" ${ok(v)?"":"disabled"} style="margin:3px">${up?"+":"−"}${x}%<small>${px(v)}</small></button>`; }).join("");
+  modal(`${stop?"🛑 Stop loss":"🎯 Take profit"} · ${lng?"long":"short"} ${sym}`,`<p>Automatically ${lng?"sell":"cover"} all ${lng?p.l:p.s} shares if ${sym} ${up?"rises to":"falls to"} this price. Works while you're away. Your entry was <b>${px(en)}</b>; it's at <b>${px(now)}</b> now.</p>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center">${chips}</div>
+    <div class="row" style="margin-top:8px"><input id="opx" class="inp g" inputmode="decimal" placeholder="Or type a price"><button class="btn gold sm" data-op="${key}:custom">Set</button></div>
+    ${o[key]?`<button class="btn ghost sm" style="width:100%;margin-top:8px" data-op="${key}:off">Remove (currently ${px(o[key])})</button>`:""}`,[["Cancel","ghost"]]); }
+function setOrder(arg){ const [key,v]=arg.split(":"), o=ORD(S.sel), now=sp(S.sel), lng=key[0]==="l", stop=key.slice(1)==="sl", up=(lng&&!stop)||(!lng&&stop);
+  if(v==="off"){ delete o[key]; closeModal(); toast("Removed"); return build(true); }
+  const val=v==="custom"?+$("opx").value:+v; if(!(val>0)) return toast("Enter a price");
+  if(up?val<=now:val>=now) return toast(`That price needs to be ${up?"above":"below"} ${px(now)}`);
+  o[key]=val; closeModal(); toast(`${stop?"🛑 Stop loss":"🎯 Take profit"} set at ${px(val)}`); build(true); }
+function cover(sym,q,why){ const p=P(sym); if(q<1) return; const a=fillBuy(sym,q), col=q*p.se, pl=Math.max(q*(p.se-a),-col), en=p.se; flowPush(sym,1,q*a);
+  S.cash+=col+pl; p.s-=q; if(!p.s) p.se=0; rec(sym,"S",q,en,a,pl); mark(sym,"C",sp(sym),pl); winFx(pl); tipCredit(sym,pl);
+  toast(`${why||"Covered"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`);  chips(); }
+
+// ---------- mom's practice trades ----------
+function paper(dir){ const sym=S.sel; S.paper={sym,dir,en:dir==="L"?ask(sym):bid(sym),t:NOW}; sfx('open'); toast(`📝 Practice ${dir==="L"?"buy":"short"}: 1 ${sym} at ${px(S.paper.en)}`); build(true); }
+function paperClose(){ const c=S.paper; if(NOW-c.t<15) return toast("Hold it at least 15 seconds");
+  const ex=c.dir==="L"?bid(c.sym):ask(c.sym), pl=c.dir==="L"?ex-c.en:c.en-ex; S.paper=null; S.st.paper++;
+  if(pl>0){ const pay=Math.round(pl*5*100)/100; S.streak++; S.cash+=pay; S.st.paperWon++; S.st.paperPay+=pay; sfx('win'); toast(`✅ Practice profit ${sg(pl)}. Mom pays you ${money(pay)}!`,"good"); life(`📝 Practice trade won · Mom paid ${money(pay)}`); }
+  else { S.streak=0; sfx('loss'); toast(`❌ Practice loss ${sg(pl)}. "Try again, sweetie."`,"bad"); }
+  build(true); }
+
+// ---------- jobs ----------
+function jobTime(id,j,t){ return Math.round(j.min*60*.8*durMult(id,t)); }
+function startJob(k,auto){ const p=prof(), j=p.jobs[k], s=pst(), t=tier(p.id); if(S.job||t<j.t) return false;
+  const use=FUSE[t];
+  if(use){ if(s.fuel+1e-9<use&&aOn("resup")){ const need=use*4-s.fuel, c=need*supP(p); if(S.cash>=c){ S.cash-=c; s.fuel+=need; resetPeak(); } }
+    if(s.fuel+1e-9<use){ if(!auto) toast("Out of "+p.sup.toLowerCase()+". Refill in the Store."); return false; } s.fuel-=use; }
+  S.job={p:p.id,k,t,start:NOW,end:NOW+jobTime(p.id,j,t),pay:Math.round(j.pay*payMult(p.id)*100)/100};
+  if(!auto){ closeModal(); toast(`${p.i} Started: ${j.n}`); build(); } return true; }
+function bestJob(){ const p=prof(), t=tier(p.id); let b=-1; p.jobs.forEach((j,k)=>{ if(j.t<=t) b=k; }); return b; }
+function finishJob(){ const jb=S.job, p=PB[jb.p], j=p.jobs[jb.k], s=pst(jb.p); S.job=null;
+  S.cash+=jb.pay; S.st.jobs++; S.st.jobPay+=jb.pay; s.rep++;
+  if(aOn("inv")){ const a=jb.pay*aV("inv")/100; S.cash-=a; S.fu+=a/price(II,NOW); S.fbasis+=a; resetPeak(); }
+  let msg=`${p.i} ${j.n}: +${money(jb.pay)}`;
+  if(Math.random()<GBRK[jb.t]*eff("brk",jb.p)){ if(s.up.insure){ msg+=" · gear broke, insurance fixed it"; } else { const fc=Math.max(3,GCOST[jb.t]*.25); S.st.breaks++; if(aOn("fix")&&S.cash>=fc){ S.cash-=fc; resetPeak(); msg+=` · gear broke, auto-repaired (-${money(fc)})`; } else { s.br[jb.t]=true; if(jb.t===0) s.momFix=NOW+3600; msg+=` · your ${p.gear[jb.t]} broke!`; } } }
+  life(msg); toast(msg,"good"); sfx('pay');
+  if(aOn("book")&&S.prof===jb.p){ const b=bestJob(); if(b>=0) startJob(b,true); } }
+
+// ---------- bills, debt, broke ----------
+const earned=()=>S.st.jobPay+S.st.paperPay+Math.max(0,S.st.realized);
+function bill(t,a){ a=Math.round(a*100)/100; if(a<=0) return; S.cash-=a; S.st.bills+=a; if(inDebt()&&!S.debtDue) S.debtDue=NOW+86400; resetPeak(); life(`${t}: -${money(a)}`); toast(`${t}: -${money(a)}`,"bad"); sfx('bill'); }
+function bills(){ const e=earned();
+  if(e>=100&&!S.ms.condo){ if(!S.rentAt) S.rentAt=NOW+86400; else if(NOW>=S.rentAt){ S.rentAt+=86400; S.ms.apt?bill("🏢 Apartment rent",30):bill("🏠 Mom's rent",5); } }
+  if(e>=30&&!S.ms.house&&Math.random()<1/21600){ const b=pick(BILLS); bill(b[0],((b[1]+Math.random()*(b[2]-b[1]))*Math.min(1,Math.max(.1,e/1500))+Math.max(0,S.cash)*b[3])*eff("bill")); } }
+function broke(why){
+  for(const k in S.pos) S.pos[k]={l:0,lc:0,s:0,se:0};
+  S.cash=0; S.job=null; S.debtDue=0; S.liqPeak=0; S.st.broke++;
+  for(const id in S.profs){ const s=S.profs[id]; S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:s.rep,up:{}}; }
+  S.auto={}; S.ord={}; S.vb={};
+  life("💀 Went broke: "+why); sfx('broke');
+  const body=`<div class="mom">"${pick(["Your old room's still down there.","I'm not mad. I'm just… disappointed.","Come on home, kiddo. Again."])}"</div><p>${why}. Creditors took your cash, investments, gear, business upgrades and automations.</p><p>You keep your <b>index fund (${money(fundVal())})</b>, your <b>knowledge</b>, your <b>reputation</b> and your <b>life milestones</b>.</p>`;
+  if(SIM) AWAY_BROKE=body; else { modal("💀 You went broke",body,[["Start over","gold"]]); build(); } }
+function solvency(){
+  for(const k in S.pos){ const p=S.pos[k]; if(p.s&&ask(k)>=2*p.se) cover(k,p.s,"⚠️ Margin call:"); }
+  const liq=liquid();
+  if(inDebt()&&S.debtDue&&NOW>=S.debtDue){ for(const k in S.pos){ const p=S.pos[k]; if(p.l){ S.cash+=p.l*bid(k); p.l=0; p.lc=0; } if(p.s) cover(k,p.s,"Forced cover:"); }
+    if(inDebt()) return broke(`You couldn't pay off ${money(-S.cash)} of debt in time`); }
+  if(!inDebt()) S.debtDue=0;
+  if(liq>S.liqPeak) S.liqPeak=liq;
+  if(!inDebt()&&S.liqPeak>=25&&liq<Math.max(1,S.liqPeak*.02)) broke(`Your investments got wiped out (${money(S.liqPeak)} → ${money(liq)})`); }
+
+// ---------- one second ----------
+let SIM=false, AWAY=[], AWAY_BROKE=null;
+function tick(){
+  S.st.played++;
+  if(S.job&&NOW>=S.job.end) finishJob();
+  for(const id in S.profs){ const s=S.profs[id]; if(s.momFix&&NOW>=s.momFix){ s.momFix=0; s.br[0]=false; } }
+  runAutos(); checkOrders(); bills(); solvency();
+  const nw=netWorth();
+  if(nw>S.bestNW){ const b=STOCKS.filter(unlocked).length; S.bestNW=nw; const a=STOCKS.filter(unlocked); if(a.length>b){ life("🔓 Unlocked "+a[a.length-1].s); toast("🔓 You can now trade "+a[a.length-1].n,"good"); sfx('unlock'); } }
+  if(!S.momDone&&S.bestNW>=15){ S.momDone=true; S.paper=null; if(!SIM) modal("Mom has something to say",`<div class="mom">"You've got real money now. No more practice rounds from me. You're on your own, kiddo."</div>`,[["Thanks, Mom","gold"]]); life("👩 Mom ended the practice rounds"); }
+  if(S.fu>0&&(!S.fh.length||NOW-S.fh[S.fh.length-1][0]>=600)){ S.fh.push([NOW,fundVal()]); if(S.fh.length>300) S.fh.shift(); }
+}
+function advance(to){ // process every second from lastT+1 to `to`
+  const from=S.lastT; if(to<=from) return 0; const start=Math.max(from+1,to-offCap()+1);
+  for(let t=start;t<=to;t++){ NOW=t; tick(); } S.lastT=to; NOW=to; return to-from; }
+
+// ---------- UI ----------
+let tab="trade", seg="job"; const main=$("main");
+function setTab(t){ tab=t; document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t)); main.scrollTop=0; build(); }
+function build(soft){ if(tab==="trade") soft&&$("chart")?upd():buildTrade(); else if(tab==="store") buildStore(); else if(tab==="auto"){ if(!soft) buildAuto(); } else if(tab==="friends"){ if(!soft) buildFriends(); } else if(!soft) buildMe(); hdr(); }
+function buildTrade(){
+  main.innerHTML=`<div id="chips"></div>
+  <div class="q"><div><span class="t" id="qn"></span><div class="row"><span id="qp" class="m"></span><span id="qc" class="m" style="font-size:12.5px"></span></div></div>
+  </div><div class="tf">${TFS.map(([s,l])=>`<button data-tf="${s}">${l}</button>`).join("")}</div>
+  <canvas id="chart"></canvas><div id="news"></div>
+  <div class="pad"><div id="pos" class="card"></div>
+  <div class="qty"><button data-q="-1">−</button><div class="mid"><b id="qv"></b><span id="qcst"></span></div><button data-q="1">+</button><button data-q="max">MAX</button></div>
+  <div class="g4" id="acts" style="grid-template-columns:1fr 1fr 1.3fr"><button class="btn buy" data-a="buy">BUY</button><button class="btn short" data-a="short">SHORT</button><button class="btn ghost" data-a="close">CLOSE</button></div>
+  <div id="tipw"></div>
+  <div id="compw"></div>
+  <h3>Hustle</h3><div id="job" class="card"></div>
+  <div id="momw"><h3>Mom's practice round</h3><div id="momc" class="card"></div></div>
+  <h3>Index fund · TTI</h3><div id="fundc" class="card"></div></div>`;
+  chips(); upd(); fundCard(); }
+function chips(){ const c=$("chips"); if(!c) return; const sl=c.scrollLeft;
+  c.innerHTML=STOCKS.map(d=>{ if(!unlocked(d)) return `<button class="chip lock" data-lk="${d.un}"><b>${d.s}</b><small>🔒${money(d.un)}</small></button>`;
+    const p=S.pos[d.s], dot=p&&p.l?'<span class="dot" style="background:#16c784"></span>':p&&p.s?'<span class="dot" style="background:#ea3943"></span>':"";
+    return `<button class="chip ${S.sel===d.s?"on":""}" data-sym="${d.s}"><b>${d.s}${dot}</b><small id="c-${d.s}"></small></button>`; }).join(""); c.scrollLeft=sl; }
+function chg(sym){ const i=BYSYM[sym].i; return (sp(sym)/price(i,NOW-3600)-1)*100; }
+function upd(){
+  if(!$("qp")) return; const sym=S.sel, d=BYSYM[sym], p=P(sym), pr=sp(sym), c=chg(sym);
+  $("qn").textContent=sym+" · "+d.n; $("qp").textContent=px(pr);
+  const c24=(sp(sym)/price(d.i,NOW-86400)-1)*100; $("qc").innerHTML=`<span class="${c>=0?"up":"dn"}"> ${c>=0?"+":""}${c.toFixed(2)}% 1h</span> <span class="${c24>=0?"up":"dn"}">${c24>=0?"+":""}${c24.toFixed(2)}% 24h</span>`;
+  STOCKS.forEach(x=>{ const e=$("c-"+x.s); if(e){ e.textContent=px(sp(x.s)); e.className=chg(x.s)>=0?"up":"dn"; } });
+  document.querySelectorAll(".tf button").forEach(b=>b.classList.toggle("on",+b.dataset.tf===S.tf));
+  const nw=newsSince(NOW-7200,NOW); $("news").textContent=nw[0]?nw[0].t+" · "+dur(NOW-nw[0].at)+" ago":"No headlines in the last 2 hours.";
+  let h="";
+  if(p.l){ const b=bid(sym), pl=p.l*(b-p.lc); h+=`<div class="row"><div class="g t">🟢 <b style="color:var(--text)">${p.l} sh</b> bought at ${px(p.lc)} · worth ${money(p.l*sp(sym))}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((b/p.lc-1)*100).toFixed(2)}%)</b></div>`+ordBtns("l"); }
+  if(p.s){ const a=ask(sym), pl=Math.max(p.s*(p.se-a),-p.s*p.se); h+=`<div class="row"><div class="g t">🟣 <b style="color:var(--text)">${p.s} sh</b> shorted at ${px(p.se)} · margin call ${px(2*p.se)}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((1-a/p.se)*100).toFixed(2)}%)</b></div>`+ordBtns("s"); }
+  $("pos").innerHTML=h||`<div class="t">No position in ${sym}. Small orders fill at the chart price; big ones move it a little.</div>`;
+  const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+(sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
+  const q=s=>main.querySelector(s);
+  const open=p.l>0||p.s>0; q("[data-a=buy]").disabled=open||inDebt()||S.qty*fillBuy(sym,S.qty)>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||S.qty*fillSell(sym,S.qty)>S.cash+1e-9;
+  const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; cb.className="btn "+(open?(cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?`CLOSE<small>${sg(cpl)}</small>`:"CLOSE";
+  jobCard(); momCard(); tipCard(); compCard(); draw();
+  if(NOW%5===0) fundCard(); }
+function jobCard(){ const el=$("job"); if(!el) return; const p=prof();
+  if(!p){ el.innerHTML=`<button class="btn gold" style="width:100%" data-x="pick">Pick a profession</button>`; return; }
+  const s=pst(), t=tier(); let h=`<div class="row"><div style="font-size:22px">${p.i}</div><div class="g"><div class="b">${p.n} <span class="pill">★ ${s.rep} rep</span></div><div class="t">${t>=0?p.gear[t]:"<span class=dn>gear broken</span>"}${FUSE[t]>0?` · ${p.sup} ${s.fuel.toFixed(1)}/${FUSE[t]*4}`:""}${aOn("book")?" · 📅 auto-booking":""}</div></div></div>`;
+  if(S.job){ const j=p.jobs[S.job.k]; h+=`<div class="bar"><i style="width:${(NOW-S.job.start)/(S.job.end-S.job.start)*100}%"></i></div><div class="row t"><span class="g">${j.n} · ${money(S.job.pay)}</span><span>${dur(S.job.end-NOW)}</span></div>`; }
+  else if(t<0) h+=`<div class="t" style="margin-top:6px">${s.momFix?"Mom's getting it fixed: "+dur(s.momFix-NOW)+". ":""}Repair it in the Store.</div>`;
+  else h+=`<button class="btn gold" style="width:100%;margin-top:8px" data-x="jobs">Find a job</button>`;
+  el.innerHTML=h; }
+function momCard(){ const w=$("momw"); if(!w) return; if(S.momDone){ w.style.display="none"; return; }
+  const mult=5, c=S.paper;
+  if(c){ const ex=c.dir==="L"?bid(c.sym):ask(c.sym), pl=c.dir==="L"?ex-c.en:c.en-ex;
+    $("momc").innerHTML=`<div class="row"><div class="g t">Practice ${c.dir==="L"?"buy":"short"} · 1 ${c.sym} at ${px(c.en)}<br>Mom pays <b style="color:var(--text)">${money(Math.max(0,pl)*mult)}</b> if you close now (${mult.toFixed(2)}× your profit)</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)}</b></div><button class="btn ghost" style="width:100%;margin-top:8px" data-x="pclose">Close practice trade</button>`; }
+  else $("momc").innerHTML=`<div class="t">Free practice with Mom's pretend money: open 1 share of <b style="color:var(--text)">${S.sel}</b> and close it in profit. She pays you <b style="color:var(--text)">${mult.toFixed(2)}×</b> whatever 1 real share would have made. Ends once you have $15.</div><div class="g2" style="margin-top:8px"><button class="btn buy sm" data-x="pL">Practice buy</button><button class="btn short sm" data-x="pS">Practice short</button></div>`; }
+function fundCard(){ const el=$("fundc"); if(!el) return; const v=fundVal(), g=v-S.fbasis, ip=price(II,NOW), w=(ip/price(II,NOW-86400)-1)*100;
+  el.innerHTML=`<div class="row"><div class="g"><div class="b m">${money(v)} <span class="m ${g>=0?"up":"dn"}" style="font-size:12px">${S.fu>0?sg(g)+" all-time":""}</span></div><div class="t">Tracks the whole market. Averages about +11% a week, with dips. Survives going broke. Index ${w>=0?"+":""}${w.toFixed(2)}% today</div></div></div>
+  <canvas class="sp" id="spark"></canvas>
+  <div class="row"><input id="famt" class="inp g" inputmode="decimal" placeholder="Amount $"><button class="btn buy sm" data-x="dep">Deposit</button><button class="btn ghost sm" data-x="wd">Withdraw</button></div>`;
+  const pts=S.fu>0?S.fh.map(x=>x[1]).concat([v]):candles(II,600,48,NOW).map(c=>c[3]); spark($("spark"),pts); }
+function spark(cv,pts){ const dpr=devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight; if(!W||pts.length<2) return; cv.width=W*dpr; cv.height=H*dpr; const c=cv.getContext("2d"); c.scale(dpr,dpr);
+  const lo=Math.min(...pts),hi=Math.max(...pts),r=hi-lo||1, up=pts[pts.length-1]>=pts[0], col=up?"#16c784":"#ea3943";
+  c.beginPath(); pts.forEach((v,i)=>{const x=i/(pts.length-1)*W,y=H-3-(v-lo)/r*(H-6); i?c.lineTo(x,y):c.moveTo(x,y);}); c.strokeStyle=col; c.lineWidth=1.8; c.stroke();
+  c.lineTo(W,H); c.lineTo(0,H); c.fillStyle=up?"rgba(22,199,132,.12)":"rgba(234,57,67,.12)"; c.fill(); }
+let DRAW_T=0;
+function spanLbl(tf,n){ const s=tf*n; return "≈ "+(s<3600?Math.round(s/60)+" min":s<172800?Math.round(s/3600)+" hours":Math.round(s/86400)+" days")+" shown"; }
+function draw(){
+  const cv=$("chart"); if(!cv) return; const dpr=devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight; if(!W) return;
+  if(cv.width!==Math.round(W*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
+  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,H);
+  const sym=S.sel, d=BYSYM[sym], p=P(sym), tf=S.tf, aw=56, pw=W-aw, vh=H*.15, top=12, bot=H-vh-12, cw=7, n=Math.floor(pw/cw);
+  BUDGET=performance.now()+35; const data=candles(d.i,tf,n,NOW), first=data[0][5], loading=data.some(k=>k[0]===null); BUDGET=Infinity;
+  let lo=Infinity,hi=-Infinity,vm=0; data.forEach(k=>{ if(k[0]===null) return; lo=Math.min(lo,k[2]);hi=Math.max(hi,k[1]);vm=Math.max(vm,k[4]);});
+  // lines sit at the chart price where you break even (fill price adjusted for the spread),
+  // so "live price above the green line" = profit, exactly matching the P/L tag
+  const hs=d.spr*sprMult()/2, beL=p.l?p.lc/(1-hs):0, beS=p.s?p.se/(1+hs):0, ln=[];
+  if(p.l) ln.push([beL,"#16c784","YOUR BUY "+px(beL)]); if(p.s) ln.push([beS,"#a855f7","YOUR SHORT "+px(beS)]);
+  { const o=ORD(sym); if(p.l&&o.lsl) ln.push([o.lsl,"#ff5a66","STOP "+px(o.lsl),"lsl"]); if(p.l&&o.ltp) ln.push([o.ltp,"#22d3ee","TARGET "+px(o.ltp),"ltp"]); if(p.s&&o.ssl) ln.push([o.ssl,"#ff5a66","STOP "+px(o.ssl),"ssl"]); if(p.s&&o.stp) ln.push([o.stp,"#22d3ee","TARGET "+px(o.stp),"stp"]); }
+  if(S.paper&&S.paper.sym===sym){ const e=S.paper.dir==="L"?S.paper.en/(1-hs):S.paper.en/(1+hs); ln.push([e,"#f5b301","PRACTICE "+px(e)]); }
+  ln.forEach(l=>{lo=Math.min(lo,l[0]);hi=Math.max(hi,l[0]);}); const pd=(hi-lo)*.1||hi*.002; lo=Math.max(0,lo-pd); hi+=pd;
+  if(DRAG){ lo=DRAG.lo; hi=DRAG.hi; }
+  const Y=v=>top+(hi-v)/(hi-lo)*(bot-top), X=i=>i*cw+cw/2, now=sp(sym);
+  MAP={lo,hi,top,bot,pw}; ORDL=ln.filter(l=>l[3]).map(l=>({k:l[3],y:Y(l[0])})); cv.style.touchAction=(p.l||p.s)?"none":"pan-y";
+  c.font="10px JetBrains Mono"; c.textBaseline="middle"; c.textAlign="left";
+  for(let g=0;g<=4;g++){ const v=lo+(hi-lo)*g/4,y=Y(v); c.fillStyle=TH().grid; c.fillRect(0,y,pw,1); c.fillStyle=TH().lab; c.fillText(px(v).slice(1),pw+5,y); }
+  if(p.l){ const y1=Y(beL),y2=Y(now); c.fillStyle=now>=beL?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
+  if(p.s){ const y1=Y(beS),y2=Y(now); c.fillStyle=now<=beS?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
+  drawCandles(c,data,X,Y,H,vh,vm);
+  c.setLineDash([5,4]); ln.forEach(l=>{ c.strokeStyle=l[1]; c.beginPath(); c.moveTo(0,Y(l[0])); c.lineTo(pw,Y(l[0])); c.stroke(); }); c.setLineDash([]);
+  ln.forEach(l=>{ const y=Y(l[0]); c.font="bold 10px JetBrains Mono"; const w=c.measureText(l[2]).width+8; c.fillStyle=l[1]; c.fillRect(3,y-8,w,16); c.fillStyle="#05080b"; c.fillText(l[2],7,y); });
+  (S.mk[sym]||[]).forEach(m=>{ const i=Math.floor((m.t-first)/tf); if(i<0||i>=data.length) return; const x=X(i), y=Y(m.p), dn=m.k==="B"||m.k==="C";
+    const col=m.k==="B"?"#16c784":m.k==="X"?"#a855f7":m.pl>=0?"#16c784":"#ea3943"; c.fillStyle=col; c.beginPath();
+    if(dn){c.moveTo(x,y+3);c.lineTo(x-6,y+13);c.lineTo(x+6,y+13);}else{c.moveTo(x,y-3);c.lineTo(x-6,y-13);c.lineTo(x+6,y-13);} c.fill();
+    const tx=m.k==="B"?"BUY":m.k==="X"?"SHORT":(m.k==="S"?"SOLD ":"COVER ")+sg(m.pl); c.font="bold 9.5px JetBrains Mono"; const tw=c.measureText(tx).width+6, ty=dn?y+22:y-22, xx=Math.min(Math.max(2,x-tw/2),pw-tw);
+    c.fillStyle="rgba(5,8,11,.85)"; c.fillRect(xx,ty-7,tw,14); c.fillStyle=col; c.fillText(tx,xx+3,ty); });
+  if(loading){ c.fillStyle=TH().lab; c.font="11px JetBrains Mono"; c.fillText("Loading older candles…",6,top+6); if(!DRAW_T) DRAW_T=setTimeout(()=>{ DRAW_T=0; if(tab==="trade") draw(); },60); }
+  c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; c.fillText(spanLbl(tf,data.length),6,bot+4);
+  const y=Y(now), lk=data[data.length-1], col=lk[3]>=lk[0]?CPAL().up:CPAL().dn; c.fillStyle=col; c.fillRect(0,y,pw,1); c.fillRect(pw+1,y-9,aw-2,18);
+  c.fillStyle="#04110b"; c.font="bold 10px JetBrains Mono"; c.fillText(px(now).slice(1),pw+4,y);
+  // live "if you closed now" P/L tag, sitting on the price line next to the price
+  let pl=null, lab="P/L ", gold=false;
+  if(p.l||p.s){ pl=(p.l?p.l*(bid(sym)-p.lc):0)+(p.s?Math.max(p.s*(p.se-ask(sym)),-p.s*p.se):0); }
+  else if(S.paper&&S.paper.sym===sym){ const c0=S.paper; pl=c0.dir==="L"?bid(sym)-c0.en:c0.en-ask(sym); lab="PRACTICE "; gold=true; }
+  if(pl!=null){ const tx=lab+sg(pl); c.font="bold 12px JetBrains Mono"; const tw=c.measureText(tx).width+12, bx=pw-tw-3;
+    c.fillStyle=pl>=0?"#16c784":"#ea3943"; c.fillRect(bx,y-11,tw,22); if(gold){ c.strokeStyle="#f5b301"; c.lineWidth=2; c.strokeRect(bx,y-11,tw,22); }
+    c.fillStyle=pl>=0?"#03250f":"#fff"; c.fillText(tx,bx+6,y); } }
+
+function buildStore(){
+  let h=`<div class="pad"><div class="seg"><button data-seg="job" class="${seg==="job"?"on":""}">Profession</button><button data-seg="know" class="${seg==="know"?"on":""}">Knowledge</button><button data-seg="style" class="${seg==="style"?"on":""}">Style</button></div>`;
+  if(seg==="style"){ main.innerHTML=h+styleHTML()+"</div>"; return; }
+  if(seg==="know"){ h+=`<div class="t" style="margin:0 3px 8px">Lessons are permanent, even if you go broke. Nothing on the chart changes when you buy one; you just learn what to look for.</div>`;
+    const kc=(k,ok)=>{ const own=S.know[k.id]; return `<div class="card"><div class="row"><div class="g b">📘 ${k.n}${k.ch?` <span class="pill">${k.ch}</span>`:""}</div>${own?'<span class="pill ok">Learned</span>':ok?`<button class="btn gold sm" data-kn="${k.id}" data-cost="${k.c}">${money(k.c)}</button>`:`<span class="pill">🔒 ${money(k.c)}</span>`}</div><div class="t" style="margin-top:6px">${own?kd(k):k.t}</div></div>`; };
+    h+=`<h3>All stocks · ${KNOW.filter(k=>S.know[k.id]).length}/${KNOW.length}</h3>`;
+    KNOW.forEach((k,i)=>{ h+=kc(k,i===0||S.know[KNOW[i-1].id]); });
+    h+=`<h3>Longer charts · ${LONG.filter(k=>S.know[k.id]).length}/${LONG.length}</h3><div class="t" style="margin:0 3px 8px">Slower trades for the 10m to 1D charts. Fewer chances, bigger swings.</div>`;
+    LONG.forEach((k,i)=>{ h+=kc(k,i===0||S.know[LONG[i-1].id]); });
+    STOCKS.filter(unlocked).forEach(d=>{ const ks=SK.filter(k=>k.sym===d.s); h+=`<h3>${d.s} · ${d.n} · ${ks.filter(k=>S.know[k.id]).length}/${ks.length}</h3>`; ks.forEach(k=>h+=kc(k,true)); });
+    const lk=STOCKS.filter(d=>!unlocked(d)); if(lk.length) h+=`<div class="t" style="margin:8px 3px">🔒 ${SK.filter(k=>lk.some(d=>d.s===k.sym)).length} more lessons unlock as you unlock ${lk.map(d=>d.s).join(", ")}.</div>`;
+    main.innerHTML=h+"</div>"; return; }
+  const p=prof();
+  if(p){ const s=pst(), t=tier();
+    h+=`<div class="card"><div class="row"><div style="font-size:26px">${p.i}</div><div class="g"><div class="b">${p.n} <span class="pill">★ ${s.rep} rep · +${Math.round(Math.min(s.rep,200)*1.5)}% pay</span></div><div class="t">Pay multiplier ×${payMult(p.id).toFixed(2)} · every job you finish adds reputation</div></div></div></div><h3>Gear</h3>`;
+    p.gear.forEach((g,i)=>{ if(i>s.own+2) return; const own=i<=s.own, br=own&&s.br[i];
+      const r=br?`<button class="btn gold sm" data-rep="${i}" data-cost="${Math.max(3,GCOST[i]*.25)}">Fix ${money(Math.max(3,GCOST[i]*.25))}</button>`:own?`<span class="pill ${i===t?"ok":""}">${i===t?"In use":"Owned"}</span>`:i===s.own+1?`<button class="btn gold sm" data-gear="${i}" data-cost="${GCOST[i]}">${money(GCOST[i])}</button>`:`<span class="pill">🔒 ${money(GCOST[i])}</span>`;
+      h+=`<div class="card"><div class="row"><div class="g"><div class="b">${g}${br?' <span class="pill bad">BROKEN</span>':""}</div><div class="t">${Math.round(GBRK[i]*100)}% break · ${Math.round(GSPD[i]*100)}% time${FUSE[i]?` · ${FUSE[i]} ${p.unit}/job`:""} · unlocks ${p.jobs.filter(j=>j.t===i).map(j=>j.n).join(", ")}</div></div>${r}</div></div>`; });
+    if(FUSE[t]>0){ const cap=FUSE[t]*4, need=cap-s.fuel;
+      h+=`<h3>Supplies</h3><div class="card"><div class="t">${p.sup}: ${s.fuel.toFixed(1)} / ${cap} ${p.unit} · ${money(supP(p))} each</div><div class="bar f"><i style="width:${s.fuel/cap*100}%"></i></div><button class="btn gold sm" data-x="fill" ${need>.01&&S.cash>=supP(p)*.1?"":"disabled"}>Fill up (${money(Math.min(need*supP(p),Math.max(0,S.cash)))})</button></div>`; }
+    h+=`<h3>Business upgrades</h3>`;
+    UPS.forEach(u=>{ h+=`<div class="card row"><div class="g"><div class="b">${u.n}</div><div class="t">${u.d}</div></div>${s.up[u.id]?'<span class="pill ok">Owned</span>':`<button class="btn gold sm" data-up="${u.id}" data-cost="${u.c}">${money(u.c)}</button>`}</div>`; }); }
+  h+=`<h3>Change profession</h3><div class="t" style="margin:0 3px 6px">Ones you've done before keep your gear. New ones start with borrowed gear.${S.job?" Finish your current job first.":""}</div>`;
+  PROFS.forEach(x=>{ const k=S.profs[x.id], cur=S.prof===x.id;
+    h+=`<button class="opt" data-pf="${x.id}" ${cur||S.job?"disabled":""}><b>${x.i} ${x.n}</b> ${cur?'<span class="pill ok">Current</span>':k?'<span class="pill">Resume</span>':""}<div class="t">${k?x.gear[k.own]+" · ★"+k.rep:"Borrow: "+x.gear[0]}</div></button>`; });
+  main.innerHTML=h+"</div>"; }
+
+let cloudSt="Saved on this device";
+const CHAP=[{at:0,n:"Chapter 1 · The Basement",d:"Broke, 19, and living under Mom's stairs. Every dollar counts. Get a little cash together and get some wheels."},
+ {at:3,n:"Chapter 2 · Out on Your Own",d:"Your own place, your own bills. Mom's proud, but she's watching. Prove you can stand on your own."},
+ {at:5,n:"Chapter 3 · Making It",d:"People are starting to take you seriously. Credentials, a real truck, real money."},
+ {at:7,n:"Chapter 4 · Building an Empire",d:"Property, an accountant, your own firm. You're not trading for rent anymore. You're building something."},
+ {at:11,n:"Chapter 5 · Legacy",d:"Dream house, a scholarship fund, and the one goal that's been there since the basement: taking care of Mom."}];
+const chapIdx=()=>{ const n=MS.filter(x=>S.ms[x.id]).length; let c=0; CHAP.forEach((x,i)=>{ if(n>=x.at) c=i; }); return c; };
+const SCENES=[
+`<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3142"/><stop offset="1" stop-color="#151a24"/></linearGradient></defs><rect width="360" height="130" fill="url(#g0)"/><rect x="250" y="14" width="56" height="26" rx="3" fill="#2b3a55"/><rect x="252" y="16" width="52" height="22" fill="#5b7bb5" opacity=".55"/><circle cx="290" cy="24" r="5" fill="#e8eef4" opacity=".8"/><path d="M250 40 L210 130 L330 130 L306 40Z" fill="#5b7bb5" opacity=".07"/><g fill="#3a4456"><rect x="20" y="70" width="18" height="60"/><rect x="38" y="85" width="18" height="45"/><rect x="56" y="100" width="18" height="30"/><rect x="74" y="115" width="18" height="15"/></g><rect x="150" y="104" width="90" height="16" rx="4" fill="#2a3242"/><rect x="152" y="98" width="24" height="10" rx="4" fill="#3a4558"/><rect x="250" y="96" width="34" height="24" rx="2" fill="#2a3242"/><rect x="254" y="100" width="26" height="14" fill="#16c784" opacity=".25"/></svg>`,
+`<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2f5a"/><stop offset="1" stop-color="#e07a5f"/></linearGradient></defs><rect width="360" height="130" fill="url(#g1)"/><g fill="#141826"><rect x="0" y="70" width="50" height="60"/><rect x="55" y="50" width="40" height="80"/><rect x="100" y="80" width="60" height="50"/><rect x="200" y="40" width="70" height="90"/><rect x="280" y="65" width="80" height="65"/></g><g fill="#f5b301" opacity=".75"><rect x="210" y="52" width="8" height="8"/><rect x="226" y="52" width="8" height="8"/><rect x="242" y="68" width="8" height="8"/><rect x="226" y="84" width="8" height="8"/><rect x="64" y="62" width="6" height="6"/><rect x="80" y="78" width="6" height="6"/><rect x="292" y="78" width="8" height="8"/></g><rect x="226" y="68" width="8" height="8" fill="#fff"/></svg>`,
+`<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b6ea5"/><stop offset="1" stop-color="#f2c57c"/></linearGradient></defs><rect width="360" height="130" fill="url(#g2)"/><circle cx="270" cy="88" r="26" fill="#ffe3a3"/><path d="M0 100 Q90 80 180 98 T360 92 V130 H0Z" fill="#33503a"/><path d="M150 130 L176 98 L186 98 L230 130Z" fill="#2a2a2a"/><path d="M178 104 h6 M176 114 h10 M172 124 h16" stroke="#f5b301" stroke-width="2"/><g transform="translate(60 92)"><rect width="56" height="16" rx="3" fill="#c0392b"/><rect x="30" y="-10" width="22" height="12" rx="2" fill="#c0392b"/><rect x="34" y="-8" width="14" height="7" fill="#9fd3ff"/><circle cx="12" cy="17" r="5" fill="#111"/><circle cx="44" cy="17" r="5" fill="#111"/></g></svg>`,
+`<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6a54b"/><stop offset="1" stop-color="#6b3b5e"/></linearGradient></defs><rect width="360" height="130" fill="url(#g3)"/><g fill="#1e1a2b"><rect x="10" y="60" width="30" height="70"/><rect x="45" y="30" width="34" height="100"/><rect x="84" y="50" width="26" height="80"/><rect x="118" y="12" width="40" height="118"/><rect x="134" y="2" width="8" height="12"/><rect x="166" y="44" width="36" height="86"/><rect x="210" y="26" width="30" height="104"/><rect x="248" y="56" width="44" height="74"/><rect x="300" y="38" width="50" height="92"/></g><g fill="#ffd27a" opacity=".6"><rect x="124" y="24" width="5" height="5"/><rect x="134" y="40" width="5" height="5"/><rect x="146" y="58" width="5" height="5"/><rect x="216" y="40" width="5" height="5"/><rect x="306" y="52" width="5" height="5"/><rect x="52" y="44" width="5" height="5"/></g></svg>`,
+`<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a76"/><stop offset="1" stop-color="#ffd1a1"/></linearGradient></defs><rect width="360" height="130" fill="url(#g4)"/><circle cx="90" cy="70" r="30" fill="#fff1d0" opacity=".8"/><path d="M0 104 Q180 74 360 104 V130 H0Z" fill="#4a7a4a"/><g transform="translate(190 56)"><path d="M0 26 L36 0 L72 26Z" fill="#7b3f2a"/><rect x="6" y="26" width="60" height="34" fill="#f3e9dc"/><rect x="30" y="40" width="12" height="20" fill="#7b3f2a"/><rect x="12" y="32" width="12" height="10" fill="#f5b301"/><rect x="48" y="32" width="12" height="10" fill="#f5b301"/></g><g transform="translate(290 60)"><rect x="8" y="22" width="6" height="26" fill="#5a3a22"/><circle cx="11" cy="16" r="18" fill="#3d6b3d"/></g></svg>`];
+const AVS=["🧑","👩","👨","🧔","👱","🧑‍💼","🤠","😎","🦊","🐻","🐸","🦁","🐼","🐺","🦉","🐢"];
+const COLS=[["#1f3a5f","#3b82f6"],["#3a1f5f","#a855f7"],["#14432f","#16c784"],["#5f3a14","#f5b301"],["#5f1f2a","#ea3943"],["#163f4a","#22d3ee"],["#2b2b33","#9aa4b2"],["#4a2a14","#fb923c"]];
+let pseg="profile";
+function buildMe(){ const m=myCard(); m.col=m.col==null?0:m.col;
+  let h=`<div class="pad"><div class="seg"><button data-ps="profile" class="${pseg==="profile"?"on":""}">Profile</button><button data-ps="story" class="${pseg==="story"?"on":""}">Story</button></div>`;
+  if(pseg==="profile"){ const c=COLS[m.col]||COLS[0];
+    h+=`<div class="pcard${bdCls()}" style="background:linear-gradient(135deg,${c[0]},#0d1219 85%)"><div class="row"><div class="pav" style="border-color:${c[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><div class="g"><div class="pname">${(m.name||"").replace(/</g,"")}</div><div class="ptag">${(m.tag||"Just getting started.").replace(/</g,"")}</div>${ttl()}</div></div>
+      <div class="pmeta"><span>${homeName()}</span><span>${prof()?prof().i+" "+prof().n:"No job"}</span><span>${money(netWorth())}</span><span>📘 ${Object.keys(S.know||{}).length}</span>${myCode()?`<span>Code ${myCode()}</span>`:""}</div></div>
+      <div class="lbl2">Name</div><input id="pname" class="inp" maxlength="20" value="${(m.name||"").replace(/"/g,"")}">
+      <div class="lbl2">Tagline</div><input id="ptag" class="inp" maxlength="40" placeholder="Something about you" value="${(m.tag||"").replace(/"/g,"")}">
+      <div class="lbl2">Profile photo</div><div class="row"><label class="btn ghost sm" style="flex:1;text-align:center;cursor:pointer">📷 ${okImg(m.img)?"Change photo":"Upload a photo"}<input type="file" accept="image/*" id="pimg" style="display:none"></label>${okImg(m.img)&&LASTIMG?`<button class="btn ghost sm" data-pcrop="1">Adjust crop</button>`:""}${okImg(m.img)?`<button class="btn sell sm" data-pimgx="1">Remove</button>`:""}</div>
+      <div class="lbl2">${okImg(m.img)?"Or switch back to an emoji":"Or pick an emoji"}</div><div class="avgrid">${AVS.map(a=>`<button data-pav="${a}" class="${a===m.av&&!okImg(m.img)?"on":""}">${a}</button>`).join("")}</div>
+      <div class="lbl2">Card color</div><div class="swat">${COLS.map((c,k)=>`<button data-pcol="${k}" class="${k===m.col?"on":""}" style="background:linear-gradient(135deg,${c[1]},${c[0]})"></button>`).join("")}</div>
+      <button class="btn gold" style="width:100%;margin-top:14px" data-psave="1">Save profile</button>
+      <div class="t" style="margin:8px 2px">Friends see this card on the leaderboard. Unlock titles, borders and themes in Store → Style.</div></div>`;
+    main.innerHTML=h; return; }
+  const ci=chapIdx(), c=CHAP[ci], nx=MS.findIndex(x=>!S.ms[x.id]), done=MS.filter(x=>S.ms[x.id]).length;
+  h+=`<div class="scene">${SCENES[ci]}<div class="scap"><div class="t" style="color:#cfd8e3">Chapter ${ci+1} of ${CHAP.length} · ${done}/${MS.length} done</div><b>${c.n.split(" · ")[1]}</b><div class="sd">${c.d}</div></div></div>`;
+  CHAP.forEach((ch,k)=>{ const end=k+1<CHAP.length?CHAP[k+1].at:MS.length;
+    h+=`<h3 style="${k>ci?"opacity:.45":""}">${ch.n.split(" · ")[1]}</h3><div class="tl" style="${k>ci?"opacity:.55":""}">`;
+    MS.slice(ch.at,end).forEach(m=>{ const i=MS.indexOf(m), own=S.ms[m.id], cur=i===nx;
+      h+=`<div class="tn ${own?"done":cur?"cur":""}"><div class="row"><div class="g"><b>${m.n}</b><div class="perk">${m.p}</div></div>${own?"":cur?`<button class="btn gold sm" data-ms="${m.id}" data-cost="${m.c}">${money(m.c)}</button>`:`<span class="t m">${money(m.c)}</span>`}</div></div>`; });
+    h+=`</div>`; });
+  main.innerHTML=h+"</div>"; }
+function stats_html(){ const s=S.st; return `<div class="card kv">
+   <div>Time played<b class="m">${dur(s.played)}</b></div><div>Net worth<b class="m">${money(netWorth())}</b></div>
+   <div>Trading P/L<b class="m ${s.realized>=0?"up":"dn"}">${sg(s.realized)}</b></div><div>Win rate<b class="m">${s.trades?Math.round(s.wins/s.trades*100):0}% of ${s.trades}</b></div>
+   <div>Best / worst<b class="m"><span class="up">${sg(s.best)}</span> / <span class="dn">${sg(s.worst)}</span></b></div><div>Job pay<b class="m">${money(s.jobPay)} · ${s.jobs} jobs</b></div>
+   <div>Mom's practice<b class="m">${s.paperWon}/${s.paper} · ${money(s.paperPay)}</b></div><div>Bills · broke<b class="m">${money(s.bills)} · ${s.broke}×</b></div></div>
+  `; }
+function SAVEHTML(){ return `<h3>Save</h3><div class="card"><div class="t">☁️ ${cloudSt}</div><div class="g2" style="margin-top:8px"><button class="btn ghost sm" data-sx="exp">Copy save code</button><button class="btn ghost sm" data-sx="imp">Load code</button></div>
+  <input id="sbox" class="inp" style="margin-top:6px" placeholder="Paste save code"><button class="btn sell sm" style="width:100%;margin-top:6px" data-sx="wipe">Wipe save</button><button class="btn ghost sm" style="width:100%;margin-top:6px" data-sx="replay">Replay intro & tutorial</button></div>`; }
+function openSettings(){ const s=S.st;
+  modal("⚙︎ Settings",acctHTML()+`<h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div><h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); }
+function hdr(){ applyCos(); const c=$("cash"); c.textContent=money(S.cash); c.className="m hv"+(inDebt()?" neg":""); $("fund").textContent=money(fundVal()); $("nw").textContent=money(netWorth());
+  const home=S.ms.house?"🏡 Dream house":S.ms.condo?"🏙 Your condo":S.ms.apt?"🏢 Your apartment":"🏠 Mom's basement", p=prof();
+  $("home").textContent=home+(p?" · "+p.i+" "+p.n:"")+(S.st.broke?" · broke "+S.st.broke+"×":"");
+  const db=$("debt"); db.style.display=inDebt()?"block":"none"; if(inDebt()) db.innerHTML=`⚠️ You owe <b>${money(-S.cash)}</b>. Pay it within <b>${dur(S.debtDue-NOW)}</b> or you go broke. Your stocks get sold first.`;
+  main.querySelectorAll("[data-cost]").forEach(x=>x.disabled=S.cash<+x.dataset.cost); }
+
+// ---------- modals ----------
+function modal(t,body,btns,cb){ const m=$("modal"); m.innerHTML=`<div class="box"><h2>${t}</h2>${body}${btns&&btns.length?`<div class="row" style="margin-top:12px">${btns.map((b,i)=>`<button class="btn g ${b[1]||""}" data-i="${i}">${b[0]}</button>`).join("")}</div>`:""}</div>`;
+  m.classList.remove("hide"); m.onclick=e=>{ const sxb=e.target.closest("[data-sx]"); if(sxb) return sx(sxb.dataset.sx); const o=e.target.closest("[data-pp],[data-jb],[data-op]"); if(o&&!o.disabled){ o.dataset.op?setOrder(o.dataset.op):o.dataset.pp?chooseProf(o.dataset.pp):startJob(+o.dataset.jb); return; }
+    const b=e.target.closest("[data-i]"); if(!b&&(e.target!==m||m.dataset.lock)) return; closeModal(); if(b&&btns[+b.dataset.i][2]) btns[+b.dataset.i][2](); }; }
+function closeModal(){ const m=$("modal"); m.classList.add("hide"); delete m.dataset.lock; }
+let tt; function toast(t,k){ if(SIM) return; const e=$("toast"); e.textContent=t; e.className="show "+(k||""); clearTimeout(tt); tt=setTimeout(()=>e.className="",2600); }
+function profPicker(first){ modal(first?"Get a job":"Pick a profession",(first?`<div class="mom">"You're 19 and living in my basement. Pick something and get out there. You can borrow my old stuff, but don't break it."</div>`:"")+
+  PROFS.map(x=>`<button class="opt" data-pp="${x.id}"><b>${x.i} ${x.n}</b><div class="t">Borrow: ${x.gear[0]} · "${x.jobs[0].n}" pays ${money(x.jobs[0].pay)}</div></button>`).join(""),first?[]:[["Cancel","ghost"]]);
+  if(first) $("modal").dataset.lock=1; }
+function chooseProf(id){ S.prof=id; pst(id); closeModal(); toast(PB[id].i+" You're doing "+PB[id].n+" now"); build(); if(!S.tut) setTimeout(tutorial,500); }
+function jobPicker(){ const p=prof(), t=tier(), s=pst(), m=payMult(p.id);
+  modal(p.i+" Jobs",`<div class="t" style="margin-bottom:6px">${p.gear[t]} · ${Math.round(GBRK[t]*100)}% chance it breaks · ★${s.rep} rep pays ×${m.toFixed(2)}</div>`+
+   p.jobs.map((j,k)=>{ const ok=t>=j.t; return `<button class="opt" data-jb="${k}" ${ok?"":"disabled"}><div class="row"><div class="g"><b>${j.n}</b><div class="t">${ok?dur(jobTime(p.id,j,t))+(FUSE[t]?` · ${FUSE[t]} ${p.unit}`:""):"Needs "+p.gear[j.t]}</div></div><b class="m up">${money(j.pay*m)}</b></div></button>`; }).join(""),[["Close","ghost"]]); }
+
+// ---------- input ----------
+$("nav").onclick=e=>{ const b=e.target.closest("button"); if(b) setTab(b.dataset.tab); };
+main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||el.disabled) return; const d=el.dataset, sym=S.sel;
+  if(d.sym){ S.sel=d.sym; chips(); upd(); fundCard(); return; }
+  if(d.lk) return toast("Unlocks when your net worth reaches "+money(+d.lk));
+  if(d.tf){ S.tf=+d.tf; upd(); return; }
+  if(d.q){ const p=P(sym); S.qty=d.q==="max"?Math.max(1,maxQty(sym),p.l,p.s):Math.max(1,S.qty+(+d.q)); upd(); return; }
+  if(d.a==="close"){ const p=P(sym); if(p.l) sellLong(sym,p.l); else if(p.s) cover(sym,p.s); resetPeak(); return build(true); }
+  if(d.a) return trade(d.a,S.qty);
+  if(d.seg){ seg=d.seg; buildStore(); return; }
+  const s=S.prof?pst():null, p=prof();
+  if(d.kn){ const k=ALLK.find(x=>x.id===d.kn); if(S.cash>=k.c){ S.cash-=k.c; S.know[k.id]=1; sfx('buyItem'); resetPeak(); modal("📘 "+k.n,`<p>${kd(k)}</p>`,[["Got it","gold"]]); } }
+  if(d.gear){ const i=+d.gear; if(S.cash>=GCOST[i]){ S.cash-=GCOST[i]; s.own=i; s.br[i]=false; resetPeak(); toast(p.i+" Bought "+p.gear[i],"good"); sfx('buyItem'); } }
+  if(d.rep){ const i=+d.rep, c=Math.max(3,GCOST[i]*.25); if(S.cash>=c){ S.cash-=c; s.br[i]=false; if(!i) s.momFix=0; resetPeak(); } }
+  if(d.up){ const u=UPS.find(x=>x.id===d.up); if(S.cash>=u.c){ S.cash-=u.c; s.up[u.id]=1; resetPeak(); toast("✅ "+u.n,"good"); sfx('buyItem'); } }
+  if(d.ord) return orderModal(d.ord);
+  if(d.abuy){ const x=AUTOS.find(y=>y.id===d.abuy); if(S.cash>=x.c){ S.cash-=x.c; A(x.id).own=1; A(x.id).on=1; resetPeak(); toast("🤖 "+x.n+" is on","good"); sfx('buyItem'); } return buildAuto(), hdr(); }
+  if(d.atog){ const a=A(d.atog); a.on=a.on?0:1; return buildAuto(); }
+  if(d.pf){ const id=d.pf; return modal("Switch to "+PB[id].n+"?",`<p>${S.profs[id]?"You'll pick up with your old gear and reputation.":"You've never done this. You start with borrowed gear."}</p>`,[["Cancel","ghost"],["Switch","gold",()=>chooseProf(id)]]); }
+  if(d.ms){ const m=MS.find(x=>x.id===d.ms); if(S.cash>=m.c){ S.cash-=m.c; S.ms[m.id]=1; resetPeak(); life("🎉 "+m.n); sfx('unlock'); modal("🎉 "+m.n,`<div class="mom">"${m.mom}"</div><p>Permanent perk: <b>${m.p}</b></p>`,[["Let's go","gold"]]); } }
+  switch(d.x){
+    case "pick": return profPicker(!S.prof);
+    case "jobs": return jobPicker();
+    case "pL": return paper("L"); case "pS": return paper("S"); case "pclose": return paperClose();
+    case "fill": { const cap=FUSE[tier()]*4, a=Math.min(cap-s.fuel,Math.max(0,S.cash)/supP(p)); S.cash-=a*supP(p); s.fuel+=a; resetPeak(); break; }
+    case "dep": { const a=Math.min(+$("famt").value||0,S.cash); if(a<=0||inDebt()) return toast("Enter an amount you have"); const ip=price(II,NOW); S.cash-=a; S.fu+=a/ip; S.fbasis+=a; S.fh.push([NOW,fundVal()]); resetPeak(); toast("🏦 Invested "+money(a)+" in the index"); fundCard(); break; }
+    case "wd": { const v=fundVal(), a=Math.min(+$("famt").value||0,v); if(a<=0) return toast("Enter an amount"); const ip=price(II,NOW); S.fbasis=Math.max(0,S.fbasis*(1-a/v)); S.fu-=a/ip; if(S.fu<1e-9) S.fu=0; S.cash+=a; S.fh.push([NOW,fundVal()]); toast("🏦 Withdrew "+money(a)); fundCard(); break; }
+    case "exp": { const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); $("sbox").value=code; try{navigator.clipboard.writeText(code).then(()=>toast("Copied"));}catch(_){} return; }
+    case "imp": try{ S=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); save(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return;
+    case "replay": S.tut=0; return storyIntro();
+    case "wipe": return modal("Wipe everything?","<p>No undo.</p>",[["Cancel","ghost"],["Wipe","sell",()=>{ S=fresh(); save(); build(); intro(); }]]);
+  }
+  if(tab==="store") buildStore(); else if(tab==="me") buildMe(); hdr(); });
+
+// ---------- catch-up, save, loop ----------
+function catchUp(){ const away=nowSec()-S.lastT; if(away<=2){ advance(nowSec()); return; }
+  const nw0=netWorth(), j0=S.st.jobPay, b0=S.st.bills, bp0=S.st.botPay||0; SIM=true; AWAY=[]; AWAY_BROKE=null; advance(nowSec()); SIM=false;
+  if(away<90) return;
+  if(AWAY_BROKE) return modal("💀 You went broke while you were away",AWAY_BROKE,[["Start over","gold"]]);
+  const dn=netWorth()-nw0;
+  modal("Welcome back",`<p>You were away <b>${dur(away)}</b>${away>offCap()?` (only the last ${dur(offCap())} counted)`:""}.</p><p>${S.st.jobPay>j0?`💼 Jobs: <b class="up">+${money(S.st.jobPay-j0)}</b><br>`:""}${(S.st.botPay||0)!==bp0?`🪙 PNNY bots: <b class="${S.st.botPay-bp0>=0?"up":"dn"}">${sg(S.st.botPay-bp0)}</b><br>`:""}${S.st.bills>b0?`🧾 Bills: <b class="dn">-${money(S.st.bills-b0)}</b><br>`:""}Net worth: <b class="${dn>=0?"up":"dn"}">${sg(dn)}</b></p>`,[["OK","gold"]]); }
+function save(){ S.savedAt=Date.now(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} }
+let cref=null,cbusy=false,clast="";
+async function csave(){ if(!cref||cbusy) return; save(); const j=JSON.stringify(S); if(j===clast) return; cbusy=true;
+  try{ await cref.set({save:j,savedAt:S.savedAt}); clast=j; }catch(e){ if(["invalid_argument","revoked","quota_exceeded","not_granted"].includes(e&&e.code)) cref=null; } cbusy=false; }
+let lastSave=0;
+function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catchUp(); build(); return; }
+  advance(t); build(true); if(t%5===0){ momTexts(); cosCheck(); } compPub(); if(t%600===0) compSettle();
+  if(t-lastSave>5){ save(); lastSave=t; }
+  const nw=newsSince(S.lastNews,t); S.lastNews=t;
+  nw.forEach(x=>{ const p=S.pos[x.s]; if(x.s==="*"||x.s===S.sel||(p&&(p.l||p.s))){ toast(x.t); sfx('ping'); } }); }
+function intro(){ if(!S.prof){ if(!S.introSeen) storyIntro(); else profPicker(true); } }
+document.addEventListener("visibilitychange",()=>{ if(document.hidden){save();csave();} else loop(); });
+// ---------- set stop loss / take profit right on the chart ----------
+let MAP=null, ORDL=[], DRAG=null, PDOWN=null;
+const yToPrice=y=>MAP.hi-(y-MAP.top)/(MAP.bot-MAP.top)*(MAP.hi-MAP.lo);
+function okSide(key,v){ const now=sp(S.sel), up=(key==="ltp"||key==="ssl"); return up?v>now:v<now; }
+main.addEventListener("pointerdown",e=>{ if(e.target.id!=="chart"||!MAP) return; const r=e.target.getBoundingClientRect(), y=e.clientY-r.top, x=e.clientX-r.left;
+  PDOWN={y,x,moved:false}; const hit=ORDL.find(l=>Math.abs(l.y-y)<14);
+  if(hit){ DRAG={k:hit.k,lo:MAP.lo,hi:MAP.hi}; e.target.setPointerCapture(e.pointerId); } });
+main.addEventListener("pointermove",e=>{ if(!PDOWN||e.target.id!=="chart") return; const r=e.target.getBoundingClientRect(), y=e.clientY-r.top;
+  if(Math.abs(y-PDOWN.y)>5) PDOWN.moved=true;
+  if(DRAG){ const v=yToPrice(y); if(okSide(DRAG.k,v)){ ORD(S.sel)[DRAG.k]=v; draw(); } } });
+main.addEventListener("pointerup",e=>{ if(!PDOWN) return; const was=DRAG, tap=!PDOWN.moved, y=PDOWN.y; PDOWN=null; DRAG=null;
+  if(was){ const v=ORD(S.sel)[was.k]; toast(`${was.k.endsWith("sl")?"🛑 Stop loss":"🎯 Take profit"} moved to ${px(v)}`); build(true); return; }
+  if(!tap||e.target.id!=="chart"||!MAP) return;
+  const p=P(S.sel), v=yToPrice(y), now=sp(S.sel); if(!p.l&&!p.s) return;
+  const c=[]; if(p.l) c.push(v<now?"lsl":"ltp"); if(p.s) c.push(v>now?"ssl":"stp");
+  const lab=k=>`${k.endsWith("sl")?"🛑 Stop loss":"🎯 Take profit"} for your ${k[0]==="l"?"buy":"short"}`;
+  if(c.length===1){ ORD(S.sel)[c[0]]=v; toast(`${lab(c[0])} set at ${px(v)}. Drag the line to adjust.`); build(true); }
+  else modal("Set at "+px(v)+"?","",c.map(k=>[lab(k),k.endsWith("sl")?"sell":"buy",()=>{ ORD(S.sel)[k]=v; toast(lab(k)+" set at "+px(v)); build(true); }]).concat([["Cancel","ghost"]])); });
+main.addEventListener("pointercancel",()=>{ PDOWN=null; DRAG=null; });
+main.addEventListener("input",e=>{ const id=e.target.dataset.aset; if(!id) return; A(id).v=+e.target.value; const x=AUTOS.find(y=>y.id===id); $("av-"+id).textContent=e.target.value+x.set[4]; });
+
+function flowPush(sym,dir,usd){ if(SIM||!DB||!(usd>0)) return; MYFLOW=MYFLOW.filter(x=>NOW-x[0]<1800); MYFLOW.push([NOW,BYSYM[sym].i,dir,Math.round(usd*100)/100]); if(MYFLOW.length>25) MYFLOW.shift(); flowDirty=true; }
+async function flowSync(){ if(!DB||!UID||flowBusy) return; flowBusy=true; const now=nowSec();
+  try{ if(flowDirty){ flowDirty=false; const m=myCard(); await DB.doc("flow/"+UID).set({at:Date.now(),name:m.name.slice(0,20),code:myCode(),tr:MYFLOW}); }
+    const q=await DB.collection("flow").orderBy("at","desc").limit(50).get(), ev=[], fr=S.friends||[];
+    q.docs.forEach(doc=>{ if(doc.id===UID) return; const x=doc.data()||{}; if(!Array.isArray(x.tr)||!(Date.now()-(+x.at||0)<1800000)) return;
+      x.tr.slice(-25).forEach(r=>{ if(!Array.isArray(r)) return; const tt=Math.floor(+r[0]), i=+r[1], dir=+r[2], usd=Math.min(1e9,Math.max(0,+r[3]||0));
+        if(!(now-tt<1800&&tt<=now+60)||!Number.isInteger(i)||i<0||i>=STOCKS.length||(dir!==1&&dir!==-1)||!usd) return;
+        ev.push({t:tt,i,dir,usd}); const key=doc.id+":"+tt+":"+i+":"+dir;
+        if(!FLOWSEEN.has(key)){ FLOWSEEN.add(key); const s=STOCKS[i].s, pos=S.pos[s];
+          if(now-tt<120&&fr.includes(String(x.code||""))&&(s===S.sel||(pos&&(pos.l||pos.s)))) toast(`👥 ${String(x.name||"A friend").replace(/</g,"").slice(0,20)} ${dir>0?"bought":"sold"} ${s}`); } }); });
+    FLOWEV=ev; if(FLOWSEEN.size>2000) FLOWSEEN=new Set([...FLOWSEEN].slice(-500));
+  }catch(_){} flowBusy=false; }
+// ---------- friends (first version: profile card, friend codes, leaderboard) ----------
+let DB=null, UID=null, FR={list:null,view:"friends",busy:false,last:""};
+const myCode=()=>UID?UID.replace(/[^a-zA-Z0-9]/g,"").slice(-6).toUpperCase():"";
+function myCard(){ S.me=S.me||{name:"Trader"+Math.floor(1000+Math.random()*9000),av:"🧑"}; return S.me; }
+function homeName(){ return S.ms.island?"🏝 Private island":S.ms.house?"🏡 Dream house":S.ms.condo?"🏙 Condo":S.ms.apt?"🏢 Apartment":"🏠 Mom's basement"; }
+async function pubProfile(){ if(!DB||!UID) return; const m=myCard();
+  const doc={name:m.name.slice(0,20),av:m.av,img:okImg(m.img)?m.img:"",tag:(m.tag||"").slice(0,40),col:m.col||0,code:myCode(),nw:Math.round(netWorth()*100)/100,best:Math.round(S.bestNW),pl:Math.round(S.st.realized*100)/100,home:homeName(),
+    stories:MS.filter(x=>S.ms[x.id]).length,lessons:Object.keys(S.know||{}).length,broke:S.st.broke,prof:S.prof?PB[S.prof].n:"",title:cosGet("title").id,bd:cosGet("border").id,uname:UNAME,tro:S.st.tro||null,at:Date.now()};
+  const j=JSON.stringify(Object.assign({},doc,{at:0})); if(j===FR.last) return;
+  try{ await DB.doc("profiles/"+UID).set(doc); FR.last=j; }catch(_){} }
+async function loadBoard(){ if(!DB||FR.busy) return; FR.busy=true; try{ const q=await DB.collection("profiles").orderBy("nw","desc").limit(100).get(); FR.list=q.docs.map(d=>Object.assign({id:d.id},d.data())); }catch(_){ FR.list=[]; } FR.busy=false; if(tab==="friends") buildFriends(); }
+function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[];
+  const cc=COLS[m.col||0]||COLS[0];
+  let h=`<div class="pad"><div class="pcard${bdCls()}" style="background:linear-gradient(135deg,${cc[0]},#0d1219 85%);padding:12px"><div class="row"><div class="pav" style="width:48px;height:48px;font-size:26px;border-color:${cc[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><div class="g"><b style="font-size:16px">${(m.name||"").replace(/</g,"")}</b><div class="ptag">${(m.tag||"").replace(/</g,"")}</div>${ttl()}<div class="t" style="margin-top:3px">${UNAME?`<b style="color:var(--text)">@${UNAME}</b>`:"Not signed in"}</div></div><button class="btn ghost sm" data-fx="edit">Customize</button></div></div>`;
+  if(!DB){ h+=window.NET?`<div class="card"><div class="t">Sign in to add friends, chat, join weekly competitions and see the leaderboard.</div><button class="btn gold" style="width:100%;margin-top:8px" data-sx2="login">Sign in or create an account</button></div>`:`<div class="card t">Online features aren't set up for this copy of the game. Single-player works the same.</div>`; main.innerHTML=h+"</div>"; return; }
+  h+=socialHTML()+compHTML()+`
+  <div class="t" style="margin:-2px 3px 10px">💡 Tips: sent ${S.st.tipsSent||0} · paid off ${S.st.tipWins||0} · earned <b style="color:var(--text)">${money(S.st.tipPay||0)}</b>. Send tips from the Market tab, under the trade buttons.</div>
+  <h3>Leaderboard</h3><div class="seg"><button data-fv="friends" class="${FR.view==="friends"?"on":""}">Friends (${fr.length})</button><button data-fv="all" class="${FR.view==="all"?"on":""}">Everyone</button></div>`;
+  if(FR.list===null){ h+=`<div class="t">Loading the leaderboard…</div>`; loadBoard(); }
+  else { const rows=FR.list.filter(p=>FR.view==="all"||fr.includes(p.code)||p.id===UID);
+    h+=`<div class="card">${rows.length?rows.map((p,i)=>`<div class="li"><div class="row g"><b class="m" style="width:22px">${i+1}</b><span class="pav${["silver","gold","dia"].includes(p.bd)?" bd-"+p.bd:""}" style="width:34px;height:34px;font-size:19px;border-width:2px;border-color:${(COLS[p.col||0]||COLS[0])[1]}${pavBg(p.img)}">${okImg(p.img)?"":p.av||"🧑"}</span><div class="g"><b>${String(p.name||"Trader").replace(/</g,"")}${troStr(p.tro)}${p.id===UID?' <span class="pill ok">you</span>':""}</b>${p.title&&p.title!=="none"&&TBY[p.title]?`<div class="ptitle" style="margin:2px 0 3px">🏅 ${TBY[p.title].n}</div>`:""}<div class="t">${p.tag?`<i>${String(p.tag).replace(/</g,"")}</i><br>`:""}${p.uname?"@"+esc(p.uname)+" · ":""}${p.home||""} · ${p.prof||"no job"} · ${p.lessons||0} lessons${p.broke?` · broke ${p.broke}×`:""}</div></div></div><b class="m">${money(p.nw||0)}</b></div>`).join(""):`<div class="t">${FR.view==="friends"?"No friends added yet. Share your code and ask for theirs.":"Nobody here yet."}</div>`}</div>
+    <button class="btn ghost sm" style="width:100%" data-fx="ref">↻ Refresh</button>`; }
+  h+=`<div class="t" style="margin:12px 3px">Other players can see your card, net worth and trophies.</div>`;
+  main.innerHTML=h+"</div>"; }
+main.addEventListener("click",e=>{ const b=e.target.closest("[data-fx],[data-fv]"); if(!b) return; const m=myCard();
+  if(b.dataset.fv){ FR.view=b.dataset.fv; return buildFriends(); }
+  const x=b.dataset.fx;
+  if(x==="av"){ const A_=["🧑","👩","👨","🧔","👱","🧑‍💼","🤠","😎","🦊","🐻","🐸","🦁","🐼","🤖","👽","🎩"]; m.av=A_[(A_.indexOf(m.av)+1)%A_.length]; return buildFriends(); }
+  if(x==="edit"){ pseg="profile"; return setTab("me"); }
+  if(x==="save"){ const n=$("fname").value.trim(); if(n) m.name=n.slice(0,20); toast("Card saved"); save(); pubProfile().then(loadBoard); return; }
+  if(x==="add"){ const c=$("fcode").value.trim().toUpperCase(); if(c.length!==6) return toast("Codes are 6 characters"); if(c===myCode()) return toast("That's your own code"); S.friends=S.friends||[]; if(!S.friends.includes(c)) S.friends.push(c); save(); toast("Friend added"); FR.view="friends"; return loadBoard(); }
+  if(x==="ref"){ CB.list=null; pubProfile().then(loadBoard); } });
+
+
+// ---------- online: sign-in screen, account ----------
+let NETP=null, UNAME="", NETON=false;
+function netReady(){ return NETP||(NETP=new Promise(r=>{ if('NET' in window) return r(window.NET); addEventListener('net-ready',()=>r(window.NET),{once:true}); setTimeout(()=>r(window.NET||null),20000); })); }
+async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode: online features aren't set up"; return; }
+  N.onUser(async u=>{
+    if(!u){ DB=null; UID=null; UNAME=""; cref=null; socialStop(); cloudSt="Not signed in: saved on this device only"; if(!S.authSkip) showAuth(); if(tab==="friends") buildFriends(); return; }
+    hideAuth(); UNAME=u.username;
+    try{ const ref=N.db.doc("saves/"+u.uid), sn=await ref.get(), other=S.owner&&S.owner!==u.uid;
+      if(sn.exists){ const d=sn.data(); if(d&&typeof d.save==="string"&&(other||(d.savedAt||0)>(S.savedAt||0)+3000)){ S=Object.assign(fresh(),JSON.parse(d.save)); closeModal(); catchUp(); toast("Loaded your saved game"); } }
+      else if(other){ S=fresh(); NOW=nowSec(); S.lastT=NOW; S.lastNews=NOW; }
+      S.owner=u.uid; const m=myCard(); if(/^Trader\d+$/.test(m.name||"")) m.name=u.username;
+      save(); DB=N.db; UID=u.uid; cref=ref; clast="";
+      cloudSt="Signed in as @"+u.username+" · progress saves to your account";
+      if(!NETON){ NETON=true; setInterval(pubProfile,300000); setInterval(flowSync,15000); setInterval(tipSync,15000); }
+      pubProfile(); flowSync(); tipSync(); csave(); socialStart(N,u.uid); compSettle(); build();
+      if(!S.prof&&$("modal").classList.contains("hide")&&!$("intro")) intro();
+    }catch(e){ console.warn(e); toast("Couldn't reach the server. Playing offline."); } }); }
+function showAuth(){ if($('auth')||!window.NET) return; const el=document.createElement('div'); el.id='auth'; document.body.appendChild(el); let mode='in', un='';
+  const r=()=>{ el.innerHTML=`<div class='au'><div class='aulogo'>📈</div><h1>Ticker Tycoon</h1><div class='t' style='text-align:center;margin-bottom:16px'>${mode==='in'?'Sign in to save your progress and play with friends.':'Pick a username. Friends will find you by it.'}</div>
+   <div class='seg'><button data-am='in' class='${mode==='in'?'on':''}'>Sign in</button><button data-am='up' class='${mode==='up'?'on':''}'>Create account</button></div>
+   <input id='au_u' class='inp' placeholder='Username' autocapitalize='none' autocomplete='username' autocorrect='off' spellcheck='false' maxlength='17' value='${un.replace(/[^a-zA-Z0-9_@]/g,'')}'>
+   <input id='au_p' class='inp' type='password' placeholder='Password (6+ characters)' autocomplete='${mode==='in'?'current-password':'new-password'}' style='margin-top:8px'>
+   ${mode==='up'?`<div class='t' style='margin:6px 2px'>3–16 letters, numbers or _. There's no email on your account, so remember your password.</div>`:''}
+   <div id='au_e' class='dn' style='font-size:13px;min-height:18px;margin:8px 2px'></div>
+   <button class='btn gold' style='width:100%;padding:13px;font-size:15px' data-ago='1'>${mode==='in'?'Sign in':'Create account'}</button>
+   <button class='t' style='width:100%;margin-top:14px;padding:8px' data-askip='1'>Play offline for now</button></div>`; };
+  r();
+  el.onclick=async e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return;
+    if(b.dataset.am){ un=$('au_u').value; mode=b.dataset.am; r(); return; }
+    if(b.dataset.askip){ S.authSkip=1; save(); hideAuth(); return; }
+    if(b.dataset.ago){ const u=$('au_u').value, p=$('au_p').value, er=$('au_e'); er.textContent='';
+      if(p.length<6){ er.textContent='Password needs at least 6 characters.'; return; }
+      b.disabled=true; b.textContent='One sec…';
+      try{ mode==='in'?await window.NET.signIn(u,p):await window.NET.signUp(u,p); S.authSkip=0; sfx('unlock'); }
+      catch(x){ er.textContent=x.message; sfx('loss'); b.disabled=false; b.textContent=mode==='in'?'Sign in':'Create account'; } } };
+  el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ const g=el.querySelector('[data-ago]'); g&&g.click(); } }); }
+function hideAuth(){ const el=$('auth'); if(el) el.remove(); }
+const isIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const standalone=()=>!!(navigator.standalone||matchMedia('(display-mode: standalone)').matches);
+function acctHTML(){ let h=`<h3>Account</h3>`;
+  if(!window.NET) h+=`<div class='card t'>Offline mode. Online features aren't set up for this copy of the game.</div>`;
+  else if(!UID) h+=`<div class='card row'><div class='g t'>Not signed in. Your game saves on this device only.</div><button class='btn gold sm' data-sx='login'>Sign in</button></div>`;
+  else h+=`<div class='card'><div class='row'><div class='g'><div class='b'>@${UNAME}</div><div class='t'>Progress saves to your account</div></div><button class='btn ghost sm' data-sx='logout'>Sign out</button></div><div class='row' style='margin-top:8px'><input id='newpw' class='inp g' type='password' placeholder='New password' autocomplete='new-password'><button class='btn ghost sm' data-sx='pw'>Change</button></div></div>`;
+  if(isIOS()&&!standalone()) h+=`<h3>Install</h3><div class='card t'>In Safari, tap <b style='color:var(--text)'>Share</b> → <b style='color:var(--text)'>Add to Home Screen</b>. It opens full-screen like a real app.</div>`;
+  return h; }
+function installHint(){ if(!isIOS()||standalone()||S.instHint||!S.prof||!$('modal').classList.contains('hide')||$('auth')||$('intro')||$('tut')) return;
+  S.instHint=1; save(); modal('📲 Install the app',`<p>In Safari, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p><p>Ticker Tycoon then opens full-screen from your home screen, like a real app.</p>`,[['Got it','gold']]); }
+
+// ---------- friends: requests by username, friends list, private chat ----------
+let FS={list:[],prof:{},unsub:null,chatUnsub:null,chat:null,first:true}, FRUIDS=new Set();
+const troStr=t=>t?['g','s','b'].map((k,i)=>t[k]?` ${['🥇','🥈','🥉'][i]}${t[k]>1?'×'+t[k]:''}`:'').join(''):'';
+const avh=(p,s)=>`<span class='pav' style='width:${s}px;height:${s}px;font-size:${Math.round(s*.55)}px;border-width:2px;border-color:${(COLS[p.col||0]||COLS[0])[1]}${pavBg(p.img)}'>${okImg(p.img)?'':p.av||'🧑'}</span>`;
+function socialStop(){ if(FS.unsub) FS.unsub(); FS.unsub=null; FS.list=[]; FRUIDS=new Set(); closeChat(true); navDot(); }
+function socialStart(N,uid){ socialStop(); FS.first=true;
+  FS.unsub=N.watchFriendships(uid,async list=>{
+    for(const f of list){ f.other=f.members.find(x=>x!==uid)||f.members[0]; if(!FS.prof[f.other]){ try{ FS.prof[f.other]=await N.getProfile(f.other)||{name:'Player'}; }catch(_){ FS.prof[f.other]={name:'Player'}; } } }
+    if(!FS.first) list.forEach(f=>{ const old=FS.list.find(x=>x.id===f.id), p=FS.prof[f.other]||{};
+      if(!old&&f.status==='pending'&&f.from!==uid){ sfx('ping'); toast(`👥 ${esc(p.name)} sent you a friend request`); }
+      if(old&&old.status==='pending'&&f.status==='accepted'&&f.from===uid){ sfx('unlock'); toast(`👥 ${esc(p.name)} accepted your friend request`,'good'); }
+      if(f.last&&f.last.from!==uid&&(!old||!old.last||old.last.at!==f.last.at)&&FS.chat!==f.id){ sfx('ping'); toast(`💬 ${esc(p.name)}: ${String(f.last.text||'').replace(/</g,'').slice(0,60)}`); } });
+    FS.first=false; FS.list=list;
+    const acc=list.filter(f=>f.status==='accepted'); FRUIDS=new Set(acc.map(f=>f.other)); S.friends=acc.map(f=>(FS.prof[f.other]||{}).code).filter(Boolean);
+    navDot(); if(tab==='friends'&&!FS.chat) buildFriends(); }); }
+const unread=f=>f.status==='accepted'&&f.last&&f.last.from!==UID&&f.last.at>((S.readAt||{})[f.id]||0);
+function navDot(){ const b=document.querySelector('nav [data-tab="friends"]'); if(!b) return; const n=FS.list.filter(f=>(f.status==='pending'&&f.from!==UID)||unread(f)).length; let d=b.querySelector('.ndot');
+  if(n&&!d){ d=document.createElement('i'); d.className='ndot'; b.appendChild(d); } if(!n&&d) d.remove(); }
+function socialHTML(){ const uid=UID, pn=f=>Object.assign({},FS.prof[f.other]||{},(FR.list||[]).find(x=>x.id===f.other)||{});
+  const inc=FS.list.filter(f=>f.status==='pending'&&f.from!==uid), out=FS.list.filter(f=>f.status==='pending'&&f.from===uid), acc=FS.list.filter(f=>f.status==='accepted').sort((a,b)=>((b.last||{}).at||0)-((a.last||{}).at||0));
+  let h=`<h3>Add a friend</h3><div class='card row'><input id='funame' class='inp g' maxlength='17' placeholder='Their username' autocapitalize='none' autocorrect='off' spellcheck='false'><button class='btn buy sm' data-freq='1'>Send request</button></div><div class='t' style='margin:-2px 3px 10px'>Your username is <b style='color:var(--text)'>@${UNAME}</b>. Share it so friends can add you.</div>`;
+  if(inc.length) h+=`<h3>Friend requests · ${inc.length}</h3><div class='card'>${inc.map(f=>{ const p=pn(f); return `<div class='li'><div class='row g'>${avh(p,34)}<div class='g'><b>${esc(p.name)}</b><div class='t'>@${esc(p.uname||'')}</div></div></div><button class='btn buy sm' data-facc='${f.id}'>Accept</button><button class='btn ghost sm' data-frem='${f.id}'>Decline</button></div>`; }).join('')}</div>`;
+  h+=`<h3>Friends · ${acc.length}</h3><div class='card'>${acc.length?acc.map(f=>{ const p=pn(f), un=unread(f);
+     return `<div class='li' data-fchat='${f.id}' style='cursor:pointer'><div class='row g' style='min-width:0'>${avh(p,38)}<div class='g' style='min-width:0'><b>${esc(p.name)}</b>${troStr(p.tro)}${un?` <span class='dot' style='background:var(--gold)'></span>`:''}<div class='t' style='white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>${f.last?(f.last.from===uid?'You: ':'')+String(f.last.text||'').replace(/</g,''):'@'+esc(p.uname||'')+' · '+money(p.nw||0)}</div></div></div><span style='font-size:18px'>💬</span></div>`; }).join(''):`<div class='t'>No friends yet. Send a request using their username.</div>`}</div>`;
+  if(out.length) h+=`<div class='t' style='margin:-2px 3px 10px'>Waiting on: ${out.map(f=>`${esc(pn(f).name)} (<button class='t' style='text-decoration:underline;padding:0' data-frem='${f.id}'>cancel</button>)`).join(' · ')}</div>`;
+  return h; }
+function openChat(pid){ const N=window.NET, f=FS.list.find(x=>x.id===pid); if(!N||!f) return; closeChat(true); FS.chat=pid; const p=Object.assign({},FS.prof[f.other]||{});
+  const el=document.createElement('div'); el.id='chat';
+  el.innerHTML=`<div class='chd'><button class='chb' data-chx='1' aria-label='Back'>‹</button>${avh(p,34)}<div class='g'><b>${esc(p.name)}</b><div class='t'>@${esc(p.uname||'')}${p.nw!=null?' · '+money(p.nw):''}</div></div><button class='t' data-chrm='1' style='padding:6px'>Remove</button></div><div id='chm' class='chm'><div class='t' style='text-align:center'>Loading…</div></div><div class='chi'><input id='chin' class='inp g' maxlength='500' placeholder='Message' enterkeyhint='send' autocomplete='off'><button class='btn buy sm' data-chs='1'>Send</button></div>`;
+  document.body.appendChild(el);
+  const send=async()=>{ const i=$('chin'), v=i.value.trim(); if(!v) return; i.value=''; try{ await N.sendMsg(pid,UID,v); sfx('tap'); }catch(_){ toast("Message didn't send"); i.value=v; } };
+  el.onclick=e=>{ if(e.target.closest('[data-chx]')) return closeChat(); if(e.target.closest('[data-chs]')) return send();
+    if(e.target.closest('[data-chrm]')) modal('Remove '+esc(p.name)+'?','<p>You can send a new friend request later.</p>',[['Cancel','ghost'],['Remove','sell',async()=>{ closeChat(); try{ await N.remove(pid); toast('Friend removed'); }catch(_){} }]]); };
+  $('chin').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); send(); } });
+  FS.chatUnsub=N.watchChat(pid,ms=>{ const box=$('chm'); if(!box) return; S.readAt=S.readAt||{}; S.readAt[pid]=Date.now(); navDot();
+    box.innerHTML=ms.length?ms.map(m=>`<div class='msg ${m.from===UID?'me':''}'><div>${String(m.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div><small>${new Date(m.at).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></div>`).join(''):`<div class='t' style='text-align:center;margin-top:20px'>Say hi to ${esc(p.name)} 👋</div>`;
+    box.scrollTop=box.scrollHeight; }); }
+function closeChat(quiet){ if(FS.chatUnsub) FS.chatUnsub(); FS.chatUnsub=null; FS.chat=null; const el=$('chat'); if(el) el.remove(); if(!quiet&&tab==='friends') buildFriends(); }
+main.addEventListener('click',async e=>{ const t=e.target, N=window.NET;
+  if(t.closest('[data-sx2]')){ S.authSkip=0; return showAuth(); }
+  if(!N||!UID) return;
+  const fa=t.closest('[data-facc]'); if(fa){ try{ await N.accept(fa.dataset.facc); sfx('unlock'); toast('👥 Friend added','good'); }catch(_){ toast("Couldn't accept"); } return; }
+  const fr=t.closest('[data-frem]'); if(fr){ try{ await N.remove(fr.dataset.frem); }catch(_){} return; }
+  const fc=t.closest('[data-fchat]'); if(fc) return openChat(fc.dataset.fchat);
+  if(t.closest('[data-freq]')){ const nm=N.norm($('funame').value); if(!N.okName(nm)) return toast('Enter their username'); if(nm===UNAME) return toast("That's you!");
+    try{ const id=await N.findUser(nm); if(!id) return toast('No player called @'+nm);
+      const pid=N.pairId(UID,id), ex=FS.list.find(f=>f.id===pid);
+      if(ex){ if(ex.status==='accepted') return toast("You're already friends"); if(ex.from===UID) return toast('Request already sent'); await N.accept(pid); return toast('👥 Friend added','good'); }
+      await N.sendRequest(UID,id); $('funame').value=''; sfx('open'); toast('👥 Request sent to @'+nm,'good'); }catch(x){ console.warn(x); toast("Couldn't send the request"); } } });
+
+// ---------- weekly competition: opt-in, separate $1,000 wallet, your real money is never touched ----------
+const WEEK0=345600, COMP_START=1000, wkIdx=t=>Math.floor((t-WEEK0)/604800), wkStart=w=>WEEK0+w*604800; // weeks run Monday 00:00 UTC to Monday
+let CB={list:null,w:-1,busy:false,view:'all'}, CPL=0;
+const compCur=()=>{ const c=S.comp; return c&&c.w===wkIdx(NOW)?c:null; };
+function compVal(c){ let v=c.cash; for(const k in c.pos){ const p=c.pos[k]; if(!BYSYM[k]) continue; const pr=sp(k); if(p.l) v+=p.l*pr; if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-pr)); } return v; }
+function compJoin(){ if(!DB) return toast('Sign in to join'); if(compCur()) return; if(S.comp&&!S.comp.done&&S.comp.w<wkIdx(NOW)) compSettle();
+  S.comp={w:wkIdx(NOW),cash:COMP_START,pos:{},tr:0,joined:NOW}; save(); compPub(true); sfx('unlock'); toast("🏆 You're in! Trade your $1,000 from the Market tab",'good'); CB.list=null; build(); }
+function compTrade(act){ const c=compCur(); if(!c) return; const sym=S.sel, pr=sp(sym), p=c.pos[sym]||(c.pos[sym]={l:0,lc:0,s:0,se:0});
+  if(act==='close'){ let pl;
+    if(p.l){ pl=p.l*(pr-p.lc); c.cash+=p.l*pr; toast(`🏆 Sold ${p.l} ${sym}: ${sg(pl)}`,pl>=0?'good':'bad'); p.l=0; p.lc=0; }
+    else if(p.s){ pl=Math.max(p.s*(p.se-pr),-p.s*p.se); c.cash+=p.s*p.se+pl; toast(`🏆 Covered ${p.s} ${sym}: ${sg(pl)}`,pl>=0?'good':'bad'); p.s=0; p.se=0; }
+    else return; winFx(pl); }
+  else { if(p.l||p.s) return toast('Close your competition trade first'); const q=Math.max(1,S.cq||1); if(q*pr>c.cash+1e-9) return toast('Not enough competition cash');
+    c.cash-=q*pr; if(act==='buy'){ p.l=q; p.lc=pr; } else { p.s=q; p.se=pr; } c.tr++; sfx('open'); toast(`🏆 ${act==='buy'?'Bought':'Shorted'} ${q} ${sym} at ${px(pr)} (competition)`); }
+  save(); compPub(true); compCard(true); }
+function compCard(force){ const el=$('compw'); if(!el) return; if(!DB){ el.innerHTML=''; el.dataset.k=''; return; } const c=compCur(), sym=S.sel;
+  if(!c){ if(el.dataset.k!=='no'){ el.dataset.k='no'; el.innerHTML=`<div class='card row' style='margin-top:8px'><div class='g t'>🏆 This week's competition is open. Everyone starts with $1,000 of competition money. Your real cash isn't touched.</div><button class='btn gold sm' data-cj='1'>Join</button></div>`; } return; }
+  const p=c.pos[sym]||{}, open=p.l||p.s, k=sym+'|'+(open?1:0);
+  if(force||el.dataset.k!==k){ el.dataset.k=k; el.innerHTML=`<div class='card' style='margin-top:8px;border-color:#5a4a1a'><div class='row'><div class='g'><div class='b'>🏆 Competition wallet</div><div class='t' id='cpt'></div></div><b class='m' id='cpv'></b></div><div class='t' id='cpp' style='margin:6px 0'></div>${open?`<button class='btn ghost' style='width:100%' data-ct='close'>Close competition trade</button>`:`<div class='qty' style='margin:0 0 6px'><button data-cq='-1'>−</button><div class='mid'><b id='cpq'></b><span id='cpqc'></span></div><button data-cq='1'>+</button><button data-cq='max'>MAX</button></div><div class='g2'><button class='btn buy sm' data-ct='buy'>Comp BUY</button><button class='btn short sm' data-ct='short'>Comp SHORT</button></div>`}</div>`; }
+  const v=compVal(c), r=(v/COMP_START-1)*100, pr=sp(sym);
+  $('cpv').innerHTML=`${money(v)} <span class='${r>=0?'up':'dn'}' style='font-size:12px'>${r>=0?'+':''}${r.toFixed(1)}%</span>`; $('cpt').textContent=`Cash ${money(c.cash)} · ends in ${dur(wkStart(c.w+1)-NOW)}`;
+  if(open){ const pl=p.l?p.l*(pr-p.lc):Math.max(p.s*(p.se-pr),-p.s*p.se); $('cpp').innerHTML=`${p.l?'🟢 '+p.l+' sh bought at '+px(p.lc):'🟣 '+p.s+' sh shorted at '+px(p.se)} · <b class='${pl>=0?'up':'dn'}'>${sg(pl)}</b>`; }
+  else { S.cq=Math.max(1,S.cq||1); $('cpp').textContent=`No competition trade in ${sym}.`; $('cpq').textContent=S.cq+' share'+(S.cq>1?'s':''); $('cpqc').textContent=money(S.cq*pr); } }
+async function compPub(force){ const c=compCur(); if(!DB||!UID||!c) return; if(!force&&NOW-CPL<60) return; CPL=NOW; const m=myCard(), v=Math.round(compVal(c)*100)/100;
+  try{ await DB.doc('comps/'+c.w+'/entries/'+UID).set({name:m.name.slice(0,20),uname:UNAME,av:m.av,value:v,tr:c.tr,at:Date.now()});
+    if(CB.w===c.w&&CB.list){ const me=CB.list.find(x=>x.id===UID); if(me) me.value=v; else CB.list=null; } }catch(_){} }
+async function compSettle(){ const c=S.comp; if(!DB||!UID||!c||c.done||c.w>=wkIdx(nowSec())) return;
+  try{ const q=await DB.collection('comps/'+c.w+'/entries').orderBy('value','desc').limit(200).get(), rows=q.docs.map(d=>Object.assign({id:d.id},d.data())), r=rows.findIndex(x=>x.id===UID);
+    c.done=1; const tro=S.st.tro=S.st.tro||{g:0,s:0,b:0}, md=rows.length>=2?['g','s','b'][r]:null, fv=r>=0?+rows[r].value:compVal(c);
+    if(md) tro[md]++; save(); pubProfile(); sfx(md?'unlock':'ping');
+    modal("🏆 Last week's competition",`<p>You finished <b>#${r>=0?r+1:'?'}</b> of ${rows.length} with <b>${money(fv)}</b> (${((fv/COMP_START-1)*100).toFixed(1)}%).</p>${md?`<p style='font-size:44px;text-align:center;margin:8px 0'>${{g:'🥇',s:'🥈',b:'🥉'}[md]}</p><p>You won a trophy! It shows on your profile and the leaderboard.</p>`:`<p>No trophy this time${rows.length<2?' (trophies need at least 2 players)':''}. This week's competition is open now.</p>`}`,[['Nice','gold']]);
+  }catch(_){} }
+async function loadComp(){ if(!DB||CB.busy) return; CB.busy=true; const w=wkIdx(nowSec());
+  try{ const q=await DB.collection('comps/'+w+'/entries').orderBy('value','desc').limit(100).get(); CB.list=q.docs.map(d=>Object.assign({id:d.id},d.data())); }catch(_){ CB.list=[]; }
+  CB.w=w; CB.busy=false; if(tab==='friends'&&!FS.chat) buildFriends(); }
+function compHTML(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW;
+  let h=`<h3>🏆 Weekly competition</h3><div class='card'>`;
+  if(!c) h+=`<div class='t'>Want in? Everyone who joins gets <b style='color:var(--text)'>$1,000 of competition money</b> to trade on the same live market, from the Market tab. Your real cash is never touched. The top 3 when the week ends (in ${dur(left)}) win trophies.</div><button class='btn gold' style='width:100%;margin-top:8px' data-cj='1'>Join this week</button>`;
+  else { const v=compVal(c), r=(v/COMP_START-1)*100; h+=`<div class='row'><div class='g'><div class='b'>You're in</div><div class='t'>Trade from the Market tab · ends in ${dur(left)}</div></div><b class='m'>${money(v)} <span class='${r>=0?'up':'dn'}'>${r>=0?'+':''}${r.toFixed(1)}%</span></b></div>`; }
+  if(CB.list===null||CB.w!==w){ CB.list=null; loadComp(); h+=`<div class='t' style='margin-top:8px'>Loading standings…</div>`; }
+  else { const rows=CB.list.filter(x=>CB.view==='all'||FRUIDS.has(x.id)||x.id===UID);
+    h+=`<div class='seg' style='margin:10px 0 4px'><button data-cv='friends' class='${CB.view==='friends'?'on':''}'>Friends</button><button data-cv='all' class='${CB.view==='all'?'on':''}'>Everyone</button></div>`+
+      (rows.length?rows.slice(0,25).map((x,i)=>`<div class='li'><span><b class='m' style='display:inline-block;width:26px'>${['🥇','🥈','🥉'][i]||i+1}</b>${esc(x.name)}${x.id===UID?" <span class='pill ok'>you</span>":''}</span><b class='m ${x.value>=COMP_START?'up':'dn'}'>${money(x.value)}</b></div>`).join(''):`<div class='t' style='margin-top:6px'>Nobody has joined yet. Be the first.</div>`); }
+  return h+`</div>`; }
+main.addEventListener('click',e=>{ const t=e.target;
+  if(t.closest('[data-cj]')) return compJoin();
+  const ct=t.closest('[data-ct]'); if(ct) return compTrade(ct.dataset.ct);
+  const cq=t.closest('[data-cq]'); if(cq){ const c=compCur(); if(!c) return; const pr=sp(S.sel), v=cq.dataset.cq; S.cq=v==='max'?Math.max(1,Math.floor(c.cash/pr)):Math.max(1,(S.cq||1)+(+v)); return compCard(); }
+  const cv=t.closest('[data-cv]'); if(cv){ CB.view=cv.dataset.cv; buildFriends(); } });
+
+// ---------- opening story ----------
+const INTRO=[
+ ["Chapter 1 · The Basement",["You're nineteen, and everything you own fits in two laundry baskets.","The apartment didn't work out. Neither did the job. So you're back in Mom's basement, on the lumpy futon you swore you'd never sleep on again. Upstairs, Mom is humming over the dishes. She hasn't mentioned rent. She doesn't have to."]],
+ ["",["Under the stairs is a box of Dad's things. At the bottom, a spiral notebook full of stock charts drawn by hand in blue pen.","On the inside cover, in his handwriting: <i>\"Volume tells the truth. Everything else is noise.\"</i> You don't know what it means yet. But you've got a cracked phone and a lot of time."]],
+ ["",["The basement door opens.","\"Morning, sunshine,\" Mom says. \"I love you. Now get a job.\" She sets down a coffee and a list of neighbors who need help. \"Borrow whatever you need from the garage. Just try not to break it.\""]]];
+function storyIntro(k){ k=k||0; let el=$("intro"); if(!el){ el=document.createElement("div"); el.id="intro"; document.body.appendChild(el); }
+  const [ch,ps]=INTRO[k], last=k===INTRO.length-1;
+  el.innerHTML=`<button class="skip" data-ix="skip">Skip</button><div class="pg">${ch?`<div class="ch">${ch}</div>`:""}${ps.map(p=>`<p>${p}</p>`).join("")}</div>
+   <div class="foot"><div class="dots">${INTRO.map((_,i)=>`<span class="${i===k?"on":""}"></span>`).join("")}</div><button class="nextb" data-ix="${last?"done":k+1}">${last?"Get a job":"Next"} <span style="font-size:18px">→</span></button></div>`;
+  el.onclick=e=>{ const b=e.target.closest("[data-ix]"); if(!b) return; const v=b.dataset.ix;
+    if(v==="skip"||v==="done"){ el.remove(); S.introSeen=1; save(); if(!S.prof) profPicker(true); else if(!S.tut) tutorial(); } else storyIntro(+v); }; }
+// ---------- quick tutorial ----------
+const TUT=[
+ ["#chart","The market","Every candle is 10 seconds of a stock's life. Green went up, red went down. The bars underneath are volume: how many people traded.","trade"],
+ ["#acts","Buy, short, close","<b>Buy</b> if you think it'll go up. <b>Short</b> if you think it'll drop. <b>Close</b> cashes out your trade. You only make money when you close.","trade"],
+ ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed.","trade"],
+ ["#momw","Practice with Mom","No money yet? Practice on Mom's dime. Close a practice trade in profit and she pays you for it, until you've got $15.","trade"],
+ ['[data-tab="store"]',"The Store","Better gear for your job, and lessons that teach you the patterns the market repeats. That's where the real money is.","trade"],
+ ['[data-tab="auto"]',"Automations","Later on, you can buy bots and tools that keep working while you're away.","trade"],
+ ['[data-tab="me"]',"Your story","Everything you're working toward: a car, your own place, and one day, paying Mom back. Good luck.","trade"]];
+let TUTK=-1, tutIv=null;
+function tutorial(k){ k=k||0; let el=$("tut"); if(!el){ el=document.createElement("div"); el.id="tut"; document.body.appendChild(el); }
+  if(k>=TUT.length){ document.querySelectorAll(".tut-hl").forEach(x=>x.classList.remove("tut-hl")); el.remove(); S.tut=1; save(); TUTK=-1; clearInterval(tutIv); return; }
+  const [sel,title,txt,t]=TUT[k]; if(tab!==t) setTab(t);
+  document.querySelectorAll(".tut-hl").forEach(x=>x.classList.remove("tut-hl"));
+  const tg=document.querySelector(sel); if(!tg) return tutorial(k+1); tg.classList.add("tut-hl");
+  tg.scrollIntoView({block:"nearest"}); TUTK=k;
+  el.innerHTML=`<div class="tip"><div class="t">${k+1} of ${TUT.length}</div><b>${title}</b><p>${txt}</p>
+     <div class="row"><button class="t" data-tx="end" style="padding:6px">Skip</button><span class="g"></span><button class="nextb" data-tx="${k+1}">${k===TUT.length-1?"Let's go":"Next"} <span style="font-size:18px">→</span></button></div></div>`;
+  el.onclick=e=>{ const b=e.target.closest("[data-tx]"); if(!b) return; b.dataset.tx==="end"?tutorial(TUT.length):tutorial(+b.dataset.tx); };
+  placeTut(); clearInterval(tutIv); tutIv=setInterval(placeTut,150); }
+function placeTut(){ const el=$("tut"); if(!el||TUTK<0) return; const tg=document.querySelector(TUT[TUTK][0]); if(!tg) return;
+  if(!tg.classList.contains("tut-hl")) tg.classList.add("tut-hl"); const r=tg.getBoundingClientRect(), tip=el.querySelector(".tip"), below=r.top+r.height/2<innerHeight/2;
+  if(below){ tip.style.bottom="calc(env(safe-area-inset-bottom) + 74px)"; tip.style.top="auto"; } else { tip.style.top="calc(env(safe-area-inset-top) + 76px)"; tip.style.bottom="auto"; } }
+// ---------- texts from Mom (pop up, then gone) ----------
+const TEXTS=[
+ ["job1",()=>S.st.jobs>=1,"First paycheck! Don't spend it all on gas station snacks."],
+ ["trade1",()=>S.st.trades>=1,"Did you just buy a STOCK? A penny stock?? …Okay. Be careful."],
+ ["win1",()=>S.st.wins>=1,"You made money trading? Your uncle never did that once in 30 years."],
+ ["loss1",()=>S.st.worst<0,"Lost a little? Grandpa once lost his whole truck on a bet. Learn from it."],
+ ["lesson1",()=>Object.keys(S.know||{}).length>=1,"Reading up on the market? Your dad would like that."],
+ ["nw50",()=>S.bestNW>=50,"Fifty dollars saved! I'm putting a sticky note on the fridge."],
+ ["fund1",()=>S.fu>0,"An index fund? Who taught you that? …Me? No. But I'm proud anyway."],
+ ["nw250",()=>S.bestNW>=250,"$250. At your age I had $11 and a broken bike."],
+ ["rep25",()=>Object.values(S.profs||{}).some(p=>p.rep>=25),"Mrs. Jenkins told the whole street you do good work."],
+ ["auto1",()=>Object.values(S.auto||{}).some(a=>a.own),"You set up robots to work for you?? Is that legal?"],
+ ["nw1k",()=>S.bestNW>=1000,"A THOUSAND DOLLARS. Okay. Start thinking about your own place, kiddo."],
+ ["broke1",()=>S.st.broke>=1,"We all fall down, sweetie. Dinner's at 6. We'll figure it out."],
+ ["nw10k",()=>S.bestNW>=10000,"Ten thousand. Your father would've been so proud of you."],
+ ["nw100k",()=>S.bestNW>=1e5,"I told the ladies at church you're a 'finance person' now. Don't make me a liar."],
+ ["nw1m",()=>S.bestNW>=1e6,"A MILLION?? I had to sit down. I'm still sitting down."]];
+const FLAVOR=["Did you eat today? Real food, not chips.","Leftovers are in the fridge. The blue container, not the green one.","Don't forget to call your grandma this week.","Proud of you. That's all. Go back to work.","The dog keeps sitting by your door.","Take a break and go outside for 10 minutes.","Found your old piggy bank. It had $3.40 in it. Want it?","Church potluck Sunday. You're bringing something. Not chips.","Make sure you're sleeping. Money isn't everything.","Your sister got a new job! Text her congrats."];
+function momTexts(){ if(SIM||!S.prof) return; S.mt=S.mt||{};
+  for(const [id,c,t] of TEXTS){ if(!S.mt[id]&&c()){ S.mt[id]=1; toast("📱 Mom: "+t); sfx('ping'); life("📱 Mom: "+t); return; } }
+  if(NOW-(S.lastFl||0)>1200&&Math.random()<1/900&&$("modal").classList.contains("hide")){ S.lastFl=NOW; sfx('ping'); toast("📱 Mom: "+FLAVOR[Math.floor(Math.random()*FLAVOR.length)]); } }
+
+// ---------- profile photos: cropped to a square, shrunk to 112px JPEG (~5-15 KB) so it fits in the profile doc ----------
+const okImg=s=>typeof s==='string'&&s.length<40000&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(s);
+const pavBg=s=>okImg(s)?`;background:center/cover no-repeat url(${s})`:'';
+main.addEventListener('change',e=>{ if(e.target.id!=='pimg') return; const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const m=myCard(), n=$('pname'), g=$('ptag'); if(n) m.name=n.value.trim().slice(0,20)||m.name; if(g) m.tag=g.value.trim().slice(0,40);
+  const url=URL.createObjectURL(f), im=new Image();
+  im.onload=()=>cropPhoto(im);
+  im.onerror=()=>{ URL.revokeObjectURL(url); toast("Couldn't read that image. Try a JPG or PNG."); }; im.src=url; e.target.value=''; });
+// crop screen: drag to move, slider / pinch / scroll wheel to zoom. The original stays in memory this session so you can re-adjust.
+let LASTIMG=null;
+function cropPhoto(im){ LASTIMG=im; const W=im.naturalWidth||im.width, H=im.naturalHeight||im.height, mn=Math.min(W,H), V=240; let z=1, cx=W/2, cy=H/2;
+  modal('Crop your photo',`<div style='width:${V}px;height:${V}px;margin:8px auto;border-radius:50%;overflow:hidden;border:2px solid var(--gold);background:#000'><canvas id='ccv' width='${V*2}' height='${V*2}' style='width:${V}px;height:${V}px;display:block;touch-action:none;cursor:grab'></canvas></div><input type='range' id='czoom' min='1' max='4' step='0.01' value='1' style='width:100%;margin-top:6px'><div class='t' style='text-align:center'>Drag to move · slide or pinch to zoom</div>`,[['Cancel','ghost'],['Save photo','gold',()=>savePhoto(im,cx,cy,mn/z)]]);
+  const cv=$('ccv'), c=cv.getContext('2d'), zs=$('czoom');
+  const draw=()=>{ const h=mn/z/2; cx=Math.min(W-h,Math.max(h,cx)); cy=Math.min(H-h,Math.max(h,cy)); c.clearRect(0,0,cv.width,cv.height); c.drawImage(im,cx-h,cy-h,2*h,2*h,0,0,cv.width,cv.height); };
+  const pts=new Map(); let pd=0, pz=1;
+  cv.addEventListener('pointerdown',e=>{ e.preventDefault(); cv.setPointerCapture(e.pointerId); pts.set(e.pointerId,[e.clientX,e.clientY]); if(pts.size===2){ const [a,b]=[...pts.values()]; pd=Math.hypot(a[0]-b[0],a[1]-b[1]); pz=z; } });
+  cv.addEventListener('pointermove',e=>{ const p=pts.get(e.pointerId); if(!p) return; pts.set(e.pointerId,[e.clientX,e.clientY]);
+    if(pts.size===2){ const [a,b]=[...pts.values()], d=Math.hypot(a[0]-b[0],a[1]-b[1]); if(pd>0){ z=Math.min(4,Math.max(1,pz*d/pd)); zs.value=z; draw(); } return; }
+    const k=mn/z/V; cx-=(e.clientX-p[0])*k; cy-=(e.clientY-p[1])*k; draw(); });
+  const up=e=>{ pts.delete(e.pointerId); if(pts.size<2) pd=0; }; cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+  cv.addEventListener('wheel',e=>{ e.preventDefault(); z=Math.min(4,Math.max(1,z*(e.deltaY<0?1.08:1/1.08))); zs.value=z; draw(); },{passive:false});
+  zs.addEventListener('input',()=>{ z=+zs.value; draw(); }); draw(); }
+function savePhoto(im,cx,cy,s){ const m=myCard(), cv=document.createElement('canvas'); cv.width=cv.height=112; cv.getContext('2d').drawImage(im,cx-s/2,cy-s/2,s,s,0,0,112,112);
+  let q=.82, d=cv.toDataURL('image/jpeg',q); while(d.length>30000&&q>.3){ q-=.15; d=cv.toDataURL('image/jpeg',q); }
+  if(!okImg(d)) return toast("Couldn't use that image"); m.img=d; save(); pubProfile(); FR.list=null; if(tab==='me') buildMe(); toast('📷 Photo saved','good'); }
+main.addEventListener('click',e=>{ if(e.target.closest('[data-pcrop]')&&LASTIMG) return cropPhoto(LASTIMG); if(!e.target.closest('[data-pimgx]')) return; delete myCard().img; save(); pubProfile(); FR.list=null; buildMe(); toast('Photo removed'); });
+
+// ---------- Tip-offs: tip all your friends on a stock. If one of them trades it within 5 min and wins, the game pays you 10% of their profit as a bonus ----------
+// Each player writes only tips/<their id>: {to:[friend codes], tips:[[id,t,stock,dir]], cr:[[tipId,tipperCode,profit,t]]}. The tipper reads the credits and pays themselves.
+let tipDirty=false, tipBusy=false;
+const esc=s=>String(s||'').replace(/[<>&"']/g,'').slice(0,20);
+function tipCard(){ const el=$('tipw'); if(!el) return; if(!DB){ el.innerHTML=''; return; }
+  const sym=S.sel, fr=(S.friends||[]).length, used=S.tipUsed||{}, inc=(S.tipIn||[]).filter(x=>NOW-x.t<300&&!used[x.id]), p=P(sym), ml=x=>Math.max(1,Math.ceil((300-(NOW-x.t))/60));
+  const key=sym+'|'+fr+'|'+(p.tip?p.tip.id:'')+'|'+inc.map(x=>x.id+ml(x)).join(','); if(el.dataset.k===key) return; el.dataset.k=key;
+  let h=`<div class='card' style='margin-top:8px'>`;
+  if(p.tip) h+=`<div class='t' style='margin-bottom:6px'>💡 This trade is on <b style='color:var(--text)'>${p.tip.name}</b>'s tip. If it wins, they get a bonus.</div>`;
+  inc.forEach(x=>{ const s=STOCKS[x.i].s; h+=`<div class='li'><span>💡 <b>${x.name}</b>: ${s} <b class='${x.dir>0?'up':'dn'}'>${x.dir>0?'▲ up':'▼ down'}</b> <span class='t'>· ${ml(x)}m left</span></span>${s===sym?`<span class='pill'>${x.dir>0?'BUY':'SHORT'} to use it</span>`:`<button class='btn ghost sm' data-tview='${s}'>View</button>`}</div>`; });
+  h+=fr?`<div class='row' style='margin-top:${inc.length?8:0}px'><div class='g t'>💡 Tip ${fr} friend${fr>1?'s':''} on <b style='color:var(--text)'>${sym}</b></div><button class='btn buy sm' data-tipd='1'>▲ Up</button><button class='btn short sm' data-tipd='-1'>▼ Down</button></div>`:`<div class='t'>💡 Add friends in the Friends tab to send them tips.</div>`;
+  el.innerHTML=h+`</div>`; }
+function sendTip(dir){ if(!DB) return toast('Sign in to send tips'); const fr=S.friends||[]; if(!fr.length) return toast('Add a friend first');
+  const i=BYSYM[S.sel].i; S.tipOut=(S.tipOut||[]).filter(x=>NOW-x.t<172800);
+  if(S.tipOut.some(x=>x.i===i&&x.dir===dir&&NOW-x.t<30)) return toast('You just sent that tip');
+  const id=Math.random().toString(36).slice(2,10); S.tipOut.push({id,t:NOW,i,dir}); if(S.tipOut.length>60) S.tipOut.shift();
+  S.st.tipsSent=(S.st.tipsSent||0)+1; tipDirty=true; save(); tipSync(); toast(`💡 Tipped ${fr.length} friend${fr.length>1?'s':''}: ${S.sel} ${dir>0?'▲ up':'▼ down'}`,'good'); }
+function tipTag(sym,dir){ const used=S.tipUsed=S.tipUsed||{}, i=BYSYM[sym].i, tp=(S.tipIn||[]).filter(x=>x.i===i&&x.dir===dir&&NOW-x.t<=300&&!used[x.id]).pop(); if(!tp) return;
+  used[tp.id]=NOW; P(sym).tip={id:tp.id,code:tp.code,name:tp.name}; }
+function tipCredit(sym,pl){ const p=P(sym), tp=p.tip; if(!tp||p.l||p.s) return; p.tip=null; if(!(pl>0)) return;
+  S.tipCr=S.tipCr||[]; S.tipCr.push([tp.id,tp.code,Math.round(pl*100)/100,NOW]); tipDirty=true; life(`💡 Your win on ${tp.name}'s tip earned them a bonus`); }
+async function tipSync(){ if(!DB||!UID||tipBusy) return; tipBusy=true; const now=nowSec(), me=myCode();
+  try{ if(tipDirty){ tipDirty=false; const m=myCard(); S.tipCr=(S.tipCr||[]).filter(c=>now-c[3]<172800).slice(-30);
+      await DB.doc('tips/'+UID).set({at:Date.now(),name:m.name.slice(0,20),code:me,to:(S.friends||[]).slice(0,50),tips:(S.tipOut||[]).filter(x=>now-x.t<1800).slice(-10).map(x=>[x.id,x.t,x.i,x.dir]),cr:S.tipCr}); }
+    const q=await DB.collection('tips').orderBy('at','desc').limit(60).get(), mine=new Set((S.tipOut||[]).map(x=>x.id));
+    S.tipIn=(S.tipIn||[]).filter(x=>now-x.t<3600); S.tipPaid=S.tipPaid||{};
+    q.docs.forEach(doc=>{ if(doc.id===UID) return; const x=doc.data()||{}, nm=esc(x.name||'A friend')||'A friend', code=String(x.code||'').slice(0,6);
+      if(Array.isArray(x.to)&&x.to.includes(me)&&Array.isArray(x.tips)) x.tips.forEach(r=>{ if(!Array.isArray(r)) return; const id=String(r[0]).slice(0,12), t=Math.floor(+r[1]), i=+r[2], dir=+r[3];
+        if(!(now-t<300&&t<=now+60)||!Number.isInteger(i)||i<0||i>=STOCKS.length||(dir!==1&&dir!==-1)||S.tipIn.some(y=>y.id===id)) return;
+        S.tipIn.push({id,code,name:nm,i,dir,t}); if(S.tipIn.length>20) S.tipIn.shift();
+        sfx('ping'); toast(`💡 ${nm} tips ${STOCKS[i].s} ${dir>0?'▲ up':'▼ down'}${unlocked(STOCKS[i])?'':' (locked for you)'}`); });
+      if(Array.isArray(x.cr)) x.cr.forEach(c=>{ if(!Array.isArray(c)||String(c[1])!==me) return; const id=String(c[0]), pl=Math.min(1e8,+c[2]||0), key=doc.id+':'+id;
+        if(!mine.has(id)||S.tipPaid[key]||!(pl>0)) return; S.tipPaid[key]=now; const b=Math.round(pl*10)/100; S.cash+=b; S.st.tipPay=(S.st.tipPay||0)+b; S.st.tipWins=(S.st.tipWins||0)+1; resetPeak();
+        life(`💡 ${nm} won on your tip: +${money(b)} bonus`); sfx('win'); toast(`💡 ${nm} won on your tip! +${money(b)} bonus`,'good'); }); });
+    for(const k in S.tipPaid) if(now-S.tipPaid[k]>259200) delete S.tipPaid[k];
+    if(S.tipUsed) for(const k in S.tipUsed) if(now-S.tipUsed[k]>86400) delete S.tipUsed[k];
+  }catch(_){} tipBusy=false; }
+main.addEventListener('click',e=>{ const b=e.target.closest('[data-tipd],[data-tview]'); if(!b) return;
+  if(b.dataset.tipd) return sendTip(+b.dataset.tipd);
+  const d=BYSYM[b.dataset.tview]; if(d&&unlocked(d)){ S.sel=d.s; chips(); upd(); fundCard(); } else toast("You haven't unlocked that stock yet"); });
+
+// ---------- Style shop: looks you unlock by getting further (permanent, kept when you go broke) ----------
+const TBASE={bg:'#07090c',panel:'#0e1319',card:'#121922',c2:'#18212c',line:'#1f2a36',text:'#e8eef4',mut:'#77879a',grid:'#131b25',lab:'#56657a'};
+const THEMES=[
+ {id:'base',n:"Mom's basement",d:'Where it all started.',req:0,v:{}},
+ {id:'mid',n:'Midnight',d:'Deep blue, for late-night trading.',req:50,v:{bg:'#050a1a',panel:'#0a1228',card:'#0e1833',c2:'#142043',line:'#1e2d57',text:'#e6ecff',mut:'#7c8bb5',grid:'#111b38',lab:'#56679a'}},
+ {id:'term',n:'Retro terminal',d:"Green on black, like Dad's old computer.",req:250,mono:1,v:{bg:'#010603',panel:'#031009',card:'#05160c',c2:'#082012',line:'#0f3a1e',text:'#b9f7c9',mut:'#4f9a68',grid:'#082a14',lab:'#3f8f5a'}},
+ {id:'neon',n:'Neon trading floor',d:'Purple glow and late nights.',req:1000,v:{bg:'#08040f',panel:'#12081f',card:'#190c2b',c2:'#221238',line:'#3b1c63',text:'#f3e8ff',mut:'#9b7fc4',grid:'#1f1035',lab:'#8a6ab8'}},
+ {id:'sun',n:'Sunset strip',d:'Warm reds for a good day.',req:5000,v:{bg:'#110706',panel:'#1b0d0b',card:'#24130f',c2:'#2f1914',line:'#4a281d',text:'#ffeee6',mut:'#b08a7c',grid:'#2a1510',lab:'#9a6f60'}},
+ {id:'pent',n:'Penthouse',d:"Black and gold. You've earned it.",req:25000,v:{bg:'#0b0905',panel:'#15110a',card:'#1c170d',c2:'#262013',line:'#41361f',text:'#fff6e0',mut:'#a8986f',grid:'#221c10',lab:'#8f7f55'}},
+ {id:'frost',n:'Lake cabin frost',d:'Cold blue, quiet mornings.',req:250000,v:{bg:'#071016',panel:'#0c1a22',card:'#10222c',c2:'#162c38',line:'#22445a',text:'#eaf8ff',mut:'#7fa3b5',grid:'#12283a',lab:'#5f8aa0'}},
+ {id:'isle',n:'Private island',d:'Turquoise water. The real ending.',req:1e6,v:{bg:'#03141a',panel:'#061f27',card:'#082933',c2:'#0b3441',line:'#11525f',text:'#e9fffb',mut:'#74b3ab',grid:'#0a3038',lab:'#4f9a93'}}];
+const PALS=[{id:'gr',n:'Green / red',d:'The classic.',req:0,up:'#16c784',dn:'#ea3943'},{id:'bo',n:'Blue / orange',d:"Easier to tell apart if you're colorblind.",req:400,up:'#3b82f6',dn:'#f97316'},{id:'cp',n:'Cyan / pink',d:'Straight out of an arcade.',req:2000,up:'#22d3ee',dn:'#f472b6'},{id:'gp',n:'Gold / purple',d:'Money up, royalty down.',req:15000,up:'#f5b301',dn:'#a855f7'},{id:'mono',n:'White / grey',d:'Serious-trader minimalism.',req:60000,up:'#e8eef4',dn:'#5b6878'}];
+const CSTY=[{id:'classic',n:'Classic candles',d:'Solid bodies, thin wicks.',req:0},{id:'hollow',n:'Hollow candles',d:'Up candles are outlines, down candles are solid.',req:150},{id:'ohlc',n:'OHLC bars',d:'Old-school bars: open tick on the left, close tick on the right.',req:750},{id:'line',n:'Line chart',d:'Just the closing prices. Clean, but hides the candle shapes.',req:3000}];
+const TITLES=[{id:'none',n:'No title',d:'Keep it humble.',req:0},
+ {id:'rookie',n:'Basement Trader',d:'Everyone starts somewhere.',r:'Make your first trade',u:()=>S.st.trades>=1},
+ {id:'penny',n:'Penny Prodigy',d:'Squeezed real money out of pennies.',r:'Reach $100 net worth',u:()=>S.bestNW>=100},
+ {id:'hustle',n:'Hustler',d:'The whole street knows your name.',r:'Get 100 reputation in one job',u:()=>Object.values(S.profs||{}).some(p=>p.rep>=100)},
+ {id:'crash',n:'Crash Survivor',d:'Went broke and kept going.',r:'Go broke once',u:()=>S.st.broke>=1},
+ {id:'nerd',n:'Chart Nerd',d:'Dad would be proud.',r:'Learn 10 lessons',u:()=>Object.keys(S.know||{}).length>=10},
+ {id:'big',n:'Big Swinger',d:'Four figures on a single trade.',r:'Make $1,000 on one trade',u:()=>S.st.best>=1000},
+ {id:'six',n:'Six Figures',d:'Made it to six figures.',r:'Reach $100K net worth',u:()=>S.bestNW>=1e5},
+ {id:'tycoon',n:'Ticker Tycoon',d:'The name on the box.',r:'Reach $1M net worth',u:()=>S.bestNW>=1e6},
+ {id:'champ',n:'Weekly Champion',d:'Won a weekly competition.',r:'Win a weekly competition',u:()=>!!(S.st.tro&&S.st.tro.g)},
+ {id:'island',n:'Island Royalty',d:'You actually did it.',r:'Retire to the private island',u:()=>!!S.ms.island}];
+const BORDERS=[{id:'none',n:'No border',d:'Plain and simple.',req:0},{id:'silver',n:'Silver border',d:'A clean silver edge on your card.',req:1000},{id:'gold',n:'Gold border',d:'A glowing gold edge.',req:50000},{id:'dia',n:'Diamond border',d:'Shimmers through the colors.',req:1e6}];
+const FX=[{id:'fxb',n:'Cash burst',d:'Money flies when you close a winning trade.',r:'Make $25 on one trade',u:()=>S.st.best>=25,g:'💸'},{id:'fxs',n:'Cha-ching',d:'A cash-register ding on every winning trade.',r:'Make $1,000 on one trade',u:()=>S.st.best>=1000,g:'🔔'}];
+const COSCAT=[['theme','App theme',THEMES],['pal','Candle colors',PALS],['candle','Chart style',CSTY],['title','Leaderboard title',TITLES],['border','Card border',BORDERS]];
+const COSS=()=>S.cos||(S.cos={theme:'base',pal:'gr',candle:'classic',title:'none',border:'none',fxb:1,fxs:1});
+const cosOk=it=>it.u?!!it.u():S.bestNW>=(it.req||0);
+const cosReq=it=>it.r||'Reach '+money(it.req)+' net worth';
+function cosGet(cat){ const L=COSCAT.find(x=>x[0]===cat)[2], it=L.find(x=>x.id===COSS()[cat]); return it&&cosOk(it)?it:L[0]; }
+const TH=()=>Object.assign({},TBASE,cosGet('theme').v), CPAL=()=>cosGet('pal');
+const bdCls=()=>{ const b=cosGet('border').id; return b==='none'?'':' bd-'+b; };
+const ttl=()=>{ const t=cosGet('title'); return t.id==='none'?'':`<div class='ptitle'>🏅 ${t.n}</div>`; };
+const TBY={}; TITLES.forEach(t=>TBY[t.id]=t);
+let COSK='';
+function applyCos(){ const t=cosGet('theme'); if(t.id===COSK) return; COSK=t.id; const v=TH(), r=document.documentElement.style;
+  ['bg','panel','card','c2','line','text','mut'].forEach(k=>r.setProperty('--'+k,v[k])); document.body.classList.toggle('mono',!!t.mono); const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=v.panel; }
+function drawCandles(c,data,X,Y,H,vh,vm){ const cp=CPAL(), st=cosGet('candle').id, bg=TH().bg;
+  data.forEach((k,i)=>{ if(k[0]===null) return; const h=vm?k[4]/vm*vh:0; c.fillStyle=(k[3]>=k[0]?cp.up:cp.dn)+'4d'; c.fillRect(X(i)-2.5,H-h,5,h); });
+  if(st==='line'){ let s=false,f=null,l=null; c.beginPath(); data.forEach((k,i)=>{ if(k[0]===null) return; if(f===null) f=k[3]; l=k[3]; const y=Y(k[3]); if(s) c.lineTo(X(i),y); else { c.moveTo(X(i),y); s=true; } });
+    c.strokeStyle=l>=f?cp.up:cp.dn; c.lineWidth=1.8; c.stroke(); c.lineWidth=1; return; }
+  data.forEach((k,i)=>{ if(k[0]===null) return; const up=k[3]>=k[0], col=up?cp.up:cp.dn, x=X(i); c.fillStyle=col;
+    if(st==='ohlc'){ c.fillRect(x-.75,Y(k[1]),1.5,Math.max(1,Y(k[2])-Y(k[1]))); c.fillRect(x-3,Y(k[0])-.75,3,1.5); c.fillRect(x,Y(k[3])-.75,3,1.5); return; }
+    c.fillRect(x-.5,Y(k[1]),1,Math.max(1,Y(k[2])-Y(k[1]))); const y1=Y(Math.max(k[0],k[3])), bh=Math.max(1,Y(Math.min(k[0],k[3]))-y1);
+    if(st==='hollow'&&up&&bh>2){ c.fillStyle=bg; c.fillRect(x-2.5,y1,5,bh); c.strokeStyle=col; c.lineWidth=1; c.strokeRect(x-2,y1+.5,4,bh-1); } else c.fillRect(x-2.5,y1,5,bh); }); }
+function svgC(st,u,d){ if(st==='line') return `<svg viewBox='0 0 40 28' width='40' height='28'><polyline points='2,20 10,14 17,18 25,8 32,12 38,5' fill='none' stroke='${u}' stroke-width='2'/></svg>`;
+  const cs=[[8,u,6,22,10,17],[20,d,4,25,9,20],[32,u,3,18,6,14]];
+  return `<svg viewBox='0 0 40 28' width='40' height='28'>${cs.map(([x,c,hi,lo,t,b])=>st==='ohlc'?`<path d='M${x} ${hi}V${lo}M${x-4} ${c===u?b:t}H${x}M${x} ${c===u?t:b}H${x+4}' stroke='${c}' stroke-width='2' fill='none'/>`:`<path d='M${x} ${hi}V${lo}' stroke='${c}'/><rect x='${x-3}' y='${t}' width='6' height='${b-t}' fill='${st==='hollow'&&c===u?'#0000':c}' stroke='${c}'/>`).join('')}</svg>`; }
+function cosPrev(cat,it){ const p=CPAL(), bar=(v,u,d)=>`<span class='sw' style='background:${v.bg};border-color:${v.line}'><i style='background:${u};height:55%'></i><i style='background:${d};height:30%'></i><i style='background:${u};height:85%'></i></span>`;
+  if(cat==='theme') return bar(Object.assign({},TBASE,it.v),p.up,p.dn);
+  if(cat==='pal') return bar(TH(),it.up,it.dn);
+  if(cat==='candle') return svgC(it.id,p.up,p.dn);
+  if(cat==='border') return `<span class='sw bdp${it.id==='none'?'':' bd-'+it.id}'></span>`;
+  return `<span style='font-size:20px'>${it.id==='none'?'➖':'🏅'}</span>`; }
+const lockBar=it=>it.u||!it.req?'':`<div class='bar'><i style='width:${Math.min(100,S.bestNW/it.req*100).toFixed(1)}%'></i></div>`;
+function styleHTML(){ const C=COSS(); let n=0, got=0; COSCAT.forEach(x=>x[2].forEach(it=>{ n++; if(cosOk(it)) got++; })); FX.forEach(it=>{ n++; if(cosOk(it)) got++; });
+  let h=`<div class='t' style='margin:0 3px 8px'>Just for looks: nothing here changes the market. New looks unlock as you get further, and they're yours for good, even if you go broke. <b style='color:var(--text)'>${got}/${n} unlocked</b></div>`;
+  COSCAT.forEach(([cat,name,L])=>{ const cur=cosGet(cat).id; h+=`<h3>${name}</h3>`;
+    L.forEach(it=>{ const ok=cosOk(it), act=cur===it.id?`<span class='pill ok'>Using</span>`:ok?`<button class='btn ghost sm' data-cos='${cat}:${it.id}'>Use</button>`:`<span class='pill'>🔒</span>`;
+      h+=`<div class='card row${ok?'':' clk'}'><div class='cosp'>${cosPrev(cat,it)}</div><div class='g'><div class='b'>${it.n}</div><div class='t'>${ok?it.d:cosReq(it)}</div>${ok?'':lockBar(it)}</div>${act}</div>`; }); });
+  h+=`<h3>Effects</h3>`;
+  FX.forEach(it=>{ const ok=cosOk(it), on=C[it.id];
+    h+=`<div class='card row${ok?'':' clk'}'><div class='cosp' style='font-size:22px'>${it.g}</div><div class='g'><div class='b'>${it.n}</div><div class='t'>${ok?it.d:cosReq(it)}</div></div>${ok?`<button class='btn ${on?'buy':'ghost'} sm' data-cosfx='${it.id}'>${on?'ON':'OFF'}</button>`:`<span class='pill'>🔒</span>`}</div>`; });
+  return h; }
+function cosCheck(){ if(SIM) return; const all=[]; COSCAT.forEach(([cat,,L])=>L.forEach(it=>all.push([cat+':'+it.id,it]))); FX.forEach(it=>all.push(['fx:'+it.id,it]));
+  if(!S.cosSeen){ S.cosSeen={}; all.forEach(([k,it])=>{ if(cosOk(it)) S.cosSeen[k]=1; }); return; }
+  if($('toast').classList.contains('show')) return;
+  for(const [k,it] of all) if(!S.cosSeen[k]&&cosOk(it)){ S.cosSeen[k]=1; sfx('unlock'); toast('🎨 New look unlocked: '+it.n+' · Store → Style','good'); if(tab==='store'&&seg==='style') buildStore(); return; } }
+function burst(pl){ const n=Math.min(26,8+Math.round(Math.log10(1+pl)*4)), cx=innerWidth/2, cy=innerHeight*.42;
+  for(let k=0;k<n;k++){ const s=document.createElement('span'); s.className='bz'; s.textContent=pick(['💵','🪙','💰','✨']); document.body.appendChild(s);
+    const a=Math.random()*6.283, r=70+Math.random()*130, dx=cx+Math.cos(a)*r, dy=cy+Math.sin(a)*r+70;
+    const an=s.animate([{transform:`translate(${cx}px,${cy}px) scale(.4)`,opacity:1},{transform:`translate(${dx}px,${dy}px) scale(1.1) rotate(${Math.random()*360-180}deg)`,opacity:0}],{duration:900+Math.random()*500,easing:'cubic-bezier(.2,.7,.3,1)',fill:'forwards'});
+    an.onfinish=()=>s.remove(); } }
+// ---------- sound effects: synthesized with WebAudio, no files. Audio unlocks on the first tap (browser rule) ----------
+let AC=null, SNDU=false;
+const snd=()=>!S.set||S.set.snd!==0;
+function actx(){ if(!AC){ try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(_){} AC=new (window.AudioContext||window.webkitAudioContext)(); } if(AC.state==='suspended') AC.resume(); return AC; }
+document.addEventListener('pointerdown',()=>{ try{ actx(); if(!SNDU){ SNDU=true; const b=AC.createBuffer(1,1,22050), s=AC.createBufferSource(); s.buffer=b; s.connect(AC.destination); s.start(0); } }catch(_){} },true);
+document.addEventListener('click',e=>{ if(e.target.closest('button,label')) sfx('tap'); },true);
+function tone(f,d,dur,type,vol,f2){ const c=AC, t=c.currentTime+d, o=c.createOscillator(), g=c.createGain(); o.type=type||'sine'; o.frequency.setValueAtTime(f,t); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol||.12,t+.008); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+.03); }
+const SFX={tap:()=>tone(1100,0,.04,'sine',.04),
+ open:()=>{ tone(660,0,.08,'triangle',.11); tone(990,.07,.1,'triangle',.11); },
+ win:()=>{ [1047,1319,1568].forEach((f,i)=>tone(f,i*.07,.2,'triangle',.11)); },
+ loss:()=>tone(200,0,.32,'sine',.2,90),
+ pay:()=>{ tone(1568,0,.12,'square',.045); tone(2093,.08,.22,'square',.045); },
+ bill:()=>{ tone(320,0,.15,'sawtooth',.05,230); tone(230,.12,.24,'sawtooth',.05,160); },
+ ping:()=>{ tone(1200,0,.12,'sine',.09); tone(1600,.1,.18,'sine',.08); },
+ unlock:()=>{ [784,988,1175,1568].forEach((f,i)=>tone(f,i*.09,.32,'triangle',.09)); },
+ buyItem:()=>{ tone(523,0,.1,'triangle',.11); tone(784,.08,.18,'triangle',.11); },
+ broke:()=>{ [392,330,262,196].forEach((f,i)=>tone(f,i*.17,.38,'sawtooth',.05)); }};
+function sfx(k){ if(SIM||!snd()||!AC) return; try{ actx(); SFX[k]&&SFX[k](); }catch(_){} }
+function chaChing(){ try{ if(!snd()) return; actx(); const t=AC.currentTime;
+  [[1318,0],[1760,.09]].forEach(([f,d])=>{ const o=AC.createOscillator(), g=AC.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(.0001,t+d); g.gain.exponentialRampToValueAtTime(.18,t+d+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d+.35); o.connect(g); g.connect(AC.destination); o.start(t+d); o.stop(t+d+.4); }); }catch(_){} }
+function winFx(pl){ if(SIM) return; if(!(pl>0)){ if(pl<0) sfx('loss'); return; } const C=COSS(); if(C.fxb&&cosOk(FX[0])) burst(pl); if(C.fxs&&cosOk(FX[1])) chaChing(); else sfx('win'); }
+main.addEventListener('click',e=>{ const a=e.target.closest('[data-cos],[data-cosfx]'); if(!a) return; const C=COSS();
+  if(a.dataset.cos){ const [cat,id]=a.dataset.cos.split(':'); C[cat]=id; applyCos(); save(); if(cat==='title'||cat==='border') pubProfile(); }
+  else { const k=a.dataset.cosfx; C[k]=C[k]?0:1; save(); if(C[k]) k==='fxb'?burst(100):chaChing(); }
+  if(tab==='store') buildStore(); });
+
+// profile + settings wiring
+main.addEventListener("click",e=>{ const t=e.target, m=myCard();
+  const ps=t.closest("[data-ps]"); if(ps){ pseg=ps.dataset.ps; main.scrollTop=0; return buildMe(); }
+  const keep=()=>{ const n=$("pname"), g=$("ptag"); if(n) m.name=n.value.trim().slice(0,20)||m.name; if(g) m.tag=g.value.trim().slice(0,40); };
+  const av=t.closest("[data-pav]"); if(av){ keep(); m.av=av.dataset.pav; delete m.img; save(); pubProfile(); return buildMe(); }
+  const pc=t.closest("[data-pcol]"); if(pc){ keep(); m.col=+pc.dataset.pcol; return buildMe(); }
+  if(t.closest("[data-psave]")){ keep(); save(); toast("Profile saved","good"); pubProfile(); FR.list=null; return buildMe(); } });
+$("gear").onclick=openSettings;
+function sx(x){
+  if(x==="login"){ closeModal(); S.authSkip=0; return showAuth(); }
+  if(x==="logout"){ closeModal(); S.authSkip=0; csave().finally(()=>window.NET&&window.NET.signOut()); return; }
+  if(x==="pw"){ const v=($("newpw")||{}).value||""; if(v.length<6) return toast("Password needs at least 6 characters"); window.NET.changePassword(v).then(()=>{ toast("Password changed","good"); closeModal(); },e=>toast(e.message)); return; }
+  if(x==="snd"){ S.set=S.set||{}; S.set.snd=snd()?0:1; save(); sfx('ping'); return openSettings(); }
+  if(x==="exp"){ const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); $("sbox").value=code; try{navigator.clipboard.writeText(code).then(()=>toast("Copied"));}catch(_){} return; }
+  if(x==="imp"){ try{ S=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); save(); closeModal(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return; }
+  if(x==="replay"){ closeModal(); S.tut=0; return storyIntro(); }
+  if(x==="wipe") return modal("Wipe everything?","<p>No undo.</p>",[["Cancel","ghost"],["Wipe","sell",()=>{ S=fresh(); save(); build(); intro(); }]]); }
+addEventListener("pagehide",save); addEventListener("resize",()=>tab==="trade"&&draw());
+// boot
+for(const id in S.profs){ const u=S.profs[id].up||{}; ["book","resup"].forEach(k=>{ if(u[k]){ A(k).own=1; delete u[k]; } }); }
+NOW=nowSec(); if(!isNew) catchUp(); else { S.lastT=NOW; S.lastNews=NOW; }
+if(!S.mt&&S.prof){ S.mt={}; TEXTS.forEach(([id,c])=>{ if(c()) S.mt[id]=1; }); }
+save(); build(); if($("modal").classList.contains("hide")) intro();
+setInterval(loop,250); setInterval(csave,60000); setTimeout(cinit,0); setInterval(installHint,30000);
+if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script></body></html>

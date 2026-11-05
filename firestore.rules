@@ -1,0 +1,62 @@
+rules_version = '2';
+// Ticker Tycoon security rules. Paste into Firebase console → Firestore Database → Rules → Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me(uid) { return signedIn() && request.auth.uid == uid; }
+
+    // Your private save. Only you can read or write it.
+    match /saves/{uid} { allow read, write: if me(uid); }
+
+    // Public player cards, market flow and tips: any signed-in player reads, only the owner writes.
+    match /profiles/{uid} { allow read: if signedIn(); allow write: if me(uid) && request.resource.size() < 60000; }
+    match /flow/{uid}     { allow read: if signedIn(); allow write: if me(uid); }
+    match /tips/{uid}     { allow read: if signedIn(); allow write: if me(uid); }
+
+    // Username -> player id, claimed once at sign-up.
+    match /usernames/{name} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && name.matches('^[a-z0-9_]{3,16}$');
+    }
+
+    // Friend requests and friendships. Doc id is the two player ids, sorted, joined by "_".
+    match /friendships/{pid} {
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+      allow create: if signedIn()
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.members.size() == 2
+        && request.auth.uid in request.resource.data.members
+        && request.resource.data.members[0] < request.resource.data.members[1]
+        && pid == request.resource.data.members[0] + '_' + request.resource.data.members[1];
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.members
+        && request.resource.data.members == resource.data.members
+        && request.resource.data.from == resource.data.from
+        && (
+          // the other person accepts a request
+          (resource.data.status == 'pending' && request.resource.data.status == 'accepted' && request.auth.uid != resource.data.from)
+          // either friend updates the "last message" preview
+          || (resource.data.status == 'accepted' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['last']))
+        );
+      allow delete: if signedIn() && request.auth.uid in resource.data.members;
+    }
+
+    // Private chat between two accepted friends.
+    match /chats/{pid}/msgs/{mid} {
+      function fr() { return get(/databases/$(database)/documents/friendships/$(pid)).data; }
+      allow read: if signedIn() && request.auth.uid in fr().members && fr().status == 'accepted';
+      allow create: if signedIn()
+        && request.auth.uid in fr().members && fr().status == 'accepted'
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 500;
+    }
+
+    // Weekly competition standings: one entry per player per week.
+    match /comps/{week}/entries/{uid} { allow read: if signedIn(); allow write: if me(uid); }
+  }
+}

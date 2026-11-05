@@ -1304,4 +1304,10 @@ if(!S.mt&&S.prof){ S.mt={}; TEXTS.forEach(([id,c])=>{ if(c()) S.mt[id]=1; }); }
 save(); build(); if($("modal").classList.contains("hide")) intro();
 setInterval(loop,250); setInterval(csave,60000); setTimeout(cinit,0); setInterval(installHint,30000);
 if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+// auto-update: when the app comes back to the screen (or every 5 min), check if index.html changed on the server; if so, save and reload
+let APPTAG=null;
+async function appTag(){ try{ const r=await fetch("index.html",{method:"HEAD",cache:"no-store"}); return r.headers.get("etag")||r.headers.get("last-modified"); }catch(_){ return null; } }
+async function checkUpdate(){ if(location.protocol!=="https:") return; const t=await appTag(); if(!t) return; if(APPTAG===null){ APPTAG=t; return; }
+  if(t!==APPTAG){ APPTAG=t; save(); csave(); toast("Updating to the newest version…"); setTimeout(()=>location.reload(),900); } }
+checkUpdate(); setInterval(checkUpdate,300000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
 </script></body></html>

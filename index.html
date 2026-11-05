@@ -89,7 +89,7 @@ h3{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.07
 #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 70px);transform:translateX(-50%);background:#1d2835;border:1px solid var(--line);padding:8px 13px;border-radius:11px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:10;max-width:92%;text-align:center}
 #toast.show{opacity:1} #toast.good{border-color:var(--up);background:#0d2a1e} #toast.bad{border-color:var(--dn);background:#2c1014}
 canvas.sp{width:100%;height:46px;display:block;margin:6px 0}
-#intro{position:fixed;inset:0;z-index:12;background:radial-gradient(120% 90% at 50% 0%,#1b2333,#07090c 70%);display:flex;flex-direction:column;max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 18px) 26px calc(env(safe-area-inset-bottom) + 22px)}
+#intro{position:fixed;inset:0;z-index:12;background:radial-gradient(120% 90% at 50% 0%,#1b2333,#07090c 70%);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 18px) max(26px,calc(50vw - 300px)) calc(env(safe-area-inset-bottom) + 22px)}
 #intro .skip{align-self:flex-end;color:var(--mut);font-size:13px;padding:6px}
 #intro .pg{flex:1;display:flex;flex-direction:column;justify-content:center;animation:fadeup .45s ease}
 #intro .ch{font-size:12px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}

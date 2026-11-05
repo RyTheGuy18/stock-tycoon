@@ -157,6 +157,7 @@ nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9p
 .msg small{display:block;font-size:10px;opacity:.6;margin-top:2px}
 .chi{display:flex;gap:6px;padding:8px 10px calc(env(safe-area-inset-bottom) + 8px);border-top:1px solid var(--line);background:var(--panel)}
 .chw{position:relative}
+#zlive{position:absolute;left:8px;top:8px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--gold);z-index:2}
 /* ---------- desktop / laptop layout: wide screen + mouse. Phones and tablets keep the mobile layout ---------- */
 @media (min-width:1000px) and (pointer:fine){
   #app{max-width:none;display:grid;grid-template-columns:92px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"nav header" "nav main"}
@@ -409,6 +410,18 @@ function newsSince(t0,t1){ const out=[]; for(let h=Math.floor(t0/HN);h<=Math.flo
 // ---------- professions ----------
 const GCOST=[0,40,250,1200,6000,30000,150000], GBRK=[.15,.08,.05,.035,.025,.015,.01], GSPD=[1.25,1,.9,.8,.7,.6,.5], FUSE=[0,.5,1,2,4,8,15];
 const JT=[0,0,1,2,3,4,5,6], JMIN=[15,30,45,60,90,120,180,240], JRATE=[10,10,22,50,110,240,520,1100];
+// What each job actually pays in real life (before reputation and upgrades). Durations are unchanged.
+const JPAY={
+ lawn: [15,35,60,120,450,700,1800,3500],   // small yard → corner lot → church lawn → HOA contract → landscaping → sports complex → city parks → golf course
+ dog:  [15,20,30,75,120,250,600,3000],
+ car:  [15,30,60,150,400,1000,1800,4000],
+ deliv:[8,25,60,90,150,300,900,3000],
+ photo:[20,40,150,250,500,2500,3500,6000],
+ handy:[15,35,60,130,450,900,2000,4500],
+ paint:[20,40,150,450,900,1500,3000,5000],
+ pool: [10,30,60,200,450,700,1500,3500],
+ phone:[15,50,90,150,250,800,1800,3500],
+ move: [20,60,200,500,700,1500,2500,5000]};
 const PD=[
 ["lawn","Lawn Care","🌱","Gas","gal",4,"Mom's rusty reel mower|Used push mower|Self-propelled mower|Riding mower|Zero-turn mower|Landscaping trailer rig|Commercial fleet","Trim Mrs. Jenkins' yard|Mow a corner lot|Mow the church lawn|HOA weekly contract|Landscape a backyard|Mow a sports complex|City parks contract|Golf course contract"],
 ["dog","Dog Walking","🐕","Treats","bags",3,"Mom's frayed leash|Sturdy leash|Double leash + pouch|Pack-walk gear|Used minivan|Boarding kennel space|Doggy daycare building","Walk a chihuahua|Walk a hyper lab|Two-dog walk|Overnight pet sit|Pack walk for 6|Weekend boarding|Daycare day|Luxury pet resort contract"],
@@ -421,7 +434,7 @@ const PD=[
 ["phone","Phone Repair","📱","Parts","sets",10,"Mom's eyeglass screwdriver|Cheap repair kit|Pro repair station|Microsoldering rig|Mall kiosk|Repair storefront|Repair franchise","Clean a charging port|Swap a battery|Replace a cracked screen|Water-damage repair|Board-level repair|School tablet batch|Business fleet contract|Carrier warranty contract"],
 ["move","Moving Help","📦","Truck gas","gal",4,"Mom's wobbly hand truck|Heavy-duty dolly|Used pickup|Box truck|Moving crew gear|Two-truck crew|Moving company","Carry a couch upstairs|Move a dorm room|Apartment move|Full house move|Piano move|Long-distance move|Office relocation|Corporate HQ relocation"]];
 const PROFS=PD.map((a,pi)=>({id:a[0],n:a[1],i:a[2],sup:a[3],unit:a[4],price:a[5],gear:a[6].split("|"),
-  jobs:a[7].split("|").map((nm,k)=>({n:nm,t:JT[k],min:JMIN[k],pay:Math.round(JRATE[k]*JMIN[k]/60*(.9+((pi*7)%5)*.06)*100)/100}))}));
+  jobs:a[7].split("|").map((nm,k)=>({n:nm,t:JT[k],min:JMIN[k],pay:JPAY[a[0]][k]}))}));
 const PB={}; PROFS.forEach(p=>PB[p.id]=p);
 const UPS=[{id:"phone",n:"Business phone line",c:150,d:"+10% job pay",pay:1.1},{id:"fly",n:"Flyers around town",c:30,d:"+15% job pay",pay:1.15},
  {id:"list",n:"Online listing",c:400,d:"+20% job pay",pay:1.2},{id:"maint",n:"Gear maintenance kit",c:600,d:"Gear breaks 40% less often",brk:.6},
@@ -517,7 +530,7 @@ const sp=sym=>pxi(BYSYM[sym].i,NOW);
 // Big orders fill a little worse than the chart (market impact). Tiny orders: basically nothing.
 const slip=(sym,usd)=>{ const d=BYSYM[sym]; return .4*d.vol*Math.sqrt(60)*Math.tanh(Math.max(0,usd)/LIQ(d)); };
 const fillBuy=(sym,q)=>{ const a=ask(sym); return a*Math.exp(slip(sym,q*a)); }, fillSell=(sym,q)=>{ const b=bid(sym); return b*Math.exp(-slip(sym,q*b)); };
-function maxQty(sym){ let q=Math.floor(Math.max(0,S.cash)/ask(sym)); while(q>1&&q*fillBuy(sym,q)>S.cash) q=Math.floor(q*.995); return q; }
+function maxQty(sym){ let q=Math.floor(Math.max(0,S.cash)/ask(sym)/(1+SALES_TAX)); while(q>1&&q*fillBuy(sym,q)*(1+SALES_TAX)>S.cash) q=Math.floor(q*.995); return q; }
 const bid=sym=>sp(sym)*(1-BYSYM[sym].spr*sprMult()/2), ask=sym=>sp(sym)*(1+BYSYM[sym].spr*sprMult()/2);
 const P=sym=>S.pos[sym]||(S.pos[sym]={l:0,lc:0,s:0,se:0});
 function posVal(){ let v=0; if(S.vb) for(const id in S.vb) v+=vbVal(S.vb[id]); for(const k in S.pos){ const p=S.pos[k]; if(p.l) v+=p.l*bid(k); if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-ask(k))); } return v; }
@@ -538,16 +551,16 @@ function life(t){ S.life.unshift({t,at:NOW}); if(S.life.length>40) S.life.length
 // ---------- trading: whole shares, P/L = shares × (exit − entry) ----------
 function mark(sym,k,p,pl){ const a=S.mk[sym]||(S.mk[sym]=[]); a.push({t:NOW,k,p,pl}); if(a.length>30) a.shift(); }
 function rec(sym,side,q,en,ex,pl){ S.hist.unshift({sym,side,q,en,ex,pl,pct:(side==="L"?ex/en-1:1-ex/en)*100,t:NOW}); if(S.hist.length>50) S.hist.length=50;
-  const s=S.st; s.trades++; s.realized+=pl; if(pl>0) s.wins++; s.best=Math.max(s.best,pl); s.worst=Math.min(s.worst,pl); }
+  txGain(pl); const s=S.st; s.trades++; s.realized+=pl; if(pl>0) s.wins++; s.best=Math.max(s.best,pl); s.worst=Math.min(s.worst,pl); }
 function trade(act,q){
   const sym=S.sel, p=P(sym); q=Math.floor(q);
   if((act==="buy"||act==="short")&&(p.l||p.s)) return toast("You already have a trade open in "+sym+". Close it first.");
   if(act==="buy"||act==="short") p.bot=null;
-  if(act==="buy"){ const a=fillBuy(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*a>S.cash+1e-9) return toast("Not enough cash for "+q+" share"+(q>1?"s":""));
-    p.lc=(p.lc*p.l+q*a)/(p.l+q); p.l+=q; S.cash-=q*a; flowPush(sym,1,q*a); autoStops(sym); mark(sym,"B",sp(sym)); toast(`Bought ${q} ${sym} at ${px(a)} (${money(q*a)})`); }
+  if(act==="buy"){ const a=fillBuy(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*a*(1+SALES_TAX)>S.cash+1e-9) return toast("Not enough cash for "+q+" share"+(q>1?"s":"")+" plus sales tax");
+    p.lc=(p.lc*p.l+q*a)/(p.l+q); p.l+=q; S.cash-=q*a; const tx=salesTax(q*a); flowPush(sym,1,q*a); autoStops(sym); mark(sym,"B",sp(sym)); toast(`Bought ${q} ${sym} at ${px(a)} (${money(q*a)} + ${money(tx)} sales tax)`); }
   if(act==="sell") sellLong(sym,Math.min(q,p.l));
-  if(act==="short"){ const b=fillSell(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*b>S.cash+1e-9) return toast("Not enough cash to back "+q+" share"+(q>1?"s":""));
-    p.se=(p.se*p.s+q*b)/(p.s+q); p.s+=q; S.cash-=q*b; flowPush(sym,-1,q*b); autoStops(sym); mark(sym,"X",sp(sym)); toast(`Shorted ${q} ${sym} at ${px(b)} (${money(q*b)} held as collateral)`); }
+  if(act==="short"){ const b=fillSell(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*b*(1+SALES_TAX)>S.cash+1e-9) return toast("Not enough cash to back "+q+" share"+(q>1?"s":"")+" plus sales tax");
+    p.se=(p.se*p.s+q*b)/(p.s+q); p.s+=q; S.cash-=q*b; const tx=salesTax(q*b); flowPush(sym,-1,q*b); autoStops(sym); mark(sym,"X",sp(sym)); toast(`Shorted ${q} ${sym} at ${px(b)} (${money(q*b)} held as collateral, ${money(tx)} sales tax)`); }
   if(act==="cover"){ cover(sym,Math.min(q,p.s)); }
   if((act==="buy"||act==="short")&&(p.l||p.s)){ preStops(sym); sfx('open'); tipTag(sym,act==="buy"?1:-1); }
   resetPeak(); chips(); build(true);
@@ -556,8 +569,8 @@ function trade(act,q){
 const ICS=d=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const IC={sl:ICS('<path d="M8.5 3h7L21 8.5v7L15.5 21h-7L3 15.5v-7z"/><path d="M8 12h8"/>'),tp:ICS('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>')};
 function ordBtns(side){ const o=ORD(S.sel), k1=side+"sl", k2=side+"tp"; return `<div class="t" style="margin-top:4px">Tap the chart to set a stop or target. Drag the line to move it.</div><div class="g2" style="margin:6px 0 4px"><button class="btn ghost sm" data-ord="${k1}">${IC.sl}${o[k1]?"Stop "+px(o[k1]):"Set stop loss"}</button><button class="btn ghost sm" data-ord="${k2}">${IC.tp}${o[k2]?"Target "+px(o[k2]):"Set take profit"}</button></div>`; }
-function sellLong(sym,q,why){ const p=P(sym); if(q<1) return; const b=fillSell(sym,q), pl=q*(b-p.lc), en=p.lc; S.cash+=q*b; flowPush(sym,-1,q*b); p.l-=q; if(!p.l) p.lc=0;
-  rec(sym,"L",q,en,b,pl); mark(sym,"S",sp(sym),pl); winFx(pl); tipCredit(sym,pl); toast(`${why||"Sold"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`); chips(); }
+function sellLong(sym,q,why){ const p=P(sym); if(q<1) return; const b=fillSell(sym,q), pl=q*(b-p.lc), en=p.lc; S.cash+=q*b; const tx=salesTax(q*b); flowPush(sym,-1,q*b); p.l-=q; if(!p.l) p.lc=0;
+  rec(sym,"L",q,en,b,pl); mark(sym,"S",sp(sym),pl); winFx(pl); tipCredit(sym,pl); toast(`${why||"Sold"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`); chips(); }
 // ---------- automations (lost if you go broke) ----------
 const AUTOS=[
  {id:"asl",cat:"Trading",n:"Default stop loss",c:50,d:"Every new trade automatically gets a stop loss this far from your entry.",set:[1,20,1,5,"% from entry"]},
@@ -579,8 +592,8 @@ const aV=id=>A(id).v;
 function autoStops(sym){ const p=P(sym), o=ORD(sym);
   if(p.l){ if(aOn("asl")) o.lsl=p.lc*(1-aV("asl")/100); if(aOn("atp")) o.ltp=p.lc*(1+aV("atp")/100); }
   if(p.s){ if(aOn("asl")) o.ssl=p.se*(1+aV("asl")/100); if(aOn("atp")) o.stp=p.se*(1-aV("atp")/100); } }
-function botOpen(sym,dir,tag){ const p=P(sym); if(p.l||p.s||inDebt()) return; let q=Math.floor(Math.max(0,S.cash)*aV(tag)/100/sp(sym)/(1+slip(sym,S.cash*aV(tag)/100))); if(q<1) return; const pr=dir>0?fillBuy(sym,q):fillSell(sym,q);
-  if(dir>0){ p.lc=pr; p.l=q; mark(sym,"B",pr); } else { p.se=pr; p.s=q; mark(sym,"X",pr); } S.cash-=q*pr; flowPush(sym,dir,q*pr); p.bot=tag; autoStops(sym); resetPeak(); life(`🤖 ${tag==="rit"?"Routine":"Open"} bot ${dir>0?"bought":"shorted"} ${q} ${sym} at ${px(pr)}`); }
+function botOpen(sym,dir,tag){ const p=P(sym); if(p.l||p.s||inDebt()) return; let q=Math.floor(Math.max(0,S.cash)*aV(tag)/100/sp(sym)/(1+slip(sym,S.cash*aV(tag)/100))/(1+SALES_TAX)); if(q<1) return; const pr=dir>0?fillBuy(sym,q):fillSell(sym,q);
+  if(dir>0){ p.lc=pr; p.l=q; mark(sym,"B",pr); } else { p.se=pr; p.s=q; mark(sym,"X",pr); } S.cash-=q*pr; salesTax(q*pr); flowPush(sym,dir,q*pr); p.bot=tag; autoStops(sym); resetPeak(); life(`🤖 ${tag==="rit"?"Routine":"Open"} bot ${dir>0?"bought":"shorted"} ${q} ${sym} at ${px(pr)}`); }
 function botClose(sym,tag){ const p=P(sym); if(p.bot!==tag||(!p.l&&!p.s)) return; const n=S.hist.length; p.l?sellLong(sym,p.l,"🤖 Bot sold"):cover(sym,p.s,"🤖 Bot covered"); p.bot=null;
   const pl=S.hist[0]&&S.hist.length>=n?S.hist[0].pl:0; if(pl>0){ const fee=pl*.1; S.cash-=fee; } }
 // PNNY starter bots: open trades only while you're away; they use your real cash (the slider sets how much),
@@ -588,7 +601,7 @@ function botClose(sym,tag){ const p=P(sym); if(p.bot!==tag||(!p.l&&!p.s)) return
 const vbVal=v=>{ const pr=price(0,NOW); return v.dir>0?v.q*pr:Math.max(0,v.q*v.en+v.q*(v.en-pr)); };
 function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; const pr=price(0,NOW), h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
   const open=(id,dir)=>{ if(!SIM||!aOn(id)||S.vb[id]||inDebt()) return; const q=Math.floor(Math.min(Math.max(0,S.cash)*aV(id)/100,25)/pr); if(q<1) return; S.cash-=q*pr; S.vb[id]={dir,q,en:pr}; resetPeak(); };
-  const close=id=>{ const v=S.vb[id]; if(!v) return; delete S.vb[id]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; S.st.botPay=(S.st.botPay||0)+pl; resetPeak(); };
+  const close=id=>{ const v=S.vb[id]; if(!v) return; delete S.vb[id]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; resetPeak(); };
   for(const id in S.vb){ const v=S.vb[id]; if(vbVal(v)<=v.q*v.en*.8) close(id); }   // never more than 20% wrong
   d.rit.forEach(R=>{ const t0=R.h*3600+R.m; if(sod===t0) open("pscalp",R.dir); else if(sod===t0+R.L){ close("pscalp"); open("pscalp",-R.dir); } else if(sod===t0+2*R.L) close("pscalp"); });
   if(h%3===0){ if(k===120) open("pflush",1); else if(k===300) close("pflush"); }
@@ -627,15 +640,15 @@ function setOrder(arg){ const [key,v]=arg.split(":"), o=ORD(S.sel), now=sp(S.sel
   if(up?val<=now:val>=now) return toast(`That price needs to be ${up?"above":"below"} ${px(now)}`);
   o[key]=val; closeModal(); toast(`${stop?"Stop loss":"Take profit"} set at ${px(val)}`); build(true); }
 function cover(sym,q,why){ const p=P(sym); if(q<1) return; const a=fillBuy(sym,q), col=q*p.se, pl=Math.max(q*(p.se-a),-col), en=p.se; flowPush(sym,1,q*a);
-  S.cash+=col+pl; p.s-=q; if(!p.s) p.se=0; rec(sym,"S",q,en,a,pl); mark(sym,"C",sp(sym),pl); winFx(pl); tipCredit(sym,pl);
-  toast(`${why||"Covered"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`);  chips(); }
+  S.cash+=col+pl; const tx=salesTax(q*a); p.s-=q; if(!p.s) p.se=0; rec(sym,"S",q,en,a,pl); mark(sym,"C",sp(sym),pl); winFx(pl); tipCredit(sym,pl);
+  toast(`${why||"Covered"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`);  chips(); }
 
 // ---------- mom's practice trades ----------
 const PQ=2; // Mom's practice rounds count as 2 shares
 function paper(dir){ const sym=S.sel; S.paper={sym,dir,en:dir==="L"?ask(sym):bid(sym),t:NOW}; sfx('open'); toast(`📝 Practice ${dir==="L"?"buy":"short"}: ${PQ} ${sym} at ${px(S.paper.en)}`); build(true); }
 function paperClose(){ const c=S.paper; if(NOW-c.t<15) return toast("Hold it at least 15 seconds");
   const ex=c.dir==="L"?bid(c.sym):ask(c.sym), pl=(c.dir==="L"?ex-c.en:c.en-ex)*PQ; S.paper=null; S.st.paper++;
-  if(pl>0){ const pay=Math.round(pl*5*100)/100; S.streak++; S.cash+=pay; S.st.paperWon++; S.st.paperPay+=pay; sfx('win'); toast(`✅ Practice profit ${sg(pl)}. Mom pays you ${money(pay)}!`,"good"); life(`📝 Practice trade won · Mom paid ${money(pay)}`); }
+  if(pl>0){ const pay=Math.round(pl*5*100)/100; S.streak++; S.cash+=pay; txInc(pay); S.st.paperWon++; S.st.paperPay+=pay; sfx('win'); toast(`✅ Practice profit ${sg(pl)}. Mom pays you ${money(pay)}!`,"good"); life(`📝 Practice trade won · Mom paid ${money(pay)}`); }
   else { S.streak=0; sfx('loss'); toast(`❌ Practice loss ${sg(pl)}. "Try again, sweetie."`,"bad"); }
   build(true); }
 
@@ -649,7 +662,7 @@ function startJob(k,auto){ const p=prof(), j=p.jobs[k], s=pst(), t=tier(p.id); i
   if(!auto){ closeModal(); toast(`${p.i} Started: ${j.n}`); lunchMoney(); build(); } return true; }
 function bestJob(){ const p=prof(), t=tier(p.id); let b=-1; p.jobs.forEach((j,k)=>{ if(j.t<=t) b=k; }); return b; }
 function finishJob(){ const jb=S.job, p=PB[jb.p], j=p.jobs[jb.k], s=pst(jb.p); S.job=null;
-  S.cash+=jb.pay; S.st.jobs++; S.st.jobPay+=jb.pay; s.rep++;
+  S.cash+=jb.pay; txInc(jb.pay); S.st.jobs++; S.st.jobPay+=jb.pay; s.rep++;
   if(aOn("inv")){ const a=jb.pay*aV("inv")/100; S.cash-=a; S.fu+=a/price(II,NOW); S.fbasis+=a; resetPeak(); }
   let msg=`${p.i} ${j.n}: +${money(jb.pay)}`;
   if(Math.random()<GBRK[jb.t]*eff("brk",jb.p)){ if(s.up.insure){ msg+=" · gear broke, insurance fixed it"; } else { const fc=Math.max(3,GCOST[jb.t]*.25); S.st.breaks++; if(aOn("fix")&&S.cash>=fc){ S.cash-=fc; resetPeak(); msg+=` · gear broke, auto-repaired (-${money(fc)})`; } else { s.br[jb.t]=true; if(jb.t===0) s.momFix=NOW+3600; msg+=` · your ${p.gear[jb.t]} broke!`; } } }
@@ -662,6 +675,40 @@ function bill(t,a){ a=Math.round(a*100)/100; if(a<=0) return; S.cash-=a; S.st.bi
 function bills(){ const e=earned();
   if(e>=100&&!S.ms.condo){ if(!S.rentAt) S.rentAt=NOW+86400; else if(NOW>=S.rentAt){ S.rentAt+=86400; S.ms.apt?bill("🏢 Apartment rent",30):bill("🏠 Mom's rent",5); } }
   if(e>=30&&!S.ms.house&&Math.random()<1/21600){ const b=pick(BILLS); bill(b[0],((b[1]+Math.random()*(b[2]-b[1]))*Math.min(1,Math.max(.1,e/1500))+Math.max(0,S.cash)*b[3])*eff("bill")); } }
+// ---------- taxes ----------
+// In this game a "year" is one real week. Tax day is every Monday at midnight (your time).
+// Sales tax: a small cut on every stock you buy or sell. Tax day bills: income tax (real US brackets on
+// this week's job pay + trading profits), property tax on homes you own, and a war tax in war years.
+const SALES_TAX=.005;
+const BRACKETS=[[11925,.10],[48475,.12],[103350,.22],[197300,.24],[250525,.32],[626350,.35],[Infinity,.37]]; // 2025 single filer
+const HOMES=[["apt",4000,"Apartment"],["condo",100000,"Condo"],["cabin",1.2e6,"Lake cabin"],["house",3e6,"Dream house"],["island",1e8,"Private island"]];
+const taxWk=t=>Math.floor((t-new Date(t*1000).getTimezoneOffset()*60-345600)/604800);   // weeks since Mon Jan 5 1970, local time
+const taxDayAt=w=>{ const g=w*604800+345600+604800; return g+new Date(g*1000).getTimezoneOffset()*60; }        // next Monday 00:00 local
+const warYear=w=>RNG("war"+w)()<.25;                                                                         // about 1 week in 4
+function TX(){ const w=taxWk(NOW); if(!S.tx||S.tx.w==null) S.tx={w,inc:0,gain:0,sales:0}; return S.tx; }
+const txInc=a=>{ TX().inc+=a; }, txGain=a=>{ TX().gain+=a; };
+function salesTax(amt){ const t=Math.round(amt*SALES_TAX*100)/100; if(t<=0) return 0; S.cash-=t; TX().sales+=t; S.st.taxes=(S.st.taxes||0)+t; return t; }
+function incomeTax(x){ let t=0, lo=0; for(const [hi,r] of BRACKETS){ if(x<=lo) break; t+=(Math.min(x,hi)-lo)*r; lo=hi; } return t; }
+function taxBill(tx,war){ const base=Math.max(0,tx.inc+Math.max(0,tx.gain)), acct=S.ms.acct?.85:1, it=incomeTax(base)*acct;
+  const homes=HOMES.filter(h=>S.ms[h[0]]), pt=homes.reduce((a,h)=>a+h[1]*.01,0)*acct;
+  const wt=war?Math.max(0,netWorth()-1000)*.02*acct:0;
+  return {base,it,pt,wt,homes,war,acct:acct<1,total:Math.round((it+pt+wt)*100)/100}; }
+function taxDay(){ const tx=TX(), w=taxWk(NOW); if(w===tx.w) return;
+  const b=taxBill(tx,warYear(tx.w)); S.tx={w,inc:0,gain:0,sales:0};
+  if(warYear(w)&&!SIM){ toast("⚔️ War year: a 2% war tax on your net worth comes due next tax day","bad"); }
+  if(b.total<=0) return;
+  bill("🧾 Taxes",b.total); S.st.taxes=(S.st.taxes||0)+b.total;
+  const row=(l,v)=>`<div class="li"><span>${l}</span><b class="m dn">-${money(v)}</b></div>`;
+  S.taxPend=`<p>It's tax day. Here's the bill for the week ("year") that just ended.</p>`+
+    (b.it>0?row(`Income tax on ${money(b.base)} earned`,b.it):"")+
+    (b.pt>0?row(`Property tax: ${b.homes.map(h=>h[2]).join(", ")}`,b.pt):"")+
+    (b.wt>0?row("⚔️ War tax (2% of net worth over $1K)",b.wt):"")+
+    `<div class="li"><b>Total</b><b class="m dn">-${money(b.total)}</b></div>`+
+    (b.acct?`<p class="t">Your accountant saved you 15%.</p>`:"")+(inDebt()?`<p class="dn">You can't cover it all. Pay off the debt within 24 hours or you go broke.</p>`:""); }
+function taxCard(){ const el=$("taxc"); if(!el) return; const tx=TX(), w=tx.w, b=taxBill(tx,warYear(w)), left=taxDayAt(w)-NOW;
+  el.innerHTML=`<div class="row"><div class="g"><div class="b">🧾 Tax day in ${dur(left)}${warYear(w)?' <span class="pill bad">⚔️ War year</span>':''}</div>
+   <div class="t">Earned this year: ${money(b.base)} · sales tax paid: ${money(tx.sales)}</div></div><b class="m dn">≈ -${money(b.total)}</b></div>
+   <div class="t" style="margin-top:4px">Income tax ${money(b.it)}${b.pt?` · property ${money(b.pt)}`:""}${b.wt?` · war ${money(b.wt)}`:""} · ${(SALES_TAX*100).toFixed(1)}% sales tax on every stock buy and sell</div>`; }
 function broke(why){
   for(const k in S.pos) S.pos[k]={l:0,lc:0,s:0,se:0};
   S.cash=0; S.job=null; S.debtDue=0; S.liqPeak=0; S.st.broke++;
@@ -685,7 +732,7 @@ function tick(){
   S.st.played++;
   if(S.job&&NOW>=S.job.end) finishJob();
   for(const id in S.profs){ const s=S.profs[id]; if(s.momFix&&NOW>=s.momFix){ s.momFix=0; s.br[0]=false; } }
-  runAutos(); checkOrders(); bills(); solvency();
+  runAutos(); checkOrders(); bills(); taxDay(); solvency();
   const nw=netWorth();
   if(nw>S.bestNW){ const b=new Set(STOCKS.filter(unlocked).map(d=>d.s)); S.bestNW=nw; const nu=STOCKS.filter(d=>unlocked(d)&&!b.has(d.s)); if(nu.length){ const d=nu[nu.length-1]; life("🔓 Unlocked "+d.s); toast("🔓 You can now trade "+d.n,"good"); sfx('unlock'); } }
   if(!S.momDone&&S.bestNW>=15){ S.momDone=true; S.paper=null; if(!SIM) modal("Mom has something to say",`<div class="mom">"You've got real money now. No more practice rounds from me. You're on your own, kiddo."</div>`,[["Thanks, Mom","gold"]]); life("👩 Mom ended the practice rounds"); }
@@ -703,7 +750,7 @@ function buildTrade(){
   main.innerHTML=`<div class="mk"><div class="mk-l"><div id="chips"></div>
   <div class="q"><div><span class="t" id="qn"></span><div class="row"><span id="qp" class="m"></span><span id="qc" class="m" style="font-size:12.5px"></span></div></div>
   </div><div class="tf">${TFS.map(([s,l])=>`<button data-tf="${s}">${l}</button>`).join("")}</div>
-  <div class="chw"><canvas id="chart"></canvas></div><div id="news"></div></div>
+  <div class="chw"><canvas id="chart"></canvas><button id="zlive" style="display:none">↻ Live</button></div><div id="news"></div></div>
   <div class="mk-r"><div class="pad"><div id="pos" class="card"></div>
   <div class="qty"><button data-q="-1">−</button><div class="mid"><b id="qv"></b><span id="qcst"></span></div><button data-q="1">+</button><button data-q="max">MAX</button></div>
   <div class="g2" id="pre" style="margin-bottom:6px"></div>
@@ -711,9 +758,10 @@ function buildTrade(){
   <div id="tipw"></div>
   <h3>Market news</h3><div id="newsc" class="card"></div>
   <h3>Hustle</h3><div id="job" class="card"></div>
+  <h3>Taxes</h3><div id="taxc" class="card"></div>
   <div id="momw"><h3>Mom's practice round</h3><div id="momc" class="card"></div></div>
   <h3>Index fund · TTI</h3><div id="fundc" class="card"></div></div></div></div>`;
-  chips(); upd(); fundCard(); newsCard(); }
+  chips(); upd(); fundCard(); newsCard(); taxCard(); }
 function chips(){ const c=$("chips"); if(!c) return; const sl=c.scrollLeft;
   c.innerHTML=STOCKS.filter(d=>!d.gone).sort((a,b)=>a.un-b.un).map(d=>{ if(!unlocked(d)) return `<button class="chip lock" data-lk="${d.un}"><b>${d.s}</b><small>🔒${money(d.un)}</small></button>`;
     const p=S.pos[d.s], dot=p&&p.l?'<span class="dot" style="background:#16c784"></span>':p&&p.s?'<span class="dot" style="background:#ea3943"></span>':"";
@@ -730,12 +778,12 @@ function upd(){
   if(p.l){ const b=bid(sym), pl=p.l*(b-p.lc); h+=`<div class="row"><div class="g t">🟢 <b style="color:var(--text)">${p.l} sh</b> bought at ${px(p.lc)} · worth ${money(p.l*sp(sym))}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((b/p.lc-1)*100).toFixed(2)}%)</b></div>`+ordBtns("l"); }
   if(p.s){ const a=ask(sym), pl=Math.max(p.s*(p.se-a),-p.s*p.se); h+=`<div class="row"><div class="g t">🟣 <b style="color:var(--text)">${p.s} sh</b> shorted at ${px(p.se)} · margin call ${px(2*p.se)}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((1-a/p.se)*100).toFixed(2)}%)</b></div>`+ordBtns("s"); }
   $("pos").innerHTML=h||`<div class="t">No position in ${sym}. Small orders fill at the chart price; big ones move it a little.</div>`;
-  const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+(sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
+  const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+" + "+money(S.qty*a*SALES_TAX)+" tax"+(sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
   const q=s=>main.querySelector(s);
-  const open=p.l>0||p.s>0; q("[data-a=buy]").disabled=open||inDebt()||S.qty*fillBuy(sym,S.qty)>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||S.qty*fillSell(sym,S.qty)>S.cash+1e-9;
+  const open=p.l>0||p.s>0; q("[data-a=buy]").disabled=open||inDebt()||S.qty*fillBuy(sym,S.qty)*(1+SALES_TAX)>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||S.qty*fillSell(sym,S.qty)*(1+SALES_TAX)>S.cash+1e-9;
   const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; cb.className="btn "+(open?(cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?`CLOSE<small>${sg(cpl)}</small>`:"CLOSE";
   preCard(open); jobCard(); momCard(); tipCard(); compCard(); draw();
-  if(NOW%5===0){ fundCard(); if(NOW%30===0) newsCard(); } }
+  if(NOW%5===0){ fundCard(); taxCard(); if(NOW%30===0) newsCard(); } }
 // ---- stop loss / take profit chosen before you trade: tap to cycle, applied the moment a trade opens
 const PRE_SL=[0,2,5,10,20], PRE_TP=[0,2,5,10,20,50];
 function preCard(open){ const el=$("pre"); if(!el) return; const pr=S.pre=S.pre||{sl:0,tp:0}, k=(open?1:0)+"|"+pr.sl+"|"+pr.tp; if(el.dataset.k===k) return; el.dataset.k=k;
@@ -779,8 +827,8 @@ function draw(){
   const cv=$("chart"); if(!cv) return; const dpr=devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight; if(!W) return;
   if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
   const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,H);
-  const sym=S.sel, d=BYSYM[sym], p=P(sym), tf=S.tf, aw=56, pw=W-aw, vh=H*.15, top=12, bot=H-vh-12, cw=7, n=Math.floor(pw/cw);
-  BUDGET=performance.now()+35; const data=candles(d.i,tf,n,NOW), first=data[0][5], loading=data.some(k=>k[0]===null); BUDGET=Infinity;
+  const sym=S.sel, d=BYSYM[sym], p=P(sym), tf=S.tf, aw=56, pw=W-aw, vh=H*.15, top=12, bot=H-vh-12, cw=ZC, n=Math.max(5,Math.floor(pw/cw)), endT=ZOFF?NOW-ZOFF*tf:NOW;
+  BUDGET=performance.now()+35; const data=candles(d.i,tf,n,endT), first=data[0][5], loading=data.some(k=>k[0]===null); BUDGET=Infinity;
   let lo=Infinity,hi=-Infinity,vm=0; data.forEach(k=>{ if(k[0]===null) return; lo=Math.min(lo,k[2]);hi=Math.max(hi,k[1]);vm=Math.max(vm,k[4]);});
   // lines sit at the chart price where you break even (fill price adjusted for the spread),
   // so "live price above the green line" = profit, exactly matching the P/L tag
@@ -788,7 +836,7 @@ function draw(){
   if(p.l) ln.push([beL,"#16c784","YOUR BUY "+px(beL)]); if(p.s) ln.push([beS,"#a855f7","YOUR SHORT "+px(beS)]);
   { const o=ORD(sym); if(p.l&&o.lsl) ln.push([o.lsl,"#ff5a66","STOP "+px(o.lsl),"lsl"]); if(p.l&&o.ltp) ln.push([o.ltp,"#22d3ee","TARGET "+px(o.ltp),"ltp"]); if(p.s&&o.ssl) ln.push([o.ssl,"#ff5a66","STOP "+px(o.ssl),"ssl"]); if(p.s&&o.stp) ln.push([o.stp,"#22d3ee","TARGET "+px(o.stp),"stp"]); }
   if(S.paper&&S.paper.sym===sym){ const e=S.paper.dir==="L"?S.paper.en/(1-hs):S.paper.en/(1+hs); ln.push([e,"#f5b301","PRACTICE "+px(e)]); }
-  ln.forEach(l=>{lo=Math.min(lo,l[0]);hi=Math.max(hi,l[0]);}); const pd=(hi-lo)*.1||hi*.002; lo=Math.max(0,lo-pd); hi+=pd;
+  if(!ZOFF) ln.forEach(l=>{lo=Math.min(lo,l[0]);hi=Math.max(hi,l[0]);}); const pd=(hi-lo)*.1||hi*.002; lo=Math.max(0,lo-pd); hi+=pd;
   if(DRAG){ lo=DRAG.lo; hi=DRAG.hi; }
   const Y=v=>top+(hi-v)/(hi-lo)*(bot-top), X=i=>i*cw+cw/2, now=sp(sym);
   MAP={lo,hi,top,bot,pw}; ORDL=ln.filter(l=>l[3]).map(l=>({k:l[3],y:Y(l[0])})); cv.style.touchAction=(p.l||p.s)?"none":"pan-y";
@@ -796,7 +844,12 @@ function draw(){
   for(let g=0;g<=4;g++){ const v=lo+(hi-lo)*g/4,y=Y(v); c.fillStyle=TH().grid; c.fillRect(0,y,pw,1); c.fillStyle=TH().lab; c.fillText(px(v).slice(1),pw+5,y); }
   if(p.l){ const y1=Y(beL),y2=Y(now); c.fillStyle=now>=beL?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
   if(p.s){ const y1=Y(beS),y2=Y(now); c.fillStyle=now<=beS?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
-  drawCandles(c,data,X,Y,H,vh,vm);
+  ZCW=cw; drawCandles(c,data,X,Y,H,vh,vm);
+  // friends' trades: a marker sitting on the volume bars at the moment they traded
+  (S.frt||[]).forEach(f=>{ if(f[1]!==d.i) return; const i=Math.floor((f[0]-first)/tf); if(i<0||i>=data.length) return; const x=X(i), yb=H-vh-4, up=f[2]>0, col=up?"#16c784":"#ea3943";
+    c.fillStyle=col; c.beginPath(); if(up){ c.moveTo(x,yb-9); c.lineTo(x-5,yb); c.lineTo(x+5,yb); } else { c.moveTo(x,yb); c.lineTo(x-5,yb-9); c.lineTo(x+5,yb-9); } c.fill();
+    c.fillStyle="rgba(5,8,11,.9)"; c.font="bold 9px Inter,sans-serif"; const nm=f[3].split(" ")[0].slice(0,8), tw=c.measureText(nm).width+6; const xx=Math.min(Math.max(1,x-tw/2),pw-tw);
+    c.fillRect(xx,yb-22,tw,12); c.fillStyle=col; c.textAlign="left"; c.fillText(nm,xx+3,yb-16); c.fillStyle=col+"55"; c.fillRect(x-.5,yb,1,vh); });
   c.setLineDash([5,4]); ln.forEach(l=>{ c.strokeStyle=l[1]; c.beginPath(); c.moveTo(0,Y(l[0])); c.lineTo(pw,Y(l[0])); c.stroke(); }); c.setLineDash([]);
   ln.forEach(l=>{ const y=Y(l[0]); c.font="bold 10px JetBrains Mono"; const w=c.measureText(l[2]).width+8; c.fillStyle=l[1]; c.fillRect(3,y-8,w,16); c.fillStyle="#05080b"; c.fillText(l[2],7,y); });
   (S.mk[sym]||[]).forEach(m=>{ const i=Math.floor((m.t-first)/tf); if(i<0||i>=data.length) return; const x=X(i), y=Y(m.p), dn=m.k==="B"||m.k==="C";
@@ -806,6 +859,8 @@ function draw(){
     c.fillStyle="rgba(5,8,11,.85)"; c.fillRect(xx,ty-7,tw,14); c.fillStyle=col; c.fillText(tx,xx+3,ty); });
   if(loading){ c.fillStyle=TH().lab; c.font="11px JetBrains Mono"; c.fillText("Loading older candles…",6,top+6); if(!DRAW_T) DRAW_T=setTimeout(()=>{ DRAW_T=0; if(tab==="trade") draw(); },60); }
   c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; c.fillText(spanLbl(tf,data.length),6,bot+4);
+  { const zl=$("zlive"); if(zl) zl.style.display=(ZOFF||Math.abs(ZC-7)>.01)?"":"none"; }
+  if(ZOFF){ c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; return; }
   const y=Y(now), lk=data[data.length-1], col=lk[3]>=lk[0]?CPAL().up:CPAL().dn; c.fillStyle=col; c.fillRect(0,y,pw,1); c.fillRect(pw+1,y-9,aw-2,18);
   c.fillStyle="#04110b"; c.font="bold 10px JetBrains Mono"; c.fillText(px(now).slice(1),pw+4,y);
   // live "if you closed now" P/L tag, sitting on the price line next to the price
@@ -924,9 +979,9 @@ function jobPicker(){ const p=prof(), t=tier(), s=pst(), m=payMult(p.id);
 // ---------- input ----------
 $("nav").onclick=e=>{ const b=e.target.closest("button"); if(b) setTab(b.dataset.tab); };
 main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||el.disabled) return; const d=el.dataset, sym=S.sel;
-  if(d.sym){ S.sel=d.sym; chips(); upd(); fundCard(); return; }
+  if(d.sym){ S.sel=d.sym; ZOFF=0; chips(); upd(); fundCard(); return; }
   if(d.lk) return toast("Unlocks when your net worth reaches "+money(+d.lk));
-  if(d.tf){ S.tf=+d.tf; upd(); return; }
+  if(d.tf){ S.tf=+d.tf; ZOFF=0; upd(); return; }
   if(d.q){ const p=P(sym); S.qty=d.q==="max"?Math.max(1,maxQty(sym),p.l,p.s):Math.max(1,S.qty+(+d.q)); upd(); return; }
   if(d.a==="close"){ const p=P(sym); if(p.l) sellLong(sym,p.l); else if(p.s) cover(sym,p.s); resetPeak(); return build(true); }
   if(d.a) return trade(d.a,S.qty);
@@ -980,7 +1035,7 @@ async function csave(){ if(!cref||cbusy) return; save(); const j=JSON.stringify(
   try{ await cref.set({save:j,savedAt:S.savedAt,dev:DEV}); clast=j; SYNC=S.savedAt; }catch(e){ if(["invalid_argument","revoked","quota_exceeded","not_granted"].includes(e&&e.code)) cref=null; } cbusy=false; }
 let lastSave=0;
 function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catchUp(); build(); return; }
-  advance(t); build(true); if(t%5===0){ momTexts(); cosCheck(); } compPub(); if(t%600===0) compSettle();
+  advance(t); build(true); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); } compPub(); if(t%600===0) compSettle();
   if(t-lastSave>5){ save(); lastSave=t; }
   const nw=newsSince(S.lastNews,t); S.lastNews=t;
   nw.forEach(x=>{ const p=S.pos[x.s]; if(x.s==="*"||x.s===S.sel||(p&&(p.l||p.s))){ toast(x.t); sfx(x.big?'unlock':'ping'); if(x.big&&tab==="trade") newsCard(); } }); }
@@ -988,15 +1043,26 @@ function intro(){ if(!S.prof){ if(!S.introSeen) storyIntro(); else profPicker(tr
 document.addEventListener("visibilitychange",()=>{ if(document.hidden){save(); if(lastTap>SYNC-5000) csave();} else { loop(); cpull(); } });
 // ---------- set stop loss / take profit right on the chart ----------
 let MAP=null, ORDL=[], DRAG=null, PDOWN=null;
+// chart zoom/pan: ZC = candle width in px, ZOFF = how many candles back from live the right edge is
+let ZC=7, ZOFF=0; const ZMIN=2.5, ZMAX=30, ZOFFMAX=3000, PTS=new Map(); let PINCH=null, PAN=null;
+const zoomAt=(x,f)=>{ if(!MAP) return; const from=(MAP.pw-x)/ZC+ZOFF; ZC=Math.min(ZMAX,Math.max(ZMIN,ZC*f)); ZOFF=Math.max(0,Math.min(ZOFFMAX,Math.round(from-(MAP.pw-x)/ZC))); draw(); };
+const zoomReset=()=>{ ZC=7; ZOFF=0; draw(); };
 const yToPrice=y=>MAP.hi-(y-MAP.top)/(MAP.bot-MAP.top)*(MAP.hi-MAP.lo);
 function okSide(key,v){ const now=sp(S.sel), up=(key==="ltp"||key==="ssl"); return up?v>now:v<now; }
 main.addEventListener("pointerdown",e=>{ if(e.target.id!=="chart"||!MAP) return; const r=e.target.getBoundingClientRect(), y=e.clientY-r.top, x=e.clientX-r.left;
+  PTS.set(e.pointerId,[e.clientX,e.clientY]); try{ e.target.setPointerCapture(e.pointerId); }catch(_){}
+  if(PTS.size===2){ const [a,b]=[...PTS.values()]; PINCH={d:Math.hypot(a[0]-b[0],a[1]-b[1])||1,z:ZC,x:(a[0]+b[0])/2-r.left}; DRAG=null; PAN=null; if(PDOWN) PDOWN.moved=true; return; }
+  PAN={x:e.clientX,off:ZOFF,on:false};
   PDOWN={y,x,moved:false}; const hit=ORDL.find(l=>Math.abs(l.y-y)<14);
   if(hit){ DRAG={k:hit.k,lo:MAP.lo,hi:MAP.hi}; e.target.setPointerCapture(e.pointerId); } });
-main.addEventListener("pointermove",e=>{ if(!PDOWN||e.target.id!=="chart") return; const r=e.target.getBoundingClientRect(), y=e.clientY-r.top;
-  if(Math.abs(y-PDOWN.y)>5) PDOWN.moved=true;
+main.addEventListener("pointermove",e=>{ if(e.target.id!=="chart") return; if(PTS.has(e.pointerId)) PTS.set(e.pointerId,[e.clientX,e.clientY]);
+  if(PINCH&&PTS.size>=2){ const [a,b]=[...PTS.values()], d=Math.hypot(a[0]-b[0],a[1]-b[1])||1; const f=PINCH.z*d/PINCH.d/ZC; if(Math.abs(f-1)>.01) zoomAt(PINCH.x,f); return; }
+  if(!PDOWN) return; const r=e.target.getBoundingClientRect(), y=e.clientY-r.top, x=e.clientX-r.left;
+  if(Math.abs(y-PDOWN.y)>5||Math.abs(x-PDOWN.x)>5) PDOWN.moved=true;
+  if(PAN&&!DRAG){ const dx=e.clientX-PAN.x; if(!PAN.on&&Math.abs(dx)>6&&Math.abs(dx)>Math.abs(y-PDOWN.y)) PAN.on=true;
+    if(PAN.on){ const o=Math.max(0,Math.min(ZOFFMAX,Math.round(PAN.off+dx/ZC))); if(o!==ZOFF){ ZOFF=o; draw(); } return; } }
   if(DRAG){ const v=yToPrice(y); if(okSide(DRAG.k,v)){ ORD(S.sel)[DRAG.k]=v; draw(); } } });
-main.addEventListener("pointerup",e=>{ if(!PDOWN) return; const was=DRAG, tap=!PDOWN.moved, y=PDOWN.y; PDOWN=null; DRAG=null;
+main.addEventListener("pointerup",e=>{ PTS.delete(e.pointerId); if(PTS.size<2) PINCH=null; const panned=PAN&&PAN.on; PAN=null; if(!PDOWN) return; const was=DRAG, tap=!PDOWN.moved&&!panned, y=PDOWN.y; PDOWN=null; DRAG=null;
   if(was){ const v=ORD(S.sel)[was.k]; toast(`${was.k.endsWith("sl")?"Stop loss":"Take profit"} moved to ${px(v)}`); build(true); return; }
   if(!tap||e.target.id!=="chart"||!MAP) return;
   const p=P(S.sel), v=yToPrice(y), now=sp(S.sel); if(!p.l&&!p.s) return;
@@ -1004,7 +1070,12 @@ main.addEventListener("pointerup",e=>{ if(!PDOWN) return; const was=DRAG, tap=!P
   const lab=k=>`${k.endsWith("sl")?"Stop loss":"Take profit"} for your ${k[0]==="l"?"buy":"short"}`;
   if(c.length===1){ ORD(S.sel)[c[0]]=v; toast(`${lab(c[0])} set at ${px(v)}. Drag the line to adjust.`); build(true); }
   else modal("Set at "+px(v)+"?","",c.map(k=>[lab(k),k.endsWith("sl")?"sell":"buy",()=>{ ORD(S.sel)[k]=v; toast(lab(k)+" set at "+px(v)); build(true); }]).concat([["Cancel","ghost"]])); });
-main.addEventListener("pointercancel",()=>{ PDOWN=null; DRAG=null; });
+main.addEventListener("pointercancel",e=>{ PTS.delete(e.pointerId); PINCH=null; PAN=null; PDOWN=null; DRAG=null; });
+main.addEventListener("wheel",e=>{ if(e.target.id!=="chart"||!MAP) return; e.preventDefault(); const r=e.target.getBoundingClientRect();
+  if(Math.abs(e.deltaX)>Math.abs(e.deltaY)||e.shiftKey){ const d=e.deltaX||e.deltaY; ZOFF=Math.max(0,Math.min(ZOFFMAX,ZOFF+Math.round(d/ZC/2*-1))); draw(); }
+  else zoomAt(e.clientX-r.left,e.deltaY<0?1.12:1/1.12); },{passive:false});
+main.addEventListener("dblclick",e=>{ if(e.target.id==="chart") zoomReset(); });
+main.addEventListener("click",e=>{ if(e.target.closest("#zlive")) zoomReset(); });
 main.addEventListener("input",e=>{ const id=e.target.dataset.aset; if(!id) return; A(id).v=+e.target.value; const x=AUTOS.find(y=>y.id===id); $("av-"+id).textContent=e.target.value+x.set[4]; });
 
 function flowPush(sym,dir,usd){ if(SIM||!DB||!(usd>0)) return; MYFLOW=MYFLOW.filter(x=>NOW-x[0]<1800); MYFLOW.push([NOW,BYSYM[sym].i,dir,Math.round(usd*100)/100]); if(MYFLOW.length>25) MYFLOW.shift(); flowDirty=true; }
@@ -1016,6 +1087,7 @@ async function flowSync(){ if(!DB||!UID||flowBusy) return; flowBusy=true; const 
         if(!(now-tt<1800&&tt<=now+60)||!Number.isInteger(i)||i<0||i>=STOCKS.length||(dir!==1&&dir!==-1)||!usd) return;
         ev.push({t:tt,i,dir,usd}); const key=doc.id+":"+tt+":"+i+":"+dir;
         if(!FLOWSEEN.has(key)){ FLOWSEEN.add(key); const s=STOCKS[i].s, pos=S.pos[s];
+          if(fr.includes(String(x.code||""))){ S.frt=(S.frt||[]).filter(z=>now-z[0]<86400); if(!S.frt.some(z=>z[0]===tt&&z[1]===i&&z[2]===dir&&z[4]===doc.id)) S.frt.push([tt,i,dir,String(x.name||"Friend").replace(/[<>&"']/g,"").slice(0,20),doc.id,usd]); if(S.frt.length>300) S.frt.splice(0,S.frt.length-300); }
           if(now-tt<120&&fr.includes(String(x.code||""))&&(s===S.sel||(pos&&(pos.l||pos.s)))) toast(`👥 ${String(x.name||"A friend").replace(/</g,"").slice(0,20)} ${dir>0?"bought":"sold"} ${s}`); } }); });
     FLOWEV=ev; if(FLOWSEEN.size>2000) FLOWSEEN=new Set([...FLOWSEEN].slice(-500));
   }catch(_){} flowBusy=false; }
@@ -1440,14 +1512,15 @@ const TBY={}; TITLES.forEach(t=>TBY[t.id]=t);
 let COSK='';
 function applyCos(){ const t=cosGet('theme'); if(t.id===COSK) return; COSK=t.id; const v=TH(), r=document.documentElement.style;
   ['bg','panel','card','c2','line','text','mut'].forEach(k=>r.setProperty('--'+k,v[k])); document.body.classList.toggle('mono',!!t.mono); const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=v.panel; }
-function drawCandles(c,data,X,Y,H,vh,vm){ const cp=CPAL(), st=cosGet('candle').id, bg=TH().bg;
-  data.forEach((k,i)=>{ if(k[0]===null) return; const h=vm?k[4]/vm*vh:0; c.fillStyle=(k[3]>=k[0]?cp.up:cp.dn)+'4d'; c.fillRect(X(i)-2.5,H-h,5,h); });
+let ZCW=7;
+function drawCandles(c,data,X,Y,H,vh,vm){ const cp=CPAL(), st=cosGet('candle').id, bg=TH().bg, bw=Math.max(1,ZCW*.72), hb=bw/2;
+  data.forEach((k,i)=>{ if(k[0]===null) return; const h=vm?k[4]/vm*vh:0; c.fillStyle=(k[3]>=k[0]?cp.up:cp.dn)+'4d'; c.fillRect(X(i)-hb,H-h,bw,h); });
   if(st==='line'){ let s=false,f=null,l=null; c.beginPath(); data.forEach((k,i)=>{ if(k[0]===null) return; if(f===null) f=k[3]; l=k[3]; const y=Y(k[3]); if(s) c.lineTo(X(i),y); else { c.moveTo(X(i),y); s=true; } });
     c.strokeStyle=l>=f?cp.up:cp.dn; c.lineWidth=1.8; c.stroke(); c.lineWidth=1; return; }
   data.forEach((k,i)=>{ if(k[0]===null) return; const up=k[3]>=k[0], col=up?cp.up:cp.dn, x=X(i); c.fillStyle=col;
-    if(st==='ohlc'){ c.fillRect(x-.75,Y(k[1]),1.5,Math.max(1,Y(k[2])-Y(k[1]))); c.fillRect(x-3,Y(k[0])-.75,3,1.5); c.fillRect(x,Y(k[3])-.75,3,1.5); return; }
+    if(st==='ohlc'){ c.fillRect(x-.75,Y(k[1]),1.5,Math.max(1,Y(k[2])-Y(k[1]))); c.fillRect(x-hb,Y(k[0])-.75,hb,1.5); c.fillRect(x,Y(k[3])-.75,hb,1.5); return; }
     c.fillRect(x-.5,Y(k[1]),1,Math.max(1,Y(k[2])-Y(k[1]))); const y1=Y(Math.max(k[0],k[3])), bh=Math.max(1,Y(Math.min(k[0],k[3]))-y1);
-    if(st==='hollow'&&up&&bh>2){ c.fillStyle=bg; c.fillRect(x-2.5,y1,5,bh); c.strokeStyle=col; c.lineWidth=1; c.strokeRect(x-2,y1+.5,4,bh-1); } else c.fillRect(x-2.5,y1,5,bh); }); }
+    if(st==='hollow'&&up&&bh>2&&bw>2){ c.fillStyle=bg; c.fillRect(x-hb,y1,bw,bh); c.strokeStyle=col; c.lineWidth=1; c.strokeRect(x-hb+.5,y1+.5,bw-1,bh-1); } else c.fillRect(x-hb,y1,bw,bh); }); }
 function svgC(st,u,d){ if(st==='line') return `<svg viewBox='0 0 40 28' width='40' height='28'><polyline points='2,20 10,14 17,18 25,8 32,12 38,5' fill='none' stroke='${u}' stroke-width='2'/></svg>`;
   const cs=[[8,u,6,22,10,17],[20,d,4,25,9,20],[32,u,3,18,6,14]];
   return `<svg viewBox='0 0 40 28' width='40' height='28'>${cs.map(([x,c,hi,lo,t,b])=>st==='ohlc'?`<path d='M${x} ${hi}V${lo}M${x-4} ${c===u?b:t}H${x}M${x} ${c===u?t:b}H${x+4}' stroke='${c}' stroke-width='2' fill='none'/>`:`<path d='M${x} ${hi}V${lo}' stroke='${c}'/><rect x='${x-3}' y='${t}' width='6' height='${b-t}' fill='${st==='hollow'&&c===u?'#0000':c}' stroke='${c}'/>`).join('')}</svg>`; }

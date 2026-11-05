@@ -543,7 +543,7 @@ function trade(act,q){
   if(act==="short"){ const b=fillSell(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*b>S.cash+1e-9) return toast("Not enough cash to back "+q+" share"+(q>1?"s":""));
     p.se=(p.se*p.s+q*b)/(p.s+q); p.s+=q; S.cash-=q*b; flowPush(sym,-1,q*b); autoStops(sym); mark(sym,"X",sp(sym)); toast(`Shorted ${q} ${sym} at ${px(b)} (${money(q*b)} held as collateral)`); }
   if(act==="cover"){ cover(sym,Math.min(q,p.s)); }
-  if((act==="buy"||act==="short")&&(p.l||p.s)){ sfx('open'); tipTag(sym,act==="buy"?1:-1); }
+  if((act==="buy"||act==="short")&&(p.l||p.s)){ preStops(sym); sfx('open'); tipTag(sym,act==="buy"?1:-1); }
   resetPeak(); chips(); build(true);
 }
 function ordBtns(side){ const o=ORD(S.sel), k1=side+"sl", k2=side+"tp"; return `<div class="t" style="margin-top:4px">Tap the chart to set a stop or target. Drag the line to move it.</div><div class="g2" style="margin:6px 0 4px"><button class="btn ghost sm" data-ord="${k1}">🛑 ${o[k1]?"Stop "+px(o[k1]):"Set stop loss"}</button><button class="btn ghost sm" data-ord="${k2}">🎯 ${o[k2]?"Target "+px(o[k2]):"Set take profit"}</button></div>`; }
@@ -697,6 +697,7 @@ function buildTrade(){
   <div class="chw"><canvas id="chart"></canvas></div><div id="news"></div></div>
   <div class="mk-r"><div class="pad"><div id="pos" class="card"></div>
   <div class="qty"><button data-q="-1">−</button><div class="mid"><b id="qv"></b><span id="qcst"></span></div><button data-q="1">+</button><button data-q="max">MAX</button></div>
+  <div class="g2" id="pre" style="margin-bottom:6px"></div>
   <div class="g4" id="acts" style="grid-template-columns:1fr 1fr 1.3fr"><button class="btn buy" data-a="buy">BUY</button><button class="btn short" data-a="short">SHORT</button><button class="btn ghost" data-a="close">CLOSE</button></div>
   <div id="tipw"></div>
   <div id="compw"></div>
@@ -725,8 +726,18 @@ function upd(){
   const q=s=>main.querySelector(s);
   const open=p.l>0||p.s>0; q("[data-a=buy]").disabled=open||inDebt()||S.qty*fillBuy(sym,S.qty)>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||S.qty*fillSell(sym,S.qty)>S.cash+1e-9;
   const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; cb.className="btn "+(open?(cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?`CLOSE<small>${sg(cpl)}</small>`:"CLOSE";
-  jobCard(); momCard(); tipCard(); compCard(); draw();
+  preCard(open); jobCard(); momCard(); tipCard(); compCard(); draw();
   if(NOW%5===0){ fundCard(); if(NOW%30===0) newsCard(); } }
+// ---- stop loss / take profit chosen before you trade: tap to cycle, applied the moment a trade opens
+const PRE_SL=[0,2,5,10,20], PRE_TP=[0,2,5,10,20,50];
+function preCard(open){ const el=$("pre"); if(!el) return; const pr=S.pre=S.pre||{sl:0,tp:0}, k=(open?1:0)+"|"+pr.sl+"|"+pr.tp; if(el.dataset.k===k) return; el.dataset.k=k;
+  el.style.display=open?"none":""; el.innerHTML=`<button class="btn ${pr.sl?"sell":"ghost"} sm" data-pre="sl">🛑 Stop loss: ${pr.sl?pr.sl+"%":"Off"}</button><button class="btn ${pr.tp?"buy":"ghost"} sm" data-pre="tp">🎯 Take profit: ${pr.tp?pr.tp+"%":"Off"}</button>`; }
+function preStops(sym){ const pr=S.pre||{}, p=P(sym), o=ORD(sym); if(!pr.sl&&!pr.tp) return;
+  if(p.l){ if(pr.sl) o.lsl=p.lc*(1-pr.sl/100); if(pr.tp) o.ltp=p.lc*(1+pr.tp/100); }
+  if(p.s){ if(pr.sl) o.ssl=p.se*(1+pr.sl/100); if(pr.tp) o.stp=p.se*(1-pr.tp/100); } }
+main.addEventListener("click",e=>{ const b=e.target.closest("[data-pre]"); if(!b) return; const pr=S.pre=S.pre||{sl:0,tp:0}, L=b.dataset.pre==="sl"?PRE_SL:PRE_TP, k=b.dataset.pre;
+  pr[k]=L[(L.indexOf(pr[k])+1)%L.length]; save(); preCard(false);
+  toast(k==="sl"?(pr.sl?`🛑 New trades auto-sell if they drop ${pr.sl}%`:"🛑 Stop loss off"):(pr.tp?`🎯 New trades auto-sell at +${pr.tp}% profit`:"🎯 Take profit off")); });
 function jobCard(){ const el=$("job"); if(!el) return; const p=prof();
   if(!p){ el.innerHTML=`<button class="btn gold" style="width:100%" data-x="pick">Pick a profession</button>`; return; }
   const s=pst(), t=tier(); let h=`<div class="row"><div style="font-size:22px">${p.i}</div><div class="g"><div class="b">${p.n} <span class="pill">★ ${s.rep} rep</span></div><div class="t">${t>=0?p.gear[t]:"<span class=dn>gear broken</span>"}${FUSE[t]>0?` · ${p.sup} ${s.fuel.toFixed(1)}/${FUSE[t]*4}`:""}${aOn("book")?" · 📅 auto-booking":""}</div></div></div>`;

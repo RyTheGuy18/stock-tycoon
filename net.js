@@ -1,4 +1,4 @@
-// Ticker Tycoon online layer: Firebase sign-in, cloud data, friends and chat.
+// Stock Tycoon online layer: Firebase sign-in, cloud data, friends and chat.
 // The game script talks to this through window.NET (set once Firebase is ready).
 import { firebaseConfig } from "./config.js";
 
@@ -20,7 +20,7 @@ if (!firebaseConfig || !firebaseConfig.apiKey) {
     const fs = F.getFirestore(app);
 
     // Usernames are turned into a private login address. No email is ever sent to it.
-    const DOMAIN = "players.tickertycoon.app";
+    const DOMAIN = "players.tickertycoon.app"; // old name kept on purpose: changing it would lock out existing accounts
     const okName = (u) => /^[a-z0-9_]{3,16}$/.test(u);
     const norm = (u) => String(u || "").trim().toLowerCase().replace(/^@/, "");
     const email = (u) => `${u}@${DOMAIN}`;

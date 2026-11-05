@@ -1,4 +1,4 @@
-# Ticker Tycoon
+# Stock Tycoon
 
 Start broke in Mom's basement and trade your way to a private island. This is an iPhone web app: open it in Safari, then tap **Share → Add to Home Screen** and it runs full-screen like a real app.
 

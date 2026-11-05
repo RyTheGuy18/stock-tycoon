@@ -1,4 +1,4 @@
-// Firebase web config for Ticker Tycoon (Firebase console → Project settings → Your apps → Web app).
+// Firebase web config for Stock Tycoon (Firebase console → Project settings → Your apps → Web app).
 // This isn't a secret: it identifies the project. firestore.rules is what protects the data.
 // Set it to null to play offline only.
 export const firebaseConfig = {

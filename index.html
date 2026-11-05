@@ -2,12 +2,12 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>Ticker Tycoon</title>
+<title>Stock Tycoon</title>
 <meta name="theme-color" content="#0e1319">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Ticker Tycoon">
+<meta name="apple-mobile-web-app-title" content="Stock Tycoon">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -190,11 +190,11 @@ nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9p
 <script type="module" src="net.js"></script>
 <script>
 "use strict";
-/* ===================== Ticker Tycoon v4 =====================
+/* ===================== Stock Tycoon v4 =====================
    The market is a pure function of the clock: price(series, unixSecond).
    Every device computes the same numbers from the same seeds.
    ============================================================ */
-const SAVE_KEY="tickerTycoon.v4", CLOUD_DOC="save4";
+const SAVE_KEY="tickerTycoon.v4", CLOUD_DOC="save4"; // old name kept on purpose: changing it would lose everyone's saved games
 let FLUSH=.015; const flushD=d=>Math.max(FLUSH,1.2*d.vol*Math.sqrt(180)); // jumpy stocks dip deeper, so the flush is tradeable on all of them
 const H0=Math.floor(Date.UTC(2026,10,1)/3600000), HN=3600;
 
@@ -947,7 +947,7 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
       if(!S.prof&&$("modal").classList.contains("hide")&&!$("intro")) intro();
     }catch(e){ console.warn(e); toast("Couldn't reach the server. Playing offline."); } }); }
 function showAuth(){ if($('auth')||!window.NET) return; const el=document.createElement('div'); el.id='auth'; document.body.appendChild(el); let mode='in', un='';
-  const r=()=>{ el.innerHTML=`<div class='au'><div class='aulogo'>📈</div><h1>Ticker Tycoon</h1><div class='t' style='text-align:center;margin-bottom:16px'>${mode==='in'?'Sign in to save your progress and play with friends.':'Pick a username. Friends will find you by it.'}</div>
+  const r=()=>{ el.innerHTML=`<div class='au'><div class='aulogo'>📈</div><h1>Stock Tycoon</h1><div class='t' style='text-align:center;margin-bottom:16px'>${mode==='in'?'Sign in to save your progress and play with friends.':'Pick a username. Friends will find you by it.'}</div>
    <div class='seg'><button data-am='in' class='${mode==='in'?'on':''}'>Sign in</button><button data-am='up' class='${mode==='up'?'on':''}'>Create account</button></div>
    <input id='au_u' class='inp' placeholder='Username' autocapitalize='none' autocomplete='username' autocorrect='off' spellcheck='false' maxlength='17' value='${un.replace(/[^a-zA-Z0-9_@]/g,'')}'>
    <input id='au_p' class='inp' type='password' placeholder='Password (6+ characters)' autocomplete='${mode==='in'?'current-password':'new-password'}' style='margin-top:8px'>
@@ -975,7 +975,7 @@ function acctHTML(){ let h=`<h3>Account</h3>`;
   if(isIOS()&&!standalone()) h+=`<h3>Install</h3><div class='card t'>In Safari, tap <b style='color:var(--text)'>Share</b> → <b style='color:var(--text)'>Add to Home Screen</b>. It opens full-screen like a real app.</div>`;
   return h; }
 function installHint(){ if(!isIOS()||standalone()||S.instHint||!S.prof||!$('modal').classList.contains('hide')||$('auth')||$('intro')||$('tut')) return;
-  S.instHint=1; save(); modal('📲 Install the app',`<p>In Safari, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p><p>Ticker Tycoon then opens full-screen from your home screen, like a real app.</p>`,[['Got it','gold']]); }
+  S.instHint=1; save(); modal('📲 Install the app',`<p>In Safari, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p><p>Stock Tycoon then opens full-screen from your home screen, like a real app.</p>`,[['Got it','gold']]); }
 
 // ---------- friends: requests by username, friends list, private chat ----------
 let FS={list:[],prof:{},unsub:null,chatUnsub:null,chat:null,first:true}, FRUIDS=new Set();
@@ -1222,7 +1222,7 @@ const TITLES=[{id:'none',n:'No title',d:'Keep it humble.',req:0},
  {id:'nerd',n:'Chart Nerd',d:'Dad would be proud.',r:'Learn 10 lessons',u:()=>Object.keys(S.know||{}).length>=10},
  {id:'big',n:'Big Swinger',d:'Four figures on a single trade.',r:'Make $1,000 on one trade',u:()=>S.st.best>=1000},
  {id:'six',n:'Six Figures',d:'Made it to six figures.',r:'Reach $100K net worth',u:()=>S.bestNW>=1e5},
- {id:'tycoon',n:'Ticker Tycoon',d:'The name on the box.',r:'Reach $1M net worth',u:()=>S.bestNW>=1e6},
+ {id:'tycoon',n:'Stock Tycoon',d:'The name on the box.',r:'Reach $1M net worth',u:()=>S.bestNW>=1e6},
  {id:'champ',n:'Weekly Champion',d:'Won a weekly competition.',r:'Win a weekly competition',u:()=>!!(S.st.tro&&S.st.tro.g)},
  {id:'island',n:'Island Royalty',d:'You actually did it.',r:'Retire to the private island',u:()=>!!S.ms.island}];
 const BORDERS=[{id:'none',n:'No border',d:'Plain and simple.',req:0},{id:'silver',n:'Silver border',d:'A clean silver edge on your card.',req:1000},{id:'gold',n:'Gold border',d:'A glowing gold edge.',req:50000},{id:'dia',n:'Diamond border',d:'Shimmers through the colors.',req:1e6}];

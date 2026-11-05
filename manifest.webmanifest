@@ -1,6 +1,6 @@
 {
-  "name": "Ticker Tycoon",
-  "short_name": "Ticker Tycoon",
+  "name": "Stock Tycoon",
+  "short_name": "Stock Tycoon",
   "description": "Start broke in Mom's basement and trade your way to a private island.",
   "start_url": "./",
   "scope": "./",

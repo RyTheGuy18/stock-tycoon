@@ -950,7 +950,7 @@ main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||
     case "exp": { const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); $("sbox").value=code; try{navigator.clipboard.writeText(code).then(()=>toast("Copied"));}catch(_){} return; }
     case "imp": try{ S=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); save(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return;
     case "replay": S.tut=0; return storyIntro();
-    case "wipe": return modal("Wipe everything?","<p>No undo.</p>",[["Cancel","ghost"],["Wipe","sell",()=>{ S=fresh(); save(); build(); intro(); }]]);
+    case "wipe": return modal("Wipe everything?","<p>No undo.</p>",[["Cancel","ghost"],["Wipe","sell",()=>{ S=fresh(); S.wipedAt=Date.now(); save(); build(); intro(); }]]);
   }
   if(tab==="store") buildStore(); else if(tab==="me") buildMe(); hdr(); });
 
@@ -1040,6 +1040,8 @@ main.addEventListener("click",e=>{ const b=e.target.closest("[data-fx],[data-fv]
   if(x==="ref"){ CB.list=null; pubProfile().then(loadBoard); } });
 
 
+// how far along a save is: best-ever net worth first, then time played
+function progress(x){ return ((x&&x.bestNW)||0)*1e6+((x&&x.st&&x.st.played)||0); }
 // ---------- online: sign-in screen, account ----------
 let NETP=null, UNAME="", NETON=false;
 function netReady(){ return NETP||(NETP=new Promise(r=>{ if('NET' in window) return r(window.NET); addEventListener('net-ready',()=>r(window.NET),{once:true}); setTimeout(()=>r(window.NET||null),20000); })); }
@@ -1049,10 +1051,11 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
     hideAuth(); UNAME=u.username; N.claimName&&N.claimName(u.username,u.uid);
     try{ const ref=N.db.doc("saves/"+u.uid), sn=await ref.get(), other=S.owner&&S.owner!==u.uid;
       if(sn.exists){ const d=sn.data(); let cs=null; try{ cs=d&&typeof d.save==="string"?JSON.parse(d.save):null; }catch(_){}
-        const fresher=!S.owner&&cs&&((cs.st&&cs.st.played)||0)>=((S.st&&S.st.played)||0);
-        if(cs&&(other||fresher||(d.savedAt||0)>(S.savedAt||0)+3000)){ S=Object.assign(fresh(),JSON.parse(d.save)); closeModal(); catchUp(); toast("Loaded your saved game"); } }
-      else if(other){ S=fresh(); NOW=nowSec(); S.lastT=NOW; S.lastNews=NOW; }
-      S.owner=u.uid; delistCheck(); const m=myCard(); if(/^Trader\d+$/.test(m.name||"")) m.name=u.username;
+        // keep whichever save has more progress (unless you wiped this one on purpose after the cloud save)
+        const wiped=(S.wipedAt||0)>(d.savedAt||0);
+        if(cs&&!wiped&&progress(cs)>progress(S)){ S=Object.assign(fresh(),JSON.parse(d.save)); closeModal(); catchUp(); toast("Loaded your saved game"); } }
+      
+      const was=S.owner; S.owner=u.uid; delistCheck(); const m=myCard(); if(/^Trader\d+$/.test(m.name||"")||(was&&was!==u.uid)) m.name=u.username;
       save(); DB=N.db; UID=u.uid; cref=ref; clast="";
       cloudSt="Signed in as @"+u.username+" · progress saves to your account";
       if(!NETON){ NETON=true; setInterval(pubProfile,300000); setInterval(flowSync,15000); setInterval(tipSync,15000); }
@@ -1457,7 +1460,7 @@ function sx(x){
   if(x==="exp"){ const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); $("sbox").value=code; try{navigator.clipboard.writeText(code).then(()=>toast("Copied"));}catch(_){} return; }
   if(x==="imp"){ try{ S=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); save(); closeModal(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return; }
   if(x==="replay"){ closeModal(); S.tut=0; return storyIntro(); }
-  if(x==="wipe") return modal("Wipe everything?","<p>No undo.</p>",[["Cancel","ghost"],["Wipe","sell",()=>{ S=fresh(); save(); build(); intro(); }]]); }
+  if(x==="wipe") return modal("Wipe everything?","<p>No undo.</p>",[["Cancel","ghost"],["Wipe","sell",()=>{ S=fresh(); S.wipedAt=Date.now(); save(); build(); intro(); }]]); }
 addEventListener("pagehide",save); addEventListener("resize",()=>tab==="trade"&&draw());
 // boot
 for(const id in S.profs){ const u=S.profs[id].up||{}; ["book","resup"].forEach(k=>{ if(u[k]){ A(k).own=1; delete u[k]; } }); }

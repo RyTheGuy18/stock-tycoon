@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0e1319">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Stock Tycoon">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
@@ -16,20 +16,20 @@
 <style>
 :root{--bg:#07090c;--panel:#0e1319;--card:#121922;--c2:#18212c;--line:#1f2a36;--text:#e8eef4;--mut:#77879a;--up:#16c784;--dn:#ea3943;--gold:#f5b301;--pur:#a855f7}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+html{background:var(--panel)} html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none} body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
 button,input{font:inherit;color:inherit;border:0}
 button{cursor:pointer;background:none}
 input{user-select:text;-webkit-user-select:text}
 .m{font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
-#app{display:flex;flex-direction:column;height:100dvh;max-width:560px;margin:0 auto}
-header{padding:calc(env(safe-area-inset-top) + 8px) 12px 6px;border-bottom:1px solid var(--line);background:var(--panel)}
+#app{display:flex;flex-direction:column;position:fixed;top:0;left:0;right:0;height:var(--appH,100dvh);max-width:560px;margin:0 auto;background:var(--bg)}
+header{padding:calc(env(safe-area-inset-top) + 12px) 12px 8px;border-bottom:1px solid var(--line);background:var(--panel)}
 .hr{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;align-items:end}
 .l{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em}
 .hv{font-size:15px;font-weight:700}
 #cash{font-size:22px;color:var(--gold)} #cash.neg{color:var(--dn)}
 #home{font-size:11.5px;color:var(--mut);margin-top:3px}
 #debt{display:none;background:#3a1014;border:1px solid #6b1d24;color:#ffb4ba;font-size:12px;padding:6px 9px;border-radius:9px;margin-top:6px}
-main{flex:1;overflow-y:auto}
+main{flex:1;overflow-y:auto;min-height:0;overscroll-behavior:contain}
 nav{display:flex;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;padding:8px 0;font-size:11px;color:var(--mut)}
 nav button span{display:block;opacity:.55} nav button span svg{width:23px;height:23px;display:block;margin:0 auto 3px}
@@ -99,10 +99,9 @@ canvas.sp{width:100%;height:46px;display:block;margin:6px 0}
 .nextb{background:#fff;color:#0b0f14;border-radius:999px;padding:12px 20px;font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;box-shadow:0 6px 24px -8px rgba(255,255,255,.5)}
 .nextb:active{transform:scale(.96)}
 @keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-#tut{position:fixed;inset:0;z-index:11;background:rgba(0,0,0,.62);pointer-events:none}
-.tut-hl{position:relative;z-index:12;outline:2px solid var(--gold);outline-offset:4px;border-radius:10px;box-shadow:0 0 24px rgba(245,179,1,.45)}
-#tut .ring{position:fixed;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.62),0 0 18px rgba(245,179,1,.6)}
-#tut .tip{position:fixed;z-index:13;left:12px;right:12px;max-width:536px;margin:0 auto;background:#121922;border:1px solid var(--line);border-radius:14px;padding:14px;pointer-events:auto;animation:fadeup .3s ease}
+#tut{position:fixed;inset:0;z-index:11;pointer-events:auto;touch-action:none;overflow:hidden}
+#tut .ring{position:fixed;z-index:1;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.66),0 0 20px rgba(245,179,1,.55);pointer-events:none;transition:top .25s ease,left .25s ease,width .25s ease,height .25s ease}
+#tut .tip{position:fixed;z-index:2;left:12px;right:12px;max-width:536px;margin:0 auto;background:#121922;border:1px solid var(--line);border-radius:14px;padding:14px;pointer-events:auto;animation:fadeup .3s ease}
 #tut .tip b{font-size:16px} #tut .tip p{font-size:14px;line-height:1.5;color:#c9d3de;margin:6px 0 12px}
 .scene{position:relative;border-radius:14px;overflow:hidden;margin-bottom:10px;height:150px;border:1px solid var(--line)}
 .scene svg{position:absolute;inset:0;width:100%;height:100%}
@@ -117,7 +116,7 @@ canvas.sp{width:100%;height:46px;display:block;margin:6px 0}
 @keyframes dotp{0%,100%{box-shadow:0 0 0 0 rgba(245,179,1,.5)}50%{box-shadow:0 0 0 6px rgba(245,179,1,0)}}
 .tn:not(.done):not(.cur){opacity:.55}
 .perk{display:inline-block;font-size:11px;color:#c8a24a;background:#1d1a10;border-radius:6px;padding:1px 6px;margin-top:3px}
-#gear{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 8px);background:none;color:var(--mut);font-size:19px;padding:2px 4px}
+#gear{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 12px);background:none;color:var(--mut);font-size:19px;padding:2px 4px}
 header{position:relative}
 .pcard{border-radius:16px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
 .pav{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;background:rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.35);flex:none}
@@ -1200,19 +1199,45 @@ const TUT=[
  ['[data-tab="auto"]',"Automations","Later on, you can buy bots and tools that keep working while you're away.","trade"],
  ['[data-tab="me"]',"Your story","Everything you're working toward: a car, your own place, and one day, paying Mom back. Good luck.","trade"]];
 let TUTK=-1, tutIv=null;
+const tutNoScroll=e=>{ if($("tut")) e.preventDefault(); };
+function tutLock(on){ const m=$("main"); if(m) m.style.overflowY=on?"hidden":"";
+  ["touchmove","wheel"].forEach(ev=>on?document.addEventListener(ev,tutNoScroll,{passive:false}):document.removeEventListener(ev,tutNoScroll)); }
 function tutorial(k){ k=k||0; let el=$("tut"); if(!el){ el=document.createElement("div"); el.id="tut"; document.body.appendChild(el); }
-  if(k>=TUT.length){ document.querySelectorAll(".tut-hl").forEach(x=>x.classList.remove("tut-hl")); el.remove(); S.tut=1; save(); TUTK=-1; clearInterval(tutIv); return; }
+  if(k>=TUT.length){ el.remove(); S.tut=1; save(); TUTK=-1; clearInterval(tutIv); tutLock(false); return; }
   const [sel,title,txt,t]=TUT[k]; if(tab!==t) setTab(t);
-  document.querySelectorAll(".tut-hl").forEach(x=>x.classList.remove("tut-hl"));
-  const tg=document.querySelector(sel); if(!tg) return tutorial(k+1); tg.classList.add("tut-hl");
-  tg.scrollIntoView({block:"nearest"}); TUTK=k;
-  el.innerHTML=`<div class="tip"><div class="t">${k+1} of ${TUT.length}</div><b>${title}</b><p>${txt}</p>
+  if(!document.querySelector(sel)) return tutorial(k+1);
+  TUTK=k; tutLock(true);
+  el.innerHTML=`<div class="ring"></div><div class="tip"><div class="t">${k+1} of ${TUT.length}</div><b>${title}</b><p>${txt}</p>
      <div class="row"><button class="t" data-tx="end" style="padding:6px">Skip</button><span class="g"></span><button class="nextb" data-tx="${k+1}">${k===TUT.length-1?"Let's go":"Next"} <span style="font-size:18px">→</span></button></div></div>`;
   el.onclick=e=>{ const b=e.target.closest("[data-tx]"); if(!b) return; b.dataset.tx==="end"?tutorial(TUT.length):tutorial(+b.dataset.tx); };
-  placeTut(); clearInterval(tutIv); tutIv=setInterval(placeTut,150); }
-function placeTut(){ const el=$("tut"); if(!el||TUTK<0) return; const tg=document.querySelector(TUT[TUTK][0]); if(!tg) return;
-  if(!tg.classList.contains("tut-hl")) tg.classList.add("tut-hl"); const r=tg.getBoundingClientRect(), tip=el.querySelector(".tip"), below=r.top+r.height/2<innerHeight/2;
-  if(below){ tip.style.bottom="calc(env(safe-area-inset-bottom) + 74px)"; tip.style.top="auto"; } else { tip.style.top="calc(env(safe-area-inset-top) + 76px)"; tip.style.bottom="auto"; } }
+  // lay out now, again after the tab finishes drawing, then keep the ring glued to the target
+  placeTut(true); requestAnimationFrame(()=>placeTut(true)); setTimeout(()=>placeTut(true),250);
+  clearInterval(tutIv); tutIv=setInterval(()=>placeTut(false),200); }
+// Puts the tip card on one side of the screen and scrolls the target fully into the other side.
+function placeTut(scroll){ const el=$("tut"); if(!el||TUTK<0) return; const tg=document.querySelector(TUT[TUTK][0]); if(!tg) return;
+  const tip=el.querySelector(".tip"), ring=el.querySelector(".ring"), m=$("main"), GAP=14, P=6;
+  const H=innerHeight, th=tip.offsetHeight, nav=$("nav").getBoundingClientRect(), hdr=document.querySelector("header").getBoundingClientRect();
+  let r=tg.getBoundingClientRect(), lo, hi;
+  if(!m.contains(tg)){                                  // nav buttons: tip floats just above the button
+    tip.style.top="auto"; tip.style.bottom=(H-r.top+GAP)+"px"; lo=4; hi=H-4;
+  } else {
+    const mTop=m.getBoundingClientRect().top, top0=hdr.top+10;
+    const L={top:{lo:top0+th+GAP, hi:nav.top-P-2},       // tip over the header, target below it
+             bot:{lo:mTop+P+2,   hi:nav.top-10-th-GAP}}; // tip above the nav, target above it
+    if(scroll||!el.dataset.side){ const max=m.scrollHeight-m.clientHeight; let best=null;
+      for(const side of ["bot","top"]){ const {lo,hi}=L[side], room=hi-lo-2*P, fits=r.height<=room;
+        const want=fits? lo+P+(room-r.height)/2 : lo+P;
+        const st=Math.max(0,Math.min(max, m.scrollTop+(r.top-want)));
+        const top=r.top-(st-m.scrollTop), shown=Math.min(hi,top+r.height)-Math.max(lo,top);
+        const score=shown/Math.max(1,r.height)*1000 - Math.abs(st-m.scrollTop)*.05;
+        if(!best||score>best.score) best={side,st,score}; }
+      el.dataset.side=best.side; if(scroll){ m.scrollTop=best.st; r=tg.getBoundingClientRect(); } }
+    const side=el.dataset.side;
+    if(side==="top"){ tip.style.top=top0+"px"; tip.style.bottom="auto"; }
+    else { tip.style.top="auto"; tip.style.bottom=(H-nav.top+10)+"px"; }
+    ({lo,hi}=L[side]); }
+  const t=Math.max(lo,r.top-P), b=Math.min(hi,r.bottom+P), l=Math.max(4,r.left-P), rr=Math.min(innerWidth-4,r.right+P);
+  Object.assign(ring.style,{top:t+"px",left:l+"px",width:Math.max(0,rr-l)+"px",height:Math.max(0,b-t)+"px"}); }
 // ---------- texts from Mom (pop up, then gone) ----------
 const TEXTS=[
  ["job1",()=>S.st.jobs>=1,"First paycheck! Don't spend it all on gas station snacks."],
@@ -1436,4 +1461,5 @@ async function appTag(){ try{ const r=await fetch("index.html",{method:"HEAD",ca
 async function checkUpdate(){ if(location.protocol!=="https:") return; const t=await appTag(); if(!t) return; if(APPTAG===null){ APPTAG=t; return; }
   if(t!==APPTAG){ APPTAG=t; save(); csave(); toast("Updating to the newest version…"); setTimeout(()=>location.reload(),900); } }
 checkUpdate(); setInterval(checkUpdate,300000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
-</script></body></html>
+</script><script>(function(){const f=()=>document.documentElement.style.setProperty('--appH',innerHeight+'px');f();addEventListener('resize',f);addEventListener('orientationchange',()=>setTimeout(f,300));})();</script>
+</body></html>

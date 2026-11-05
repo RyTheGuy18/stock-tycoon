@@ -23,7 +23,7 @@ Start broke in Mom's basement and trade your way to a private island. This is an
 6. Go to **Authentication → Settings → Authorized domains** and add `rytheguy18.github.io`.
 
 ### 2. GitHub Pages
-Go to the repo's **Settings → Pages → Build and deployment**, set the source to **Deploy from a branch**, pick branch `main` and folder `/ (root)`, and save. The game will be at `https://rytheguy18.github.io/ticker-tycoon/`.
+Go to the repo's **Settings → Pages → Build and deployment**, set the source to **Deploy from a branch**, pick branch `main` and folder `/ (root)`, and save. The game will be at `https://rytheguy18.github.io/stock-tycoon/`.
 
 ## How accounts work
 Players sign up with a username and password. Behind the scenes Firebase stores it as `username@players.tickertycoon.app`. No email is ever sent, so passwords can't be reset by email. If someone forgets theirs, delete their account under **Authentication → Users** and they can sign up again. Their old save is lost unless they had exported a save code.

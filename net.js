@@ -32,6 +32,7 @@ if (!firebaseConfig || !firebaseConfig.apiKey) {
       doc: (p) => ({
         get: async () => wrap(await F.getDoc(F.doc(fs, p))),
         set: (o) => F.setDoc(F.doc(fs, p), o),
+        watch: (cb) => F.onSnapshot(F.doc(fs, p), (x) => cb(x.exists() ? x.data() : null), () => {}),
       }),
       collection: (p) => {
         const c = [];

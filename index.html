@@ -698,7 +698,7 @@ function advance(to){ // process every second from lastT+1 to `to`
 // ---------- UI ----------
 let tab="trade", seg="job"; const main=$("main");
 function setTab(t){ tab=t; document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t)); main.scrollTop=0; build(); }
-function build(soft){ if(tab==="trade") soft&&$("chart")?upd():buildTrade(); else if(tab==="store") buildStore(); else if(tab==="auto"){ if(!soft) buildAuto(); } else if(tab==="friends"){ if(!soft) buildFriends(); } else if(!soft) buildMe(); hdr(); }
+function build(soft){ if(tab==="trade") soft&&$("chart")?upd():buildTrade(); else if(tab==="store") buildStore(); else if(tab==="auto"){ if(!soft) buildAuto(); } else if(tab==="friends"){ if(!soft) buildFriends(); else compTick(); } else if(!soft) buildMe(); hdr(); }
 function buildTrade(){
   main.innerHTML=`<div class="mk"><div class="mk-l"><div id="chips"></div>
   <div class="q"><div><span class="t" id="qn"></span><div class="row"><span id="qp" class="m"></span><span id="qc" class="m" style="font-size:12.5px"></span></div></div>
@@ -709,7 +709,6 @@ function buildTrade(){
   <div class="g2" id="pre" style="margin-bottom:6px"></div>
   <div class="g4" id="acts" style="grid-template-columns:1fr 1fr 1.3fr"><button class="btn buy" data-a="buy">BUY</button><button class="btn short" data-a="short">SHORT</button><button class="btn ghost" data-a="close">CLOSE</button></div>
   <div id="tipw"></div>
-  <div id="compw"></div>
   <h3>Market news</h3><div id="newsc" class="card"></div>
   <h3>Hustle</h3><div id="job" class="card"></div>
   <div id="momw"><h3>Mom's practice round</h3><div id="momc" class="card"></div></div>
@@ -1043,7 +1042,7 @@ function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[];
     h+=`<div class="card">${rows.length?rows.map((p,i)=>`<div class="li"><div class="row g"><b class="m" style="width:22px">${i+1}</b><span class="pav${["silver","gold","dia"].includes(p.bd)?" bd-"+p.bd:""}" style="width:34px;height:34px;font-size:19px;border-width:2px;border-color:${(COLS[p.col||0]||COLS[0])[1]}${pavBg(p.img)}">${okImg(p.img)?"":p.av||"🧑"}</span><div class="g"><b>${String(p.name||"Trader").replace(/</g,"")}${troStr(p.tro)}${p.id===UID?' <span class="pill ok">you</span>':""}</b>${p.title&&p.title!=="none"&&TBY[p.title]?`<div class="ptitle" style="margin:2px 0 3px">🏅 ${TBY[p.title].n}</div>`:""}<div class="t">${p.tag?`<i>${String(p.tag).replace(/</g,"")}</i><br>`:""}${p.uname?"@"+esc(p.uname)+" · ":""}${p.home||""} · ${p.prof||"no job"} · ${p.lessons||0} lessons${p.broke?` · broke ${p.broke}×`:""}</div></div></div><b class="m">${money(p.nw||0)}</b></div>`).join(""):`<div class="t">${FR.view==="friends"?"No friends added yet. Share your code and ask for theirs.":"Nobody here yet."}</div>`}</div>
     <button class="btn ghost sm" style="width:100%" data-fx="ref">↻ Refresh</button>`; }
   h+=`<div class="t" style="margin:12px 3px">Other players can see your card, net worth and trophies.</div>`;
-  main.innerHTML=h+"</div>"; }
+  main.innerHTML=h+"</div>"; compTick(); }
 main.addEventListener("click",e=>{ const b=e.target.closest("[data-fx],[data-fv]"); if(!b) return; const m=myCard();
   if(b.dataset.fv){ FR.view=b.dataset.fv; return buildFriends(); }
   const x=b.dataset.fx;
@@ -1163,8 +1162,8 @@ let CB={list:null,w:-1,busy:false,view:'all'}, CPL=0;
 const compCur=()=>{ const c=S.comp; return c&&c.w===wkIdx(NOW)?c:null; };
 function compVal(c){ let v=c.cash; for(const k in c.pos){ const p=c.pos[k]; if(!BYSYM[k]) continue; const pr=sp(k); if(p.l) v+=p.l*pr; if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-pr)); } return v; }
 function compJoin(){ if(!DB) return toast('Sign in to join'); if(compCur()) return; if(S.comp&&!S.comp.done&&S.comp.w<wkIdx(NOW)) compSettle();
-  S.comp={w:wkIdx(NOW),cash:COMP_START,pos:{},tr:0,joined:NOW}; save(); compPub(true); sfx('unlock'); toast("🏆 You're in! Trade your $1,000 from the Market tab",'good'); CB.list=null; build(); }
-function compTrade(act){ const c=compCur(); if(!c) return; const sym=S.sel, pr=sp(sym), p=c.pos[sym]||(c.pos[sym]={l:0,lc:0,s:0,se:0});
+  S.comp={w:wkIdx(NOW),cash:COMP_START,pos:{},tr:0,joined:NOW}; save(); compPub(true); sfx('unlock'); toast("🏆 You're in! Pick a stock below and trade your $1,000",'good'); CB.list=null; build(); }
+function compTrade(act){ const c=compCur(); if(!c) return; const sym=compSym(), pr=sp(sym), p=c.pos[sym]||(c.pos[sym]={l:0,lc:0,s:0,se:0});
   if(act==='close'){ let pl;
     if(p.l){ pl=p.l*(pr-p.lc); c.cash+=p.l*pr; toast(`🏆 Sold ${p.l} ${sym}: ${sg(pl)}`,pl>=0?'good':'bad'); p.l=0; p.lc=0; }
     else if(p.s){ pl=Math.max(p.s*(p.se-pr),-p.s*p.se); c.cash+=p.s*p.se+pl; toast(`🏆 Covered ${p.s} ${sym}: ${sg(pl)}`,pl>=0?'good':'bad'); p.s=0; p.se=0; }
@@ -1172,7 +1171,9 @@ function compTrade(act){ const c=compCur(); if(!c) return; const sym=S.sel, pr=s
   else { if(p.l||p.s) return toast('Close your competition trade first'); const q=Math.max(1,S.cq||1); if(q*pr>c.cash+1e-9) return toast('Not enough competition cash');
     c.cash-=q*pr; if(act==='buy'){ p.l=q; p.lc=pr; } else { p.s=q; p.se=pr; } c.tr++; sfx('open'); toast(`🏆 ${act==='buy'?'Bought':'Shorted'} ${q} ${sym} at ${px(pr)} (competition)`); }
   save(); compPub(true); compCard(true); }
-function compCard(force){ const el=$('compw'); if(!el) return; if(!DB){ el.innerHTML=''; el.dataset.k=''; return; } const c=compCur(), sym=S.sel;
+function compTick(){ if(!$('compw')) return; compCard(); STOCKS.forEach(d=>{ const e=$('cc-'+d.s); if(e) e.textContent=px(sp(d.s)); }); }
+function compSym(){ const s=S.csel; return s&&BYSYM[s]&&!BYSYM[s].gone&&unlocked(BYSYM[s])?s:"PNNY"; }
+function compCard(force){ const el=$('compw'); if(!el) return; if(!DB){ el.innerHTML=''; el.dataset.k=''; return; } const c=compCur(), sym=compSym();
   if(!c){ if(el.dataset.k!=='no'){ el.dataset.k='no'; el.innerHTML=`<div class='card row' style='margin-top:8px'><div class='g t'>🏆 This week's competition is open. Everyone starts with $1,000 of competition money. Your real cash isn't touched.</div><button class='btn gold sm' data-cj='1'>Join</button></div>`; } return; }
   const p=c.pos[sym]||{}, open=p.l||p.s, k=sym+'|'+(open?1:0);
   if(force||el.dataset.k!==k){ el.dataset.k=k; el.innerHTML=`<div class='card' style='margin-top:8px;border-color:#5a4a1a'><div class='row'><div class='g'><div class='b'>🏆 Competition wallet</div><div class='t' id='cpt'></div></div><b class='m' id='cpv'></b></div><div class='t' id='cpp' style='margin:6px 0'></div>${open?`<button class='btn ghost' style='width:100%' data-ct='close'>Close competition trade</button>`:`<div class='qty' style='margin:0 0 6px'><button data-cq='-1'>−</button><div class='mid'><b id='cpq'></b><span id='cpqc'></span></div><button data-cq='1'>+</button><button data-cq='max'>MAX</button></div><div class='g2'><button class='btn buy sm' data-ct='buy'>Comp BUY</button><button class='btn short sm' data-ct='short'>Comp SHORT</button></div>`}</div>`; }
@@ -1194,8 +1195,9 @@ async function loadComp(){ if(!DB||CB.busy) return; CB.busy=true; const w=wkIdx(
   CB.w=w; CB.busy=false; if(tab==='friends'&&!FS.chat) buildFriends(); }
 function compHTML(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW;
   let h=`<h3>🏆 Weekly competition</h3><div class='card'>`;
-  if(!c) h+=`<div class='t'>Want in? Everyone who joins gets <b style='color:var(--text)'>$1,000 of competition money</b> to trade on the same live market, from the Market tab. Your real cash is never touched. The top 3 when the week ends (in ${dur(left)}) win trophies.</div><button class='btn gold' style='width:100%;margin-top:8px' data-cj='1'>Join this week</button>`;
-  else { const v=compVal(c), r=(v/COMP_START-1)*100; h+=`<div class='row'><div class='g'><div class='b'>You're in</div><div class='t'>Trade from the Market tab · ends in ${dur(left)}</div></div><b class='m'>${money(v)} <span class='${r>=0?'up':'dn'}'>${r>=0?'+':''}${r.toFixed(1)}%</span></b></div>`; }
+  if(!c) h+=`<div class='t'>Want in? Everyone who joins gets <b style='color:var(--text)'>$1,000 of competition money</b> to trade on the same live market, right here. Your real cash is never touched. The top 3 when the week ends (in ${dur(left)}) win trophies.</div><button class='btn gold' style='width:100%;margin-top:8px' data-cj='1'>Join this week</button>`;
+  else { const v=compVal(c), r=(v/COMP_START-1)*100; h+=`<div class='row'><div class='g'><div class='b'>You're in</div><div class='t'>Trade below · ends in ${dur(left)}</div></div><b class='m'>${money(v)} <span class='${r>=0?'up':'dn'}'>${r>=0?'+':''}${r.toFixed(1)}%</span></b></div>`;
+    const cs=compSym(); h+=`<div id='chips' style='padding:10px 0 2px'>${STOCKS.filter(d=>!d.gone&&unlocked(d)).sort((a,b)=>a.un-b.un).map(d=>{ const pp=c.pos[d.s]||{}, dot=pp.l?'<span class="dot" style="background:#16c784"></span>':pp.s?'<span class="dot" style="background:#ea3943"></span>':''; return `<button class='chip ${cs===d.s?'on':''}' data-csym='${d.s}'><b>${d.s}${dot}</b><small id='cc-${d.s}'>${px(sp(d.s))}</small></button>`; }).join('')}</div><div id='compw'></div>`; }
   if(CB.list===null||CB.w!==w){ CB.list=null; loadComp(); h+=`<div class='t' style='margin-top:8px'>Loading standings…</div>`; }
   else { const rows=CB.list.filter(x=>CB.view==='all'||FRUIDS.has(x.id)||x.id===UID);
     h+=`<div class='seg' style='margin:10px 0 4px'><button data-cv='friends' class='${CB.view==='friends'?'on':''}'>Friends</button><button data-cv='all' class='${CB.view==='all'?'on':''}'>Everyone</button></div>`+
@@ -1204,7 +1206,8 @@ function compHTML(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW;
 main.addEventListener('click',e=>{ const t=e.target;
   if(t.closest('[data-cj]')) return compJoin();
   const ct=t.closest('[data-ct]'); if(ct) return compTrade(ct.dataset.ct);
-  const cq=t.closest('[data-cq]'); if(cq){ const c=compCur(); if(!c) return; const pr=sp(S.sel), v=cq.dataset.cq; S.cq=v==='max'?Math.max(1,Math.floor(c.cash/pr)):Math.max(1,(S.cq||1)+(+v)); return compCard(); }
+  const cq=t.closest('[data-cq]'); if(cq){ const c=compCur(); if(!c) return; const pr=sp(compSym()), v=cq.dataset.cq; S.cq=v==='max'?Math.max(1,Math.floor(c.cash/pr)):Math.max(1,(S.cq||1)+(+v)); return compCard(); }
+  const cs=t.closest('[data-csym]'); if(cs){ S.csel=cs.dataset.csym; S.cq=1; return buildFriends(); }
   const cv=t.closest('[data-cv]'); if(cv){ CB.view=cv.dataset.cv; buildFriends(); } });
 
 // ---------- opening story ----------

@@ -125,6 +125,7 @@ header{position:relative}
 .pmeta{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px} .pmeta span{background:rgba(0,0,0,.28);border-radius:99px;padding:3px 9px;font-size:11.5px}
 .avgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px} .avgrid button{font-size:22px;padding:6px 0;border-radius:10px;background:var(--c2);border:1px solid var(--line)} .avgrid button.on{border-color:var(--gold);background:#2a2410}
 .swat{display:flex;gap:8px;flex-wrap:wrap} .swat button{width:34px;height:34px;border-radius:50%;border:2px solid transparent} .swat button.on{border-color:#fff}
+.ic{width:15px;height:15px;vertical-align:-3px;margin-right:5px}
 .lbl2{font-size:12px;color:var(--mut);margin:12px 2px 6px}
 .cosp{width:46px;height:34px;flex:none;display:flex;align-items:center;justify-content:center}
 .sw{width:42px;height:30px;border-radius:7px;border:1px solid;display:flex;align-items:flex-end;justify-content:center;gap:4px;padding:4px}
@@ -546,7 +547,10 @@ function trade(act,q){
   if((act==="buy"||act==="short")&&(p.l||p.s)){ preStops(sym); sfx('open'); tipTag(sym,act==="buy"?1:-1); }
   resetPeak(); chips(); build(true);
 }
-function ordBtns(side){ const o=ORD(S.sel), k1=side+"sl", k2=side+"tp"; return `<div class="t" style="margin-top:4px">Tap the chart to set a stop or target. Drag the line to move it.</div><div class="g2" style="margin:6px 0 4px"><button class="btn ghost sm" data-ord="${k1}">🛑 ${o[k1]?"Stop "+px(o[k1]):"Set stop loss"}</button><button class="btn ghost sm" data-ord="${k2}">🎯 ${o[k2]?"Target "+px(o[k2]):"Set take profit"}</button></div>`; }
+// line icons for stop loss and take profit
+const ICS=d=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const IC={sl:ICS('<path d="M8.5 3h7L21 8.5v7L15.5 21h-7L3 15.5v-7z"/><path d="M8 12h8"/>'),tp:ICS('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>')};
+function ordBtns(side){ const o=ORD(S.sel), k1=side+"sl", k2=side+"tp"; return `<div class="t" style="margin-top:4px">Tap the chart to set a stop or target. Drag the line to move it.</div><div class="g2" style="margin:6px 0 4px"><button class="btn ghost sm" data-ord="${k1}">${IC.sl}${o[k1]?"Stop "+px(o[k1]):"Set stop loss"}</button><button class="btn ghost sm" data-ord="${k2}">${IC.tp}${o[k2]?"Target "+px(o[k2]):"Set take profit"}</button></div>`; }
 function sellLong(sym,q,why){ const p=P(sym); if(q<1) return; const b=fillSell(sym,q), pl=q*(b-p.lc), en=p.lc; S.cash+=q*b; flowPush(sym,-1,q*b); p.l-=q; if(!p.l) p.lc=0;
   rec(sym,"L",q,en,b,pl); mark(sym,"S",sp(sym),pl); winFx(pl); tipCredit(sym,pl); toast(`${why||"Sold"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`); chips(); }
 // ---------- automations (lost if you go broke) ----------
@@ -602,13 +606,13 @@ function buildAuto(){ let h=`<div class="pad"><div class="t" style="margin:0 3px
 // ---------- stop loss / take profit ----------
 const ORD=sym=>{ S.ord=S.ord||{}; return S.ord[sym]||(S.ord[sym]={}); };
 function checkOrders(){ if(!S.ord) return; for(const sym in S.ord){ const o=S.ord[sym], p=P(sym), pr=sp(sym);
-  if(p.l){ if(o.lsl&&pr<=o.lsl) sellLong(sym,p.l,"🛑 Stop loss:"); else if(o.ltp&&pr>=o.ltp) sellLong(sym,p.l,"🎯 Take profit:"); }
-  if(p.s){ if(o.ssl&&pr>=o.ssl) cover(sym,p.s,"🛑 Stop loss:"); else if(o.stp&&pr<=o.stp) cover(sym,p.s,"🎯 Take profit:"); }
+  if(p.l){ if(o.lsl&&pr<=o.lsl) sellLong(sym,p.l,"Stop loss:"); else if(o.ltp&&pr>=o.ltp) sellLong(sym,p.l,"Take profit:"); }
+  if(p.s){ if(o.ssl&&pr>=o.ssl) cover(sym,p.s,"Stop loss:"); else if(o.stp&&pr<=o.stp) cover(sym,p.s,"Take profit:"); }
   if(!p.l){ delete o.lsl; delete o.ltp; } if(!p.s){ delete o.ssl; delete o.stp; } } }
 function orderModal(key){ const sym=S.sel, p=P(sym), lng=key[0]==="l", stop=key.slice(1)==="sl", en=lng?p.lc:p.se, now=sp(sym), o=ORD(sym);
   const up=(lng&&!stop)||(!lng&&stop), ok=v=>up?v>now:v<now;
   const chips=[1,2,3,5,10,20].map(x=>{ const v=en*(1+(up?x:-x)/100); return `<button class="btn ${stop?"sell":"buy"} sm" data-op="${key}:${v}" ${ok(v)?"":"disabled"} style="margin:3px">${up?"+":"−"}${x}%<small>${px(v)}</small></button>`; }).join("");
-  modal(`${stop?"🛑 Stop loss":"🎯 Take profit"} · ${lng?"long":"short"} ${sym}`,`<p>Automatically ${lng?"sell":"cover"} all ${lng?p.l:p.s} shares if ${sym} ${up?"rises to":"falls to"} this price. Works while you're away. Your entry was <b>${px(en)}</b>; it's at <b>${px(now)}</b> now.</p>
+  modal(`${stop?IC.sl+"Stop loss":IC.tp+"Take profit"} · ${lng?"long":"short"} ${sym}`,`<p>Automatically ${lng?"sell":"cover"} all ${lng?p.l:p.s} shares if ${sym} ${up?"rises to":"falls to"} this price. Works while you're away. Your entry was <b>${px(en)}</b>; it's at <b>${px(now)}</b> now.</p>
     <div style="display:flex;flex-wrap:wrap;justify-content:center">${chips}</div>
     <div class="row" style="margin-top:8px"><input id="opx" class="inp g" inputmode="decimal" placeholder="Or type a price"><button class="btn gold sm" data-op="${key}:custom">Set</button></div>
     ${o[key]?`<button class="btn ghost sm" style="width:100%;margin-top:8px" data-op="${key}:off">Remove (currently ${px(o[key])})</button>`:""}`,[["Cancel","ghost"]]); }
@@ -616,7 +620,7 @@ function setOrder(arg){ const [key,v]=arg.split(":"), o=ORD(S.sel), now=sp(S.sel
   if(v==="off"){ delete o[key]; closeModal(); toast("Removed"); return build(true); }
   const val=v==="custom"?+$("opx").value:+v; if(!(val>0)) return toast("Enter a price");
   if(up?val<=now:val>=now) return toast(`That price needs to be ${up?"above":"below"} ${px(now)}`);
-  o[key]=val; closeModal(); toast(`${stop?"🛑 Stop loss":"🎯 Take profit"} set at ${px(val)}`); build(true); }
+  o[key]=val; closeModal(); toast(`${stop?"Stop loss":"Take profit"} set at ${px(val)}`); build(true); }
 function cover(sym,q,why){ const p=P(sym); if(q<1) return; const a=fillBuy(sym,q), col=q*p.se, pl=Math.max(q*(p.se-a),-col), en=p.se; flowPush(sym,1,q*a);
   S.cash+=col+pl; p.s-=q; if(!p.s) p.se=0; rec(sym,"S",q,en,a,pl); mark(sym,"C",sp(sym),pl); winFx(pl); tipCredit(sym,pl);
   toast(`${why||"Covered"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`);  chips(); }
@@ -731,13 +735,13 @@ function upd(){
 // ---- stop loss / take profit chosen before you trade: tap to cycle, applied the moment a trade opens
 const PRE_SL=[0,2,5,10,20], PRE_TP=[0,2,5,10,20,50];
 function preCard(open){ const el=$("pre"); if(!el) return; const pr=S.pre=S.pre||{sl:0,tp:0}, k=(open?1:0)+"|"+pr.sl+"|"+pr.tp; if(el.dataset.k===k) return; el.dataset.k=k;
-  el.style.display=open?"none":""; el.innerHTML=`<button class="btn ${pr.sl?"sell":"ghost"} sm" data-pre="sl">🛑 Stop loss: ${pr.sl?pr.sl+"%":"Off"}</button><button class="btn ${pr.tp?"buy":"ghost"} sm" data-pre="tp">🎯 Take profit: ${pr.tp?pr.tp+"%":"Off"}</button>`; }
+  el.style.display=open?"none":""; el.innerHTML=`<button class="btn ${pr.sl?"sell":"ghost"} sm" data-pre="sl">${IC.sl}Stop loss: ${pr.sl?pr.sl+"%":"Off"}</button><button class="btn ${pr.tp?"buy":"ghost"} sm" data-pre="tp">${IC.tp}Take profit: ${pr.tp?pr.tp+"%":"Off"}</button>`; }
 function preStops(sym){ const pr=S.pre||{}, p=P(sym), o=ORD(sym); if(!pr.sl&&!pr.tp) return;
   if(p.l){ if(pr.sl) o.lsl=p.lc*(1-pr.sl/100); if(pr.tp) o.ltp=p.lc*(1+pr.tp/100); }
   if(p.s){ if(pr.sl) o.ssl=p.se*(1+pr.sl/100); if(pr.tp) o.stp=p.se*(1-pr.tp/100); } }
 main.addEventListener("click",e=>{ const b=e.target.closest("[data-pre]"); if(!b) return; const pr=S.pre=S.pre||{sl:0,tp:0}, L=b.dataset.pre==="sl"?PRE_SL:PRE_TP, k=b.dataset.pre;
   pr[k]=L[(L.indexOf(pr[k])+1)%L.length]; save(); preCard(false);
-  toast(k==="sl"?(pr.sl?`🛑 New trades auto-sell if they drop ${pr.sl}%`:"🛑 Stop loss off"):(pr.tp?`🎯 New trades auto-sell at +${pr.tp}% profit`:"🎯 Take profit off")); });
+  toast(k==="sl"?(pr.sl?`New trades auto-sell if they drop ${pr.sl}%`:"Stop loss off"):(pr.tp?`New trades auto-sell at +${pr.tp}% profit`:"Take profit off")); });
 function jobCard(){ const el=$("job"); if(!el) return; const p=prof();
   if(!p){ el.innerHTML=`<button class="btn gold" style="width:100%" data-x="pick">Pick a profession</button>`; return; }
   const s=pst(), t=tier(); let h=`<div class="row"><div style="font-size:22px">${p.i}</div><div class="g"><div class="b">${p.n} <span class="pill">★ ${s.rep} rep</span></div><div class="t">${t>=0?p.gear[t]:"<span class=dn>gear broken</span>"}${FUSE[t]>0?` · ${p.sup} ${s.fuel.toFixed(1)}/${FUSE[t]*4}`:""}${aOn("book")?" · 📅 auto-booking":""}</div></div></div>`;
@@ -971,11 +975,11 @@ main.addEventListener("pointermove",e=>{ if(!PDOWN||e.target.id!=="chart") retur
   if(Math.abs(y-PDOWN.y)>5) PDOWN.moved=true;
   if(DRAG){ const v=yToPrice(y); if(okSide(DRAG.k,v)){ ORD(S.sel)[DRAG.k]=v; draw(); } } });
 main.addEventListener("pointerup",e=>{ if(!PDOWN) return; const was=DRAG, tap=!PDOWN.moved, y=PDOWN.y; PDOWN=null; DRAG=null;
-  if(was){ const v=ORD(S.sel)[was.k]; toast(`${was.k.endsWith("sl")?"🛑 Stop loss":"🎯 Take profit"} moved to ${px(v)}`); build(true); return; }
+  if(was){ const v=ORD(S.sel)[was.k]; toast(`${was.k.endsWith("sl")?"Stop loss":"Take profit"} moved to ${px(v)}`); build(true); return; }
   if(!tap||e.target.id!=="chart"||!MAP) return;
   const p=P(S.sel), v=yToPrice(y), now=sp(S.sel); if(!p.l&&!p.s) return;
   const c=[]; if(p.l) c.push(v<now?"lsl":"ltp"); if(p.s) c.push(v>now?"ssl":"stp");
-  const lab=k=>`${k.endsWith("sl")?"🛑 Stop loss":"🎯 Take profit"} for your ${k[0]==="l"?"buy":"short"}`;
+  const lab=k=>`${k.endsWith("sl")?"Stop loss":"Take profit"} for your ${k[0]==="l"?"buy":"short"}`;
   if(c.length===1){ ORD(S.sel)[c[0]]=v; toast(`${lab(c[0])} set at ${px(v)}. Drag the line to adjust.`); build(true); }
   else modal("Set at "+px(v)+"?","",c.map(k=>[lab(k),k.endsWith("sl")?"sell":"buy",()=>{ ORD(S.sel)[k]=v; toast(lab(k)+" set at "+px(v)); build(true); }]).concat([["Cancel","ghost"]])); });
 main.addEventListener("pointercancel",()=>{ PDOWN=null; DRAG=null; });

@@ -32,8 +32,8 @@ header{padding:calc(env(safe-area-inset-top) + 8px) 12px 6px;border-bottom:1px s
 main{flex:1;overflow-y:auto}
 nav{display:flex;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;padding:8px 0;font-size:11px;color:var(--mut)}
-nav button span{display:block;font-size:18px;opacity:.5;filter:grayscale(1)}
-nav button.on{color:var(--text)} nav button.on span{opacity:1;filter:none}
+nav button span{display:block;opacity:.55} nav button span svg{width:23px;height:23px;display:block;margin:0 auto 3px}
+nav button.on{color:var(--text)} nav button.on span{opacity:1;color:var(--gold)} nav button.on{color:var(--text)}
 #chips{display:flex;gap:5px;overflow-x:auto;padding:8px 10px 4px;scrollbar-width:none}
 #chips::-webkit-scrollbar{display:none}
 .chip{flex:none;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:5px 8px;text-align:left}
@@ -157,7 +157,7 @@ nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9p
   header{grid-area:header;padding:14px 22px 10px} main{grid-area:main} 
   .hr{grid-template-columns:repeat(3,minmax(0,220px))} #cash{font-size:26px} .hv{font-size:18px} #gear{right:18px;top:14px;font-size:22px}
   nav{grid-area:nav;flex-direction:column;justify-content:flex-start;gap:4px;border-top:0;border-right:1px solid var(--line);padding:14px 0 0}
-  nav button{flex:none;padding:12px 0;font-size:11.5px} nav button span{font-size:22px}
+  nav button{flex:none;padding:12px 0;font-size:11.5px} nav button span svg{width:26px;height:26px}
   .mk{display:grid;grid-template-columns:minmax(0,1fr) 400px;height:100%}
   .mk-l{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line)}
   .mk-r{overflow-y:auto;min-height:0}
@@ -184,7 +184,7 @@ nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9p
   <div id="home"></div><button id="gear" aria-label="Settings">⚙︎</button><div id="debt"></div>
 </header>
 <main id="main"></main>
-<nav id="nav"><button data-tab="trade" class="on"><span>📈</span>Market</button><button data-tab="store"><span>🛒</span>Store</button><button data-tab="auto"><span>🤖</span>Automations</button><button data-tab="friends"><span>👥</span>Friends</button><button data-tab="me"><span>👤</span>Profile</button></nav>
+<nav id="nav"><button data-tab="trade" class="on"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg></span>Market</button><button data-tab="store"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 12H6.2L5 8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg></span>Store</button><button data-tab="auto"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="8" width="15" height="11" rx="2.5"/><path d="M12 4.5V8"/><circle cx="12" cy="4" r=".6"/><path d="M9.5 12.5v1M14.5 12.5v1M9.5 16.5h5"/></svg></span>Automations</button><button data-tab="friends"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M15.5 5.6a3.2 3.2 0 0 1 0 5.8"/><path d="M17.5 14.4c2.1.8 3.5 2.9 3.5 5.6"/></svg></span>Friends</button><button data-tab="me"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></span>Profile</button></nav>
 </div>
 <div id="modal" class="hide"></div><div id="toast"></div>
 <script type="module" src="net.js"></script>

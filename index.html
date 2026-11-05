@@ -150,6 +150,29 @@ nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9p
 .msg.me{align-self:flex-end;background:#1d4ed8;border-color:#1d4ed8;border-radius:16px 16px 4px 16px}
 .msg small{display:block;font-size:10px;opacity:.6;margin-top:2px}
 .chi{display:flex;gap:6px;padding:8px 10px calc(env(safe-area-inset-bottom) + 8px);border-top:1px solid var(--line);background:var(--panel)}
+.chw{position:relative}
+/* ---------- desktop / laptop layout: wide screen + mouse. Phones and tablets keep the mobile layout ---------- */
+@media (min-width:1000px) and (pointer:fine){
+  #app{max-width:1600px;display:grid;grid-template-columns:92px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"nav header" "nav main"}
+  header{grid-area:header;padding:14px 22px 10px} main{grid-area:main} 
+  .hr{grid-template-columns:repeat(3,minmax(0,220px))} #cash{font-size:26px} .hv{font-size:18px} #gear{right:18px;top:14px;font-size:22px}
+  nav{grid-area:nav;flex-direction:column;justify-content:flex-start;gap:4px;border-top:0;border-right:1px solid var(--line);padding:14px 0 0}
+  nav button{flex:none;padding:12px 0;font-size:11.5px} nav button span{font-size:22px}
+  .mk{display:grid;grid-template-columns:minmax(0,1fr) 400px;height:100%}
+  .mk-l{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line)}
+  .mk-r{overflow-y:auto;min-height:0}
+  main:has(.mk){overflow:hidden}
+  #chips{flex-wrap:wrap;overflow:visible;padding:12px 16px 6px;gap:6px}
+  .chip{padding:6px 10px} .chip b{font-size:13px}
+  .q{padding:4px 16px} #qp{font-size:34px} #qc{font-size:14px!important} #qn{font-size:13px}
+  .tf{padding:6px 16px 4px;max-width:640px} .tf button{padding:7px 0;font-size:13px}
+  .chw{flex:1;min-height:380px} .chw #chart{position:absolute;inset:0;width:100%;height:100%;min-height:0}
+  #news{padding:8px 16px;font-size:13px}
+  .mk-r .pad{padding:14px 14px 10px}
+  main>.pad{max-width:900px;margin:0 auto;padding:18px 20px}
+  #modal .box{max-width:480px} #chat{max-width:760px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+  .btn{font-size:14px}
+}
 </style></head><body>
 <div id="app">
 <header>
@@ -593,18 +616,18 @@ let tab="trade", seg="job"; const main=$("main");
 function setTab(t){ tab=t; document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t)); main.scrollTop=0; build(); }
 function build(soft){ if(tab==="trade") soft&&$("chart")?upd():buildTrade(); else if(tab==="store") buildStore(); else if(tab==="auto"){ if(!soft) buildAuto(); } else if(tab==="friends"){ if(!soft) buildFriends(); } else if(!soft) buildMe(); hdr(); }
 function buildTrade(){
-  main.innerHTML=`<div id="chips"></div>
+  main.innerHTML=`<div class="mk"><div class="mk-l"><div id="chips"></div>
   <div class="q"><div><span class="t" id="qn"></span><div class="row"><span id="qp" class="m"></span><span id="qc" class="m" style="font-size:12.5px"></span></div></div>
   </div><div class="tf">${TFS.map(([s,l])=>`<button data-tf="${s}">${l}</button>`).join("")}</div>
-  <canvas id="chart"></canvas><div id="news"></div>
-  <div class="pad"><div id="pos" class="card"></div>
+  <div class="chw"><canvas id="chart"></canvas></div><div id="news"></div></div>
+  <div class="mk-r"><div class="pad"><div id="pos" class="card"></div>
   <div class="qty"><button data-q="-1">−</button><div class="mid"><b id="qv"></b><span id="qcst"></span></div><button data-q="1">+</button><button data-q="max">MAX</button></div>
   <div class="g4" id="acts" style="grid-template-columns:1fr 1fr 1.3fr"><button class="btn buy" data-a="buy">BUY</button><button class="btn short" data-a="short">SHORT</button><button class="btn ghost" data-a="close">CLOSE</button></div>
   <div id="tipw"></div>
   <div id="compw"></div>
   <h3>Hustle</h3><div id="job" class="card"></div>
   <div id="momw"><h3>Mom's practice round</h3><div id="momc" class="card"></div></div>
-  <h3>Index fund · TTI</h3><div id="fundc" class="card"></div></div>`;
+  <h3>Index fund · TTI</h3><div id="fundc" class="card"></div></div></div></div>`;
   chips(); upd(); fundCard(); }
 function chips(){ const c=$("chips"); if(!c) return; const sl=c.scrollLeft;
   c.innerHTML=STOCKS.map(d=>{ if(!unlocked(d)) return `<button class="chip lock" data-lk="${d.un}"><b>${d.s}</b><small>🔒${money(d.un)}</small></button>`;
@@ -653,7 +676,7 @@ let DRAW_T=0;
 function spanLbl(tf,n){ const s=tf*n; return "≈ "+(s<3600?Math.round(s/60)+" min":s<172800?Math.round(s/3600)+" hours":Math.round(s/86400)+" days")+" shown"; }
 function draw(){
   const cv=$("chart"); if(!cv) return; const dpr=devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight; if(!W) return;
-  if(cv.width!==Math.round(W*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
   const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,H);
   const sym=S.sel, d=BYSYM[sym], p=P(sym), tf=S.tf, aw=56, pw=W-aw, vh=H*.15, top=12, bot=H-vh-12, cw=7, n=Math.floor(pw/cw);
   BUDGET=performance.now()+35; const data=candles(d.i,tf,n,NOW), first=data[0][5], loading=data.some(k=>k[0]===null); BUDGET=Infinity;

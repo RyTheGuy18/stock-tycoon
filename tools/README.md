@@ -8,3 +8,7 @@
 
 Re-run it after any engine change. Engine changes alter the market for everyone, so gate them behind a new cutover hour
 (like H1 and H2) and check that prices before it stay byte-identical.
+
+`shape-harness.js` tests the chart-pattern lessons (double top/bottom at the 1h high/low, triangles, flags) after the H3 cutover:
+`SHP(days)` → win rates per pattern, split into real patterns vs. false alarms, plus how many of each pattern the engine made.
+"Normal volume" in all rules = the median 10s volume over the last hour.

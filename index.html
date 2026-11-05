@@ -35,7 +35,7 @@ main{flex:1;overflow-y:auto;min-height:0;overscroll-behavior:contain;position:re
 @media (display-mode: standalone){ html{height:min(100lvh,calc(100% + env(safe-area-inset-top)))} }
 #modal,#intro,#tut,#auth,#chat{position:absolute!important;top:0!important;bottom:0!important;height:auto!important}
 html.pwa nav{padding-bottom:max(12px,calc(env(safe-area-inset-bottom) - 20px))} html.pwa nav button{padding:12px 0 0}
-html.pwa header{padding-top:calc(env(safe-area-inset-top) + 32px)} html.pwa #gear{top:calc(env(safe-area-inset-top) + 32px)}
+html.pwa header{padding-top:calc(env(safe-area-inset-top) + 32px)} html.pwa #hbtns{top:calc(env(safe-area-inset-top) + 30px)}
 nav{display:flex;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;padding:8px 0;font-size:11px;color:var(--mut)}
 nav button span{display:block;opacity:.55} nav button span svg{width:23px;height:23px;display:block;margin:0 auto 3px}
@@ -122,11 +122,11 @@ canvas.sp{width:100%;height:46px;display:block;margin:6px 0}
 @keyframes dotp{0%,100%{box-shadow:0 0 0 0 rgba(245,179,1,.5)}50%{box-shadow:0 0 0 6px rgba(245,179,1,0)}}
 .tn:not(.done):not(.cur){opacity:.55}
 .perk{display:inline-block;font-size:11px;color:#c8a24a;background:#1d1a10;border-radius:6px;padding:1px 6px;margin-top:3px}
-#gear{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 8px);background:none;color:var(--mut);font-size:19px;padding:2px 4px}
+#hbtns{position:absolute;right:8px;top:calc(env(safe-area-inset-top) + 6px);display:flex;align-items:center;gap:4px}
+#gear{background:none;color:var(--mut);font-size:19px;line-height:1;padding:4px;display:flex;align-items:center}
 header{position:relative}
-#bell{position:absolute;right:44px;top:calc(env(safe-area-inset-top) + 9px);color:var(--mut);padding:3px}
+#bell{position:relative;color:var(--mut);padding:4px;display:flex;align-items:center}
 #bell svg{width:20px;height:20px;display:block} #bell i{display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--dn);box-shadow:0 0 0 2px var(--panel)} #bell.new i{display:block}
-html.pwa #bell{top:calc(env(safe-area-inset-top) + 9px)}
 #tbar{display:none;background:var(--panel);border-top:1px solid var(--line);padding:8px 10px 6px}
 #tbar.on{display:block} #tbar .tr{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12.5px} #tbar .tr b{font-family:"JetBrains Mono",monospace}
 #tbar .g4{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:6px} #tbar .btn{padding:9px 0}
@@ -165,12 +165,13 @@ nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9p
 .msg small{display:block;font-size:10px;opacity:.6;margin-top:2px}
 .chi{display:flex;gap:6px;padding:8px 10px calc(env(safe-area-inset-bottom) + 8px);border-top:1px solid var(--line);background:var(--panel)}
 .chw{position:relative}
+#ctools{position:absolute;right:62px;top:6px;display:flex;gap:4px;z-index:2} #ctools button{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:4px 9px;font-size:11.5px;font-weight:700;color:var(--mut)} #ctools button.on{color:#05080b;background:var(--gold);border-color:var(--gold)}
 #zlive{position:absolute;left:8px;top:8px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--gold);z-index:2}
 /* ---------- desktop / laptop layout: wide screen + mouse. Phones and tablets keep the mobile layout ---------- */
 @media (min-width:1000px) and (pointer:fine){
   #app{max-width:none;display:grid;grid-template-columns:92px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"nav header" "nav main"}
-  header{grid-area:header;padding:14px 22px 10px} main{grid-area:main} #tbar{display:none!important} #bell{right:54px;top:15px} 
-  .hr{grid-template-columns:repeat(3,minmax(0,220px))} #cash{font-size:26px} .hv{font-size:18px} #gear{right:18px;top:14px;font-size:22px}
+  header{grid-area:header;padding:14px 22px 10px} main{grid-area:main} #tbar{display:none!important} #hbtns{right:16px;top:12px} #bell svg{width:22px;height:22px} 
+  .hr{grid-template-columns:repeat(3,minmax(0,220px))} #cash{font-size:26px} .hv{font-size:18px} #gear{font-size:22px}
   nav{grid-area:nav;flex-direction:column;justify-content:flex-start;gap:4px;border-top:0;border-right:1px solid var(--line);padding:14px 0 0}
   nav button{flex:none;padding:12px 0;font-size:11.5px} nav button span svg{width:26px;height:26px}
   .mk{display:grid;grid-template-columns:minmax(0,1fr) clamp(400px,22vw,520px);height:100%}
@@ -196,7 +197,7 @@ nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9p
     <div><div class="l">Index fund</div><div id="fund" class="m hv">$0.00</div></div>
     <div><div class="l">Net worth</div><div id="nw" class="m hv">$0.00</div></div>
   </div>
-  <div id="home"></div><button id="bell" aria-label="News"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><i></i></button><button id="gear" aria-label="Settings">⚙︎</button><div id="debt"></div>
+  <div id="home"></div><div id="hbtns"><button id="bell" aria-label="News"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><i></i></button><button id="gear" aria-label="Settings">⚙︎</button></div><div id="debt"></div>
 </header>
 <main id="main"></main>
 <div id="tbar"></div>
@@ -266,9 +267,10 @@ const SER=STOCKS.concat([IDX]), II=SER.length-1, BYSYM={}; SER.forEach((d,i)=>{d
 
 // ---------- episodes: the learnable patterns ----------
 // phase [ticks, drift (×vol unless abs), volume×, abs?]
-function makeEp(d,r,h){ const nw=h>=H1; // from H1 on, collapses and squeezes are rare (about once every 2 weeks per stock instead of every 2 days)
+function makeEp(d,r,h,shapeOK){ const nw=h>=H1; // from H1 on, collapses and squeezes are rare (about once every 2 weeks per stock instead of every 2 days)
   const w=[["breakout",3],["fakeout",3],["beat",1.4],["rumor",1.4],["deadcat",1.8],["collapse",nw?.03:.22],["squeeze",nw?.035:.25]];
   if(d.vol<.0017) w.push(["capit",2]); if(d.pump) w.push(["pump",2.2]);
+  if(h>=H3&&shapeOK) w.push(["dtop",1.1],["dbot",1.1],["atri",.9],["dtri",.9],["bflag",1.1],["sflag",1.1]);
   let x=r()*w.reduce((a,b)=>a+b[1],0), ty="breakout"; for(const k of w){x-=k[1]; if(x<=0){ty=k[0];break;}}
   const E={breakout:{ph:[[60,0,.35,0,.3],[30,.28,3.6],[220,.1,1.7]]}, fakeout:{ph:[[40,.22,1.1],[150,-.08,1]]},
     beat:{nw:"📊 {n} beats earnings, raises outlook",ph:[[6,1.2,6],[400,.09,1.8]]},
@@ -276,6 +278,7 @@ function makeEp(d,r,h){ const nw=h>=H1; // from H1 on, collapses and squeezes ar
     capit:{ph:[[30,-.38,5.5],[300,.12,1.5]]},
     deadcat:{nw:"⚠️ Report: {n} under federal investigation",ph:[[25,-.42,3],[40,.17,.8],[260,-.1,1.3]]},
     pump:{ph:[[60,.55,10],[240,-.2,1.8]]}};
+  if(SHAPES[ty]) return SHAPES[ty](d,r);
   if(h>=H2){ // tells: something visible happens BEFORE the big move. sOff = when the big move starts; nwo = when the main headline appears
     if(ty==="breakout"){ const C=60+Math.floor(r()*31); return {ty,sOff:C+36,ph:[[C,0,.35,0,.3],[12,.015,1.7,0,.5],[12,.015,2.3,0,.5],[12,.015,3,0,.5],[30,.28,3.6],[220,.1,1.7]]}; }
     if(ty==="beat"){ const P=60+Math.floor(r()*61); return {ty,sOff:P,nwo:P,pnw:"🔎 Unusual call-option buying in {n}",nw:"📊 {n} beats earnings, raises outlook",ph:[[P,.03,1.8],[6,1.2,6],[400,.09,1.8]]}; }
@@ -287,12 +290,30 @@ function makeEp(d,r,h){ const nw=h>=H1; // from H1 on, collapses and squeezes ar
   return Object.assign({ty},E[ty]);
 }
 const epLen=e=>e.ph.reduce((a,p)=>a+p[0],0);
+// ---------- candle-shape patterns (from H3) ----------
+// Each is a list of keypoints [second, kind, value] steering the price: "B" = where it already is, "T" = the target level
+// (the 1-hour high for tops, the 1-hour low for bottoms), "R" = relative to the previous keypoint. Values are in u, the stock's
+// normal 1-minute swing. seg = [volume×, noise×] for the stretch leading into each keypoint. net = the move it leaves behind.
+// Starts are on 10-second candle edges so wick candles (shooting stars, hammers) land inside one candle.
+const SHAPES={
+ dtop:(d,r)=>shapeTop(1), dbot:(d,r)=>shapeTop(-1), atri:(d,r)=>shapeTri(1), dtri:(d,r)=>shapeTri(-1),
+ bflag:(d,r)=>shapeFlag(1,r), sflag:(d,r)=>shapeFlag(-1,r)};
+function shapeTop(s){ // double top (s=1) / double bottom (s=-1): two touches of the 1h high/low with rejection wicks, then a big move away
+  const k=[[0,"B",0,[1,1]],[150,"T",-.9*s,[1.2,.35]],[154,"T",0,[1.6,.35]],[160,"T",-1*s,[1.6,.35]],[240,"T",-2.4*s,[1,.35]],[330,"T",-1*s,[.8,.35]],[334,"T",0,[1.2,.35]],[340,"T",-1.1*s,[1.2,.35]],[520,"R",-5*s,[3.6,.6]]];
+  return {ty:s>0?"dtop":"dbot",shape:1,side:s,kp:k,net:-s*4.5,ph:[[820,0,1]]}; }
+function shapeTri(s){ // ascending (s=1) / descending (s=-1) triangle: 3 touches of the 1h high/low, each pullback shallower, then a breakout through it
+  const k=[[0,"B",0,[1,1]],[150,"T",-.15*s,[1,.35]],[154,"T",0,[1.3,.35]],[160,"T",-.2*s,[1.3,.35]],[230,"T",-2*s,[.9,.35]],[300,"T",-.15*s,[1.1,.35]],[304,"T",0,[1.3,.35]],[310,"T",-.2*s,[1.3,.35]],
+    [360,"T",-1.2*s,[.9,.35]],[420,"T",-.1*s,[1.5,.35]],[424,"T",0,[2,.35]],[430,"T",-.15*s,[2,.35]],[470,"T",-.6*s,[1.4,.35]],[600,"R",5.5*s,[3.6,.6]]];
+  return {ty:s>0?"atri":"dtri",shape:1,side:s,kp:k,net:s*4.5,ph:[[900,0,1]]}; }
+function shapeFlag(s,r){ // bull (s=1) / bear (s=-1) flag: a sharp pole, a slow drift the other way on low volume, then the move continues
+  const F=10*(15+Math.floor(r()*7));
+  return {ty:s>0?"bflag":"sflag",shape:1,side:s,kp:[[0,"B",0,[1,1]],[90,"R",4*s,[3.6,.5]],[90+F,"R",-1.3*s,[.7,.3]],[90+F+150,"R",5.5*s,[3.6,.5]]],net:s*8.2,ph:[[240+F,0,1]]}; }
 const SC=new Map();
 function sched(i,h){ const key=i+":"+h; let s=SC.get(key); if(s) return s;
   const d=SER[i], eps=[];
-  if(!d.idx){ const r=RNG("e"+d.sid+":"+h); for(let sl=0;sl<3;sl++) if(r()<.45){ const e=makeEp(d,r,h); e.st=sl*1200+1+Math.floor(r()*(1199-epLen(e))); eps.push(e);} }
+  if(!d.idx){ const r=RNG("e"+d.sid+":"+h); for(let sl=0;sl<3;sl++) if(r()<.45){ const e=makeEp(d,r,h,sl<2&&!eps.some(x=>x.shape)); e.st=e.shape?sl*1200+10*Math.floor(r()*((1190-epLen(e))/10)):sl*1200+1+Math.floor(r()*(1199-epLen(e))); eps.push(e);} }
   const mr=RNG("m:"+h); let cr=mr()<1/60?1+Math.floor(mr()*3400):null; if(cr!=null&&h>=H2) cr=Math.max(cr,150);
-  let ee=0, eeP=0; for(const e of eps) for(const p of e.ph){ const m=p[0]*(p[3]?p[1]:p[1]*d.vol); ee+=m; if(p[3]&&h>=H1) eeP+=.78*m; } // part of a collapse/squeeze sticks
+  let ee=0, eeP=0; for(const e of eps){ if(e.shape){ ee+=e.net*d.vol*Math.sqrt(60); continue; } for(const p of e.ph){ const m=p[0]*(p[3]?p[1]:p[1]*d.vol); ee+=m; if(p[3]&&h>=H1) eeP+=.78*m; } } // part of a collapse/squeeze sticks
   if(cr!=null) ee+=Math.log(.82)*d.beta+(h>=H2?Math.log(.995)*d.beta:0);
   if(d.od&&((h%24)+24)%24===OPEN_H) ee+=openSign(i,h)*d.oD;
   s={eps,cr,ee,eeP}; SC.set(key,s); if(SC.size>3000) SC.delete(SC.keys().next().value); return s; }
@@ -314,6 +335,8 @@ function L(i,h){ const d=SER[i], a=AN[i], k=h-H0; if(k<0) return Lpre(i,h);
 const H1=Math.floor(Date.UTC(2026,10,5,18)/3600000), MKA=[0], RGB=[];
 // From H2 on, every big move shows a tell before it starts (see makeEp, sched, bigEv). Prices before H2 are unchanged.
 const H2=Math.floor(Date.UTC(2026,10,6,0)/3600000);
+// From H3 on, candle-shape patterns (double tops/bottoms at the 1-hour high/low, triangles, flags). Prices before H3 are unchanged.
+const H3=Math.floor(Date.UTC(2026,10,6,2)/3600000);
 function regimeAt(h){ const day=Math.floor((h-6)/24), dA=Math.floor((H1-6)/24); if(day<dA) return null;
   while(!RGB.length||RGB[RGB.length-1].d1<=day){ const n=RGB.length, st=n?RGB[n-1].d1:dA, r=RNG("rgb"+n), len=1+Math.floor(r()*3), u=r(), type=u<.27?1:u<.54?-1:0;
     RGB.push({n,d0:st,d1:st+len,type,dr:type?type*(.015+r()*.025):(r()-.5)*.006}); }
@@ -330,7 +353,8 @@ function mpath(h){ let m=MP.get(h); if(m) return m; const r=RNG("mn:"+h); m=new 
 const CH=new Map();
 function chunk(i,h){ const key=i+":"+h; let c=CH.get(key); if(c) return c;
   const d=SER[i], s=sched(i,h), mu=new Float64Array(HN+1), vm=new Float32Array(HN+1).fill(1), sm=new Float32Array(HN+1).fill(1);
-  for(const e of s.eps){ let t=e.st; for(const p of e.ph){ const m=p[3]?p[1]:p[1]*d.vol; for(let k=0;k<p[0];k++,t++){ mu[t]+=m; vm[t]*=p[2]; if(p[4]) sm[t]*=p[4]; } } }
+  for(const e of s.eps){ if(e.shape){ for(let j=1;j<e.kp.length;j++){ const [a]=e.kp[j-1], [b,,,sg]=e.kp[j]; for(let t=e.st+a+1;t<=e.st+b&&t<=HN;t++){ vm[t]*=sg[0]; sm[t]*=sg[1]; } } continue; }
+    let t=e.st; for(const p of e.ph){ const m=p[3]?p[1]:p[1]*d.vol; for(let k=0;k<p[0];k++,t++){ mu[t]+=m; vm[t]*=p[2]; if(p[4]) sm[t]*=p[4]; } } }
   // "3-hour flush": at the top of every UTC hour divisible by 3, stocks dip then fully recover
   if(!d.idx&&h%3===0){ const a=Math.log(1-flushD(d))/120; for(let t=1;t<=120;t++){ mu[t]+=a; vm[t]*=2; } for(let t=121;t<=300;t++) mu[t]-=a*120/180; }
   const dh=((h%24)+24)%24;
@@ -342,8 +366,24 @@ function chunk(i,h){ const key=i+":"+h; let c=CH.get(key); if(c) return c;
   for(let t=1;t<=HN;t++){ const e0=Math.sqrt(v)*G(r)*(r()<.02?2.6:1), e=e0*sm[t]; v=.02*tv+.06*e0*e0+.92*v;
     X[t]=X[t-1]+e+(M?d.beta*(M[t]-M[t-1]):0); E[t]=E[t-1]+mu[t];
     V[t]=(900+900*r())*vm[t]*(1+Math.abs(e)/d.vol*.25)*(d.p<5?40:d.p>500?.3:1); }
-  const L0=L(i,h), L1=L(i,h+1), P=new Float64Array(HN+1);
-  for(let t=0;t<=HN;t++) P[t]=Math.exp(L0+t/HN*(L1-L0-E[HN])+X[t]-t/HN*X[HN]+E[t]);
+  const L0=L(i,h), L1=L(i,h+1), P=new Float64Array(HN+1), shp=s.eps.find(e=>e.shape);
+  if(!shp){ for(let t=0;t<=HN;t++) P[t]=Math.exp(L0+t/HN*(L1-L0-E[HN])+X[t]-t/HN*X[HN]+E[t]); }
+  else { // base path without the shape (its net move is already in L1), then steer it through the keypoints
+    const u=d.vol*Math.sqrt(60), net=shp.net*u, B=new Float64Array(HN+1), D=new Float64Array(HN+1), ev=t=>evo(i,h*HN+t);
+    for(let t=0;t<=HN;t++) B[t]=L0+t/HN*(L1-L0-E[HN]-net)+X[t]-t/HN*X[HN]+E[t];
+    const t0=shp.st, seen=t=>B[t]+ev(t); let T=null;
+    if(shp.kp.some(k=>k[1]==="T")){ // the 1-hour high (tops) or low (bottoms) as shown on the chart, up to the pattern's start
+      const pv=chunk(i,h-1).P; let ext=shp.side>0?-Infinity:Infinity;
+      for(let t=t0;t<HN;t+=2){ const v=Math.log(pv[t])+evo(i,(h-1)*HN+t); ext=shp.side>0?Math.max(ext,v):Math.min(ext,v); }
+      for(let t=0;t<t0;t++){ const v=seen(t); ext=shp.side>0?Math.max(ext,v):Math.min(ext,v); }
+      const cur=seen(t0), gap=(ext-cur)*shp.side;
+      T=gap>20*u?cur+20*u*shp.side:gap<1.2*u?cur+1.2*u*shp.side:ext; shp.xtra=10*Math.round(Math.max(0,Math.min(30,(gap/u-4)*2))); }
+    let prevL=seen(t0); const pts=[];
+    for(const [o0,kd,v] of shp.kp){ const o=o0?o0+(shp.xtra||0):0, t=t0+o; if(t>HN) break; const Lv=kd==="B"?seen(t):kd==="T"?T+v*u:prevL+v*u; prevL=Lv; pts.push([t,Lv-seen(t)]); }
+    pts[0][1]=0;
+    for(let j=1;j<pts.length;j++){ const [a,da]=pts[j-1],[b,db]=pts[j]; for(let t=a;t<=b;t++) D[t]=da+(db-da)*(t-a)/(b-a); }
+    const [tE,dE]=pts[pts.length-1]; for(let t=tE;t<=HN;t++) D[t]=dE+(net-dE)*(t-tE)/Math.max(1,HN-tE);
+    for(let t=0;t<=HN;t++) P[t]=Math.exp(B[t]+D[t]); }
   c={P,V}; CH.set(key,c); if(CH.size>120) CH.delete(CH.keys().next().value); return c; }
 // ---------- breaking news: about one big story a day. 'f' = sudden (15-45 min), 's' = slow (1-3 days).
 // fx = how strongly each stock reacts ('*' = every stock). After the move it holds, then fades over several days.
@@ -464,12 +504,18 @@ const UPS=[{id:"phone",n:"Business phone line",c:150,d:"+10% job pay",pay:1.1},{
  {id:"crew",n:"Second crew",c:250000,d:"Jobs take another 30% less time",spd:.7},{id:"fran",n:"Franchise license",c:1e6,d:"Job pay ×2",pay:2}].sort((a,b)=>a.c-b.c);
 // ---------- knowledge (permanent) ----------
 const KNOW=[
- {id:"vol",n:"Read the volume bars",c:10,t:"Volume moves before price does.",d:"Before a real breakout, buyers pile in <b>before the price moves</b>. On the <b>10s chart</b>, look for <b>3 candles in a row where each volume bar is taller than the last</b> (all at least 1½× the normal bars) <b>but the candles stay small</b>. Buy right then, before the jump, and <b>sell 3 minutes later</b>. Won <b>81%</b> in testing.<br><br>A pop on normal volume with no build-up is noise; skip it. If a bar is 7× or more, that's a pump (see Pump and dump)."},
+ {id:"vol",n:"Read the volume bars",c:10,t:"Volume moves before price does.",d:"\"Normal\" volume means the usual bar height over the last hour. Before a real breakout, a stock goes quiet, then buyers start piling in <b>before the price moves</b>. On the <b>10s chart</b>: after a quiet stretch (short volume bars), you see <b>3 candles in a row, each with a taller volume bar than the last</b>, the last one at least <b>2½× normal</b>, while the <b>candles stay small with short wicks and the price stays flat or edges up</b>. Buy right then, before the jump, and <b>sell 3 minutes later</b>. Won <b>89%</b> in testing.<br><br>A pop on normal volume with no build-up is noise; skip it. If a bar is 7× or more, that's a pump (see Pump and dump)."},
+ {id:"dbot",n:"Double bottom",c:25,t:"When a stock tests its low twice and holds, it's about to jump.",d:"The dotted <b>“1h low”</b> line on the chart marks the lowest price of the last hour. Watch for a stock that drops to it and bounces off with a <b>hammer</b>: a candle with a tiny body and a <b>long wick sticking down</b>. It rises a bit, then within 2 to 6 minutes <b>drops back to the same low</b> and makes <b>another hammer</b>. Two failed tries to break lower means buyers are defending that price. <b>Buy when the second hammer closes</b> and <b>sell 4 minutes later</b>. Won <b>97%</b>, averaging +9%."},
  {id:"news",n:"Report vs. rumor",c:40,t:"The headline that comes before the headline.",d:"<b>“🔎 Unusual call-option buying in …”</b> means someone knows good earnings are coming. The <b>“beats earnings”</b> headline follows 1 to 2 minutes later. <b>Buy as soon as you see the option buying</b> and <b>sell 5 minutes after the earnings headline</b>. Won <b>90%</b>.<br><br><b>“Rumor: … in buyout talks”</b> never has option buying before it. It pops, then fades. Wait about <b>1 minute</b>, <b>short it</b>, and cover 5 minutes later (won <b>85%</b>)."},
  {id:"open",n:"The morning open",c:60,t:"Why the first 10 minutes of the morning matter most.",d:"At <b>{OPEN}</b> every day, every stock except PNNY makes a big 10-minute move on heavy volume. Most stocks <b>follow their 24-hour trend</b>: right at {OPEN}, look at the <b>24h</b> change next to the price. If it's green, <b>buy</b>; if it's red, <b>short</b>. Close 10 minutes later. Won about <b>85%</b> on trend-following stocks. Breaking news can still wreck a trade, so use a stop loss.<br><br>A few stocks do the opposite. Their own lessons tell you which."},
- {id:"coil",n:"The coiled spring",c:120,t:"The calm right before a big move.",d:"Right before a breakout, a stock goes eerily quiet. On the 10s chart, look for <b>6 tiny candles in a row with volume bars half the normal height or less</b>. That's the coil. <b>Buy on the 6th quiet candle</b>, before anything happens, and <b>sell 4 minutes later</b>. Won <b>84%</b>, averaging +5%."},
- {id:"dip",n:"Capitulation vs. dead cat",c:300,t:"The warning signs before a stock drops.",d:"<b>Capitulation</b> (steady stocks: BRGR, BREW, SHOP, BANK, MEDX, OILX): with <b>no headline</b>, you see <b>4 small candles in a row on 2× normal volume, mostly red, drifting down</b>. That's heavy selling, and a sharp flush comes next. <b>Sell any shares you own now.</b> After the big red flush candle, about <b>80 seconds</b> after you spotted the warning, <b>buy</b> and <b>sell 4 minutes later</b> as it bounces back. Won <b>85%</b>.<br><br><b>Dead cat:</b> <b>“🔎 Insiders quietly selling …”</b> comes 1 to 2 minutes before an <b>“under investigation”</b> report and a drop that keeps sliding. <b>Short as soon as you see the insider selling</b> and <b>cover 5 minutes after the report</b>. Won <b>87%</b>."},
+ {id:"dtop",n:"Double top",c:90,t:"When a stock fails at its high twice, it's about to drop.",d:"The dotted <b>“1h high”</b> line marks the highest price of the last hour. Watch for a stock that climbs to it and gets rejected with a <b>shooting star</b>: a candle with a tiny body and a <b>long wick sticking up</b>. It pulls back, then within 2 to 6 minutes <b>climbs back to the same high</b> and makes <b>another shooting star</b>. Two failed tries means sellers are waiting there. <b>Short when the second shooting star closes</b> and <b>cover 4 minutes later</b>. Won <b>93%</b>, averaging +7%."},
+ {id:"coil",n:"The coiled spring",c:120,t:"The calm right before a big move.",d:"Right before a breakout, a stock goes eerily quiet. On the 10s chart, look for <b>6 tiny candles in a row with volume bars half the normal height or less, and the price flat</b> (not drifting up or down). That's the coil. <b>Buy on the 6th quiet candle</b>, before anything happens, and <b>sell 4 minutes later</b>. Won <b>87%</b>, averaging +5%.<br><br>If the quiet candles are drifting one way, it's not a coil. It might be a flag."},
+ {id:"bflag",n:"Bull flag",c:200,t:"A sharp rise, a lazy pause, then another leg up.",d:"Three parts. <b>The pole:</b> about a minute of big green candles on heavy volume (3× normal or more). <b>The flag:</b> then 2 to 3 minutes of <b>small candles drifting slightly down on quiet volume</b>, giving back less than half of the pole. That's buyers resting, not selling. <b>Buy after 12 quiet flag candles</b> (2 minutes), before it breaks out, and <b>sell 4 minutes later</b>. Won <b>95%</b>, averaging +10%."},
+ {id:"dip",n:"Capitulation vs. dead cat",c:300,t:"The warning signs before a stock drops.",d:"<b>Capitulation</b> (steady stocks: BRGR, BREW, SHOP, BANK, MEDX, OILX): with <b>no headline</b>, and not during the morning open or the 3-hour flush, you see <b>4 small candles in a row on 2 to 3× normal volume, mostly red, drifting down</b>. That's heavy selling, and a sharp flush comes next. <b>Short right away and cover 80 seconds later</b>, after the big red candle. Won <b>81%</b>. Don't rush to buy the bounce: it only works about 6 times in 10.<br><br><b>Dead cat:</b> <b>“🔎 Insiders quietly selling …”</b> comes 1 to 2 minutes before an <b>“under investigation”</b> report and a drop that keeps sliding. <b>Short as soon as you see the insider selling</b> and <b>cover 5 minutes after the report</b>. Won <b>87%</b>."},
+ {id:"sflag",n:"Bear flag",c:500,t:"A sharp drop, a weak bounce, then another leg down.",d:"The bull flag upside down. <b>The pole:</b> about a minute of big red candles on heavy volume (3× normal or more). <b>The flag:</b> then 2 to 3 minutes of <b>small candles drifting slightly up on quiet volume</b>, a weak bounce that wins back less than half the drop. <b>Short after 12 quiet flag candles</b>, before the next drop, and <b>cover 4 minutes later</b>. Won <b>94%</b>, averaging +7%."},
  {id:"pump",n:"Pump and dump",c:800,t:"How to spot a pump before it starts, and what comes after.",d:"Only on PNNY, SOLR and ORBT. <b>“🗣️ … is trending on social media”</b> means a pump starts 1 to 2 minutes later, with chatter volume (about 2×) building first. <b>Buy right away</b> and <b>sell about 3 minutes after the headline</b>, at the top. Won <b>98%</b>, averaging +14%.<br><br>Then comes the dump. Once you see <b>3 green 10s candles in a row with 7× volume or more</b>, <b>wait 30 seconds, short it, and cover 4 minutes later</b>. Won <b>98%</b>, averaging +17%."},
+ {id:"atri",n:"Ascending triangle",c:1500,t:"A flat ceiling and rising floor: the breakout is coming.",d:"The stock keeps pushing up to the <b>dotted 1h high</b> and stalling there: a flat ceiling. Each dip between tries is <b>shallower than the last</b>: a rising floor. Buyers are getting more eager. On the <b>third touch of the 1h high in about 5 minutes</b>, with <b>heavier volume and no long wick</b>, <b>buy</b>. It usually breaks through within a minute. <b>Sell 4 minutes later.</b> Won <b>98%</b>, averaging +8%."},
+ {id:"dtri",n:"Descending triangle",c:2200,t:"A flat floor and falling ceiling: the breakdown is coming.",d:"The mirror image. The stock keeps dropping to the <b>dotted 1h low</b> and holding there: a flat floor. Each bounce between tries is <b>lower than the last</b>: a falling ceiling. Sellers are getting more eager. On the <b>third touch of the 1h low in about 5 minutes</b>, with <b>heavier volume and no long wick</b>, <b>short</b>. <b>Cover 4 minutes later.</b> Won <b>91%</b>, averaging +7%."},
  {id:"flush",n:"The 3-hour flush",c:3000,t:"A dip that happens on a schedule.",d:"At the top of every 3rd hour ({FLUSH}), every stock dips over 2 minutes, then fully recovers over the next 3. Steady stocks dip about 1½–2%; jumpy ones dip more (PNNY about 12%). <b>Buy at :02 past the hour and sell at :05</b>. Won <b>85%</b> across every stock."},
  {id:"flags",n:"Red flag: collapses",c:8000,t:"The headline that comes 2 to 3 minutes before a stock implodes.",d:"<b>“🚨 …auditor resigns, filings delayed”</b> means a collapse of −50% to −93% starts <b>2 to 3 minutes later</b>. Sell any shares, <b>short it right away</b>, and <b>cover about 4 minutes after the headline</b>, once the giant red candles are done. Won <b>100%</b>, averaging +69%."},
  {id:"squeeze",n:"Red flag: squeezes",c:15000,t:"The headline that comes 1½ to 2½ minutes before a stock rockets.",d:"<b>“🩳 Short interest in … hits a record high”</b> means a squeeze of +80% to +170% starts <b>1½ to 2½ minutes later</b>. Cover any shorts, <b>buy right away</b>, and <b>sell about 3½ minutes after the headline</b>, right after the spike. Won <b>100%</b>, averaging +111%."},
@@ -783,7 +829,7 @@ function buildTrade(){
   main.innerHTML=`<div class="mk"><div class="mk-l"><div id="chips"></div>
   <div class="q"><div><span class="t" id="qn"></span><div class="row"><span id="qp" class="m"></span><span id="qc" class="m" style="font-size:12.5px"></span></div></div>
   </div><div class="tf">${TFS.map(([s,l])=>`<button data-tf="${s}">${l}</button>`).join("")}</div>
-  <div class="chw"><canvas id="chart"></canvas><button id="zlive" style="display:none">↻ Live</button></div><div id="news"></div></div>
+  <div class="chw"><canvas id="chart"></canvas><button id="zlive" style="display:none">↻ Live</button><div id="ctools"><button id="ldraw" title="Draw a line">✏️ Line</button><button id="lclear" title="Clear lines">🗑</button></div></div><div id="news"></div></div>
   <div class="mk-r"><div class="pad"><div id="pos" class="card"></div>
   <div class="qty"><button data-q="-1">−</button><div class="mid"><b id="qv"></b><span id="qcst"></span></div><button data-q="1">+</button><button data-q="max">MAX</button></div>
     <div class="g4" id="acts" style="grid-template-columns:1fr 1fr 1.3fr"><button class="btn buy" data-a="buy">BUY</button><button class="btn short" data-a="short">SHORT</button><button class="btn ghost" data-a="close">CLOSE</button></div>
@@ -870,12 +916,29 @@ function draw(){
   if(!ZOFF) ln.forEach(l=>{lo=Math.min(lo,l[0]);hi=Math.max(hi,l[0]);}); const pd=(hi-lo)*.1||hi*.002; lo=Math.max(0,lo-pd); hi+=pd;
   if(DRAG){ lo=DRAG.lo; hi=DRAG.hi; }
   const Y=v=>top+(hi-v)/(hi-lo)*(bot-top), X=i=>i*cw+cw/2, now=sp(sym);
-  MAP={lo,hi,top,bot,pw}; ORDL=ln.filter(l=>l[3]).map(l=>({k:l[3],y:Y(l[0])})); cv.style.touchAction=(p.l||p.s)?"none":"pan-y";
+  MAP={lo,hi,top,bot,pw,first,cw,tf}; ORDL=ln.filter(l=>l[3]).map(l=>({k:l[3],y:Y(l[0])})); cv.style.touchAction=(p.l||p.s)?"none":"pan-y";
   c.font="10px JetBrains Mono"; c.textBaseline="middle"; c.textAlign="left";
-  for(let g=0;g<=4;g++){ const v=lo+(hi-lo)*g/4,y=Y(v); c.fillStyle=TH().grid; c.fillRect(0,y,pw,1); c.fillStyle=TH().lab; c.fillText(px(v).slice(1),pw+5,y); }
+  { const want=Math.max(5,Math.min(12,Math.floor((bot-top)/26))), raw=(hi-lo)/want, mg=Math.pow(10,Math.floor(Math.log10(raw))), st=[1,2,2.5,5,10].map(m=>m*mg).find(m=>m>=raw*.98)||10*mg;
+    for(let v=Math.ceil(lo/st)*st;v<=hi;v+=st){ const y=Y(v); c.fillStyle=TH().grid; c.fillRect(0,y,pw,1); c.fillStyle=TH().lab; c.fillText(px(v).slice(1),pw+5,y); } }
   if(p.l){ const y1=Y(beL),y2=Y(now); c.fillStyle=now>=beL?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
   if(p.s){ const y1=Y(beS),y2=Y(now); c.fillStyle=now<=beS?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
   ZCW=cw; drawCandles(c,data,X,Y,H,vh,vm);
+  // dotted 1-hour high / low (live view, short timeframes)
+  if(!ZOFF&&tf<=300){ const [h1,l1]=hourHL(d.i); for(const [v,lab] of [[h1,"1h high"],[l1,"1h low"]]){ if(v<lo||v>hi) continue; const y=Y(v);
+    c.setLineDash([2,4]); c.strokeStyle="rgba(245,179,1,.55)"; c.beginPath(); c.moveTo(0,y); c.lineTo(pw,y); c.stroke(); c.setLineDash([]);
+    c.font="9.5px JetBrains Mono"; c.fillStyle="rgba(245,179,1,.8)"; c.textAlign="right"; c.fillText(lab,pw-4,y+(lab==="1h high"?-7:7)); c.textAlign="left"; } }
+  // your drawn lines (rays from the first point through the second)
+  const tX=t=>(t-first)/tf*cw+cw/2;
+  for(const ln of myLines(sym)){ const [ta,pa]=ln.a, [tb,pb]=ln.b, x1=tX(ta), y1=Y(pa), x2=tX(tb), y2=Y(pb), sl=(x2-x1)?(y2-y1)/(x2-x1):0, hot=ln.hot&&Date.now()-ln.hot<4000;
+    c.strokeStyle=hot?"#fff":"#f5b301"; c.lineWidth=hot?2.5:1.6; c.beginPath(); c.moveTo(x1,y1); c.lineTo(pw,y1+sl*(pw-x1)); c.stroke(); c.lineWidth=1;
+    c.fillStyle="#f5b301"; for(const [x,y] of [[x1,y1],[x2,y2]]){ c.beginPath(); c.arc(x,y,3,0,7); c.fill(); } }
+  if(LINE&&LINE.a){ const x=tX(LINE.a[0]), y=Y(LINE.a[1]); c.fillStyle="#f5b301"; c.beginPath(); c.arc(x,y,4.5,0,7); c.fill(); }
+  // hover / tap readout: the top half of a candle shows its high, the bottom half its low
+  if(HOV&&(HOV.until==null||Date.now()<HOV.until)){ const j=Math.floor(HOV.x/cw), k=data[j];
+    if(k&&k[0]!==null&&HOV.x<pw){ const x=X(j), yh=Y(k[1]), yl=Y(k[2]), top=HOV.y<(yh+yl)/2, v=top?k[1]:k[2], y=top?yh:yl;
+      c.strokeStyle="rgba(255,255,255,.6)"; c.strokeRect(x-Math.max(2,cw*.45),yh-2,Math.max(4,cw*.9),yl-yh+4);
+      const tx=(top?"High ":"Low ")+px(v); c.font="bold 11px JetBrains Mono"; const w=c.measureText(tx).width+10, bx=Math.min(Math.max(2,x-w/2),pw-w-2), by=top?Math.max(2,y-24):Math.min(H-20,y+6);
+      c.fillStyle="rgba(5,8,11,.92)"; c.fillRect(bx,by,w,18); c.strokeStyle=top?"#16c784":"#ea3943"; c.strokeRect(bx,by,w,18); c.fillStyle="#fff"; c.fillText(tx,bx+5,by+9); } }
   // friends' trades: a marker sitting on the volume bars at the moment they traded
   (S.frt||[]).forEach(f=>{ if(f[1]!==d.i) return; const i=Math.floor((f[0]-first)/tf); if(i<0||i>=data.length) return; const x=X(i), yb=H-vh-4, up=f[2]>0, col=up?"#16c784":"#ea3943";
     c.fillStyle=col; c.beginPath(); if(up){ c.moveTo(x,yb-9); c.lineTo(x-5,yb); c.lineTo(x+5,yb); } else { c.moveTo(x,yb); c.lineTo(x-5,yb-9); c.lineTo(x+5,yb-9); } c.fill();
@@ -1059,6 +1122,8 @@ function catchUp(){ const away=nowSec()-S.lastT; if(away<=2){ advance(nowSec());
 function save(){ S.savedAt=Date.now(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} }
 let cref=null,cbusy=false,clast="";
 // ---------- live sync between your devices ----------
+// chart choices (timeframe, selected stock, share count) stay on each device
+const viewPrefs=()=>({tf:S.tf,sel:S.sel,qty:S.qty,cq:S.cq,csel:S.csel});
 // Each device has an id. A device pushes ~2 s after you tap something (and when it goes to the background),
 // and listens for pushes from your other devices; a newer save from another device replaces this one.
 const DEV=(()=>{ try{ let d=localStorage.getItem("st.dev"); if(!d){ d=Math.random().toString(36).slice(2,10); localStorage.setItem("st.dev",d); } return d; }catch(_){ return "x"+Math.random().toString(36).slice(2,8); } })();
@@ -1066,7 +1131,7 @@ let SYNC=0, lastTap=0, tapT=null, unwatch=null;
 document.addEventListener("pointerdown",()=>{ lastTap=Date.now(); clearTimeout(tapT); tapT=setTimeout(csave,2000); },true);
 function adoptCloud(d){ if(!d||typeof d.save!=="string"||d.dev===DEV||(d.savedAt||0)<=SYNC) return false;
   let cs; try{ cs=JSON.parse(d.save); }catch(_){ return false; }
-  const own=S.owner; S=Object.assign(fresh(),cs); S.owner=own; SYNC=d.savedAt||0; clast=d.save;
+  const own=S.owner, vw=viewPrefs(); S=Object.assign(fresh(),cs); S.owner=own; Object.assign(S,vw); SYNC=d.savedAt||0; clast=d.save;
   NOW=nowSec(); catchUp(); delistCheck(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} build(); hdr&&hdr(); return true; }
 function watchSave(ref){ if(unwatch) unwatch(); unwatch=ref.watch?ref.watch(d=>{ if(adoptCloud(d)) toast("🔄 Synced from your other device"); }):null; }
 async function cpull(){ if(!cref) return; try{ const sn=await cref.get(); if(sn.exists&&adoptCloud(sn.data())) toast("🔄 Synced from your other device"); }catch(_){} }
@@ -1074,7 +1139,7 @@ async function csave(){ if(!cref||cbusy) return; save(); const j=JSON.stringify(
   try{ await cref.set({save:j,savedAt:S.savedAt,dev:DEV}); clast=j; SYNC=S.savedAt; }catch(e){ if(["invalid_argument","revoked","quota_exceeded","not_granted"].includes(e&&e.code)) cref=null; } cbusy=false; }
 let lastSave=0;
 function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catchUp(); build(); return; }
-  advance(t); build(true); tbarUpd(); bellUpd(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); } compPub(); if(t%600===0) compSettle();
+  advance(t); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); } compPub(); if(t%600===0) compSettle();
   if(t-lastSave>5){ save(); lastSave=t; }
   const nw=newsSince(S.lastNews,t); S.lastNews=t;
   nw.forEach(x=>{ const p=S.pos[x.s]; if(x.s==="*"||x.s===S.sel||(p&&(p.l||p.s))){ toast(x.t); sfx(x.big?'unlock':'ping'); if(x.big&&tab==="trade") newsCard(); } }); }
@@ -1101,10 +1166,16 @@ main.addEventListener("pointermove",e=>{ if(e.target.id!=="chart") return; if(PT
   if(PAN&&!DRAG){ const dx=e.clientX-PAN.x; if(!PAN.on&&Math.abs(dx)>6&&Math.abs(dx)>Math.abs(y-PDOWN.y)) PAN.on=true;
     if(PAN.on){ const o=Math.max(0,Math.min(ZOFFMAX,Math.round(PAN.off+dx/ZC))); if(o!==ZOFF){ ZOFF=o; draw(); } return; } }
   if(DRAG){ const v=yToPrice(y); if(okSide(DRAG.k,v)){ ORD(S.sel)[DRAG.k]=v; draw(); } } });
-main.addEventListener("pointerup",e=>{ PTS.delete(e.pointerId); if(PTS.size<2) PINCH=null; const panned=PAN&&PAN.on; PAN=null; if(!PDOWN) return; const was=DRAG, tap=!PDOWN.moved&&!panned, y=PDOWN.y; PDOWN=null; DRAG=null;
+let PUPX=0;
+main.addEventListener("pointerup",e=>{ if(e.target.id==="chart"){ const r=e.target.getBoundingClientRect(); PUPX=e.clientX-r.left; } PTS.delete(e.pointerId); if(PTS.size<2) PINCH=null; const panned=PAN&&PAN.on; PAN=null; if(!PDOWN) return; const was=DRAG, tap=!PDOWN.moved&&!panned, y=PDOWN.y; PDOWN=null; DRAG=null;
   if(was){ const v=ORD(S.sel)[was.k]; toast(`${was.k.endsWith("sl")?"Stop loss":"Take profit"} moved to ${px(v)}`); build(true); return; }
   if(!tap||e.target.id!=="chart"||!MAP) return;
-  const p=P(S.sel), v=yToPrice(y), now=sp(S.sel); if((!p.l&&!p.s)||!ARM) return;
+  if(LINE){ const x=PUPX, cw=MAP.cw, tf=MAP.tf; const pt=[MAP.first+(x-cw/2)/cw*tf,yToPrice(y)];
+    if(!LINE.a){ LINE.a=pt; draw(); return; }
+    let b=pt; if(Math.abs(b[1]/LINE.a[1]-1)<.0012) b=[b[0],LINE.a[1]]; if(Math.abs(b[0]-LINE.a[0])<tf) b=[LINE.a[0]+tf,b[1]];
+    const ls=LINES[S.sel]=LINES[S.sel]||[]; ls.push({a:LINE.a,b}); if(ls.length>12) ls.shift(); saveLines(); LINE=null; const lb=$("ldraw"); if(lb) lb.classList.remove("on"); toast("Line added. You'll get an alert when the price touches or crosses it."); draw(); return; }
+  const p=P(S.sel), v=yToPrice(y), now=sp(S.sel);
+  if((!p.l&&!p.s)||!ARM){ if(e.pointerType!=="mouse"){ HOV={x:PUPX,y,until:Date.now()+3000}; draw(); setTimeout(()=>draw(),3100); } return; }
   const k=ARM, lab=k.endsWith("sl")?"Stop loss":"Take profit";
   if(!okSide(k,v)) return toast(`A ${lab.toLowerCase()} on a ${k[0]==="l"?"buy":"short"} has to be ${(k==="ltp"||k==="ssl")?"above":"below"} ${px(now)}`);
   ORD(S.sel)[k]=v; ARM=null; $("pos").dataset.k=""; toast(`${lab} set at ${px(v)}. Drag its handle on the right to move it.`); build(true); });
@@ -1113,7 +1184,11 @@ main.addEventListener("wheel",e=>{ if(e.target.id!=="chart"||!MAP) return; e.pre
   if(Math.abs(e.deltaX)>Math.abs(e.deltaY)||e.shiftKey){ const d=e.deltaX||e.deltaY; ZOFF=Math.max(0,Math.min(ZOFFMAX,ZOFF+Math.round(d/ZC/2*-1))); draw(); }
   else zoomAt(e.clientX-r.left,e.deltaY<0?1.12:1/1.12); },{passive:false});
 main.addEventListener("dblclick",e=>{ if(e.target.id==="chart") zoomReset(); });
-main.addEventListener("click",e=>{ if(e.target.closest("#zlive")) zoomReset(); });
+main.addEventListener("click",e=>{ if(e.target.closest("#zlive")) zoomReset();
+  if(e.target.closest("#ldraw")){ LINE=LINE?null:{}; ARM=null; e.target.closest("#ldraw").classList.toggle("on",!!LINE); toast(LINE?"Tap two points on the chart to draw a line":"Line drawing off"); draw(); }
+  if(e.target.closest("#lclear")){ const n=myLines(S.sel).length; if(!n) return toast("No lines on "+S.sel); delete LINES[S.sel]; saveLines(); toast(`Cleared ${n} line${n>1?"s":""} on ${S.sel}`); draw(); } });
+main.addEventListener("pointermove",e=>{ if(e.target.id!=="chart"||e.pointerType!=="mouse"||e.buttons) return; const r=e.target.getBoundingClientRect(); HOV={x:e.clientX-r.left,y:e.clientY-r.top}; draw(); });
+main.addEventListener("pointerout",e=>{ if(e.target.id==="chart"&&e.pointerType==="mouse"){ HOV=null; draw(); } });
 main.addEventListener("input",e=>{ const id=e.target.dataset.aset; if(!id) return; A(id).v=+e.target.value; const x=AUTOS.find(y=>y.id===id); $("av-"+id).textContent=e.target.value+x.set[4]; });
 
 function flowPush(sym,dir,usd){ if(SIM||!DB||!(usd>0)) return; MYFLOW=MYFLOW.filter(x=>NOW-x[0]<1800); MYFLOW.push([NOW,BYSYM[sym].i,dir,Math.round(usd*100)/100]); if(MYFLOW.length>25) MYFLOW.shift(); flowDirty=true; }
@@ -1176,7 +1251,7 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
       if(sn.exists){ const d=sn.data(); let cs=null; try{ cs=d&&typeof d.save==="string"?JSON.parse(d.save):null; }catch(_){}
         // keep whichever save has more progress (unless you wiped this one on purpose after the cloud save)
         const wiped=(S.wipedAt||0)>(d.savedAt||0);
-        SYNC=d.savedAt||0; if(cs&&!wiped&&progress(cs)>progress(S)){ S=Object.assign(fresh(),JSON.parse(d.save)); closeModal(); catchUp(); toast("Loaded your saved game"); } }
+        SYNC=d.savedAt||0; if(cs&&!wiped&&progress(cs)>progress(S)){ const vw=viewPrefs(); S=Object.assign(fresh(),JSON.parse(d.save)); Object.assign(S,vw); closeModal(); catchUp(); toast("Loaded your saved game"); } }
       
       const was=S.owner; S.owner=u.uid; delistCheck(); const m=myCard(); if(/^Trader\d+$/.test(m.name||"")||(was&&was!==u.uid)) m.name=u.username;
       save(); DB=N.db; UID=u.uid; cref=ref; clast="";
@@ -1590,7 +1665,20 @@ const TBY={}; TITLES.forEach(t=>TBY[t.id]=t);
 let COSK='';
 function applyCos(){ const t=cosGet('theme'); if(t.id===COSK) return; COSK=t.id; const v=TH(), r=document.documentElement.style;
   ['bg','panel','card','c2','line','text','mut'].forEach(k=>r.setProperty('--'+k,v[k])); document.body.classList.toggle('mono',!!t.mono); const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=v.panel; }
-let ZCW=7;
+let ZCW=7, HOV=null, LINE=null;
+const HLC=new Map();
+function hourHL(i){ const k=i+":"+NOW; let r=HLC.get(k); if(r) return r; let h=-Infinity,l=Infinity; for(let t=NOW-3600;t<=NOW;t+=2){ const p=price(i,t); if(p>h) h=p; if(p<l) l=p; }
+  r=[h,l]; HLC.clear(); HLC.set(k,r); return r; }
+// drawn lines live only on this device (not synced): {sym:[{a:[t,price],b:[t,price],side}]}
+let LINES=(()=>{ try{ return JSON.parse(localStorage.getItem("st.lines")||"{}"); }catch(_){ return {}; } })();
+const myLines=sym=>LINES[sym]||[];
+const saveLines=()=>{ try{ localStorage.setItem("st.lines",JSON.stringify(LINES)); }catch(_){} };
+const lineAt=(ln,t)=>{ const [ta,pa]=ln.a,[tb,pb]=ln.b; return tb===ta?pb:pa+(pb-pa)*(t-ta)/(tb-ta); };
+function lineAlerts(){ const sym=S.sel, ls=myLines(sym); if(!ls.length) return; const p=sp(sym);
+  ls.forEach(ln=>{ const v=lineAt(ln,NOW), side=p>=v?1:-1, near=Math.abs(p/v-1)<.0015;
+    if(ln.side&&side!==ln.side){ ln.hot=Date.now(); toast(`📏 ${sym} crossed your line at ${px(v)} (${side>0?"up":"down"})`); sfx&&sfx('ping'); }
+    else if(near&&!(ln.tch>NOW-60)){ ln.tch=NOW; ln.hot=Date.now(); toast(`📏 ${sym} is touching your line at ${px(v)}`); }
+    ln.side=side; }); }
 function drawCandles(c,data,X,Y,H,vh,vm){ const cp=CPAL(), st=cosGet('candle').id, bg=TH().bg, bw=Math.max(1,ZCW*.72), hb=bw/2;
   data.forEach((k,i)=>{ if(k[0]===null) return; const h=vm?k[4]/vm*vh:0; c.fillStyle=(k[3]>=k[0]?cp.up:cp.dn)+'4d'; c.fillRect(X(i)-hb,H-h,bw,h); });
   if(st==='line'){ let s=false,f=null,l=null; c.beginPath(); data.forEach((k,i)=>{ if(k[0]===null) return; if(f===null) f=k[3]; l=k[3]; const y=Y(k[3]); if(s) c.lineTo(X(i),y); else { c.moveTo(X(i),y); s=true; } });

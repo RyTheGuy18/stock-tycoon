@@ -171,6 +171,7 @@ header{position:relative}
 .pchips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px} .pchips div{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 6px;text-align:center} .pchips b{display:block;font:700 14px "JetBrains Mono";white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .pchips span{font-size:10.5px;color:var(--mut)}
 .pbar{height:5px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden} .pbar i{display:block;height:100%;border-radius:9px}
 .kdet summary{list-style:none;cursor:pointer} .kdet summary::-webkit-details-marker{display:none} .kdet[open] summary .t{opacity:.6}
+.seg button svg{vertical-align:-3px} #modal .mh h2 svg{vertical-align:-3px}
 .sgrp{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:4px}
 .srow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);width:100%;text-align:left} .srow:last-child{border-bottom:0}
 .srow .ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;background:var(--c2)}
@@ -1326,6 +1327,25 @@ const LI={
  sup:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
  ins:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
  corp:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+ key:'<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+ bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+ belloff:'<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/>',
+ news:'<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8V6Z"/>',
+ flask:'<path d="M9 3h6"/><path d="M10 9V3h4v6l5 9a2 2 0 0 1-1.7 3H6.7A2 2 0 0 1 5 18l5-9z"/><path d="M7 15h10"/>',
+ vol:'<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>',
+ vollo:'<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>',
+ music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+ info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+ up:'<circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/>',
+ cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+ archive:'<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+ book:'<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
+ trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+ brief:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+ save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
+ chart:'<path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
  exp:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'};
 const PCOL={lawn:"#22c55e",dog:"#f59e0b",car:"#3b82f6",deliv:"#f97316",photo:"#a855f7",handy:"#eab308",paint:"#ec4899",pool:"#06b6d4",phone:"#6366f1",move:"#d97706"};
 const ICO=(k,col,sz)=>`<svg viewBox="0 0 24 24" width="${sz||22}" height="${sz||22}" fill="none" stroke="${col}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${LI[k]||""}</svg>`;
@@ -1456,24 +1476,24 @@ function SAVEHTML(){ const L=baks();
   return sgrp("",[srow("☁️","Saving",cloudSt)])
    +sgrp("Save code",[`<div class="srow" style="flex-wrap:wrap"><input id="sbox" class="inp" style="flex:1;min-width:0;padding:8px 10px" placeholder="Paste a save code"><button class="btn ghost sm" data-sx="imp">Load</button><button class="btn ghost sm" data-sx="exp">Copy mine</button></div>`],"Copy your code to move your game somewhere without signing in, or paste one to load it.")
    +(L.length?sgrp("Backups on this device",L.map((b,i)=>srow("🗂️",`Best ${money(b.nw)} · cash ${money(b.cash)}`,`${new Date(b.at).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} · ${b.why}`,`<button class="btn ghost sm" data-sx="bak${i}">Restore</button>`)),"Taken automatically right before a save gets replaced. Restoring one also saves it to your account."):"")
-   +sgrp("Start over",[`<button class="srow" data-sx="replay"><span class="ic">📖</span><div class="g tt">Replay intro & tutorial</div><span class="chev">›</span></button>`,`<button class="srow" data-sx="wipe"><span class="ic">🗑️</span><div class="g tt" style="color:var(--dn)">Wipe save</div><span class="chev">›</span></button>`]); }
+   +sgrp("Start over",[`<button class="srow" data-sx="replay">${sic("📖")}<div class="g tt">Replay intro & tutorial</div><span class="chev">›</span></button>`,`<button class="srow" data-sx="wipe">${sic("🗑️")}<div class="g tt" style="color:var(--dn)">Wipe save</div><span class="chev">›</span></button>`]); }
 // volume slider under the Sound effects / Music rows: changes are heard while you drag, saved when you let go
-const volRow=(k,v)=>`<div class="srow" style="padding:6px 12px 8px"><span class="ic" style="background:none">🔈</span><input type="range" class="vol g" data-vol="${k}" min="0" max="1" step="0.01" value="${v}" style="width:100%;accent-color:var(--gold)"><span class="t m" style="width:36px;text-align:right" id="vl-${k}">${Math.round(v*100)}%</span></div>`;
+const volRow=(k,v)=>`<div class="srow" style="padding:6px 12px 8px">${ICO("vollo","#94a3b8",17)}<input type="range" class="vol g" data-vol="${k}" min="0" max="1" step="0.01" value="${v}" style="width:100%;accent-color:var(--gold)"><span class="t m" style="width:36px;text-align:right" id="vl-${k}">${Math.round(v*100)}%</span></div>`;
 document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.dataset.vol; if(!k) return; const v=+e.target.value; S.set=S.set||{}; S.set[k]=v; const l=$("vl-"+k); if(l) l.textContent=Math.round(v*100)+"%";
   if(k==="sv"&&SFXB) SFXB.gain.setTargetAtTime(sfxGain(),AC.currentTime,.02);
   if(k==="mv"&&MUSB&&MUS.cur>=0&&MUS.on) MUSB.gain.setTargetAtTime(musV()*SONGS[MUS.cur].g,AC.currentTime,.05); });
 document.addEventListener("change",e=>{ const k=e.target.dataset&&e.target.dataset.vol; if(!k) return; save(); act(); if(k==="sv") sfx('ping'); });
 let SETV="gen";
 function openSettings(v){ if(v) SETV=v; const p=prof();
-  let h=`<div class="seg"><button data-setv="gen" class="${SETV==="gen"?"on":""}">⚙️ General</button><button data-setv="save" class="${SETV==="save"?"on":""}">💾 Save</button><button data-setv="stats" class="${SETV==="stats"?"on":""}">📊 Stats</button></div>`;
+  let h=`<div class="seg"><button data-setv="gen" class="${SETV==="gen"?"on":""}">${ICO("gear","currentColor",15)} General</button><button data-setv="save" class="${SETV==="save"?"on":""}">${ICO("save","currentColor",15)} Save</button><button data-setv="stats" class="${SETV==="stats"?"on":""}">${ICO("chart","currentColor",15)} Stats</button></div>`;
   if(SETV==="gen") h+=acctHTML()+notifHTML()
     +sgrp("Sound",[srow("🔊","Sound effects","On iPhone, also check the volume and silent switch",tgl(snd(),"snd")),volRow("sv",svol()),
       srow("🎵","Music",`<span id="muslbl"></span>`,(mus()&&MUS.on?`<button class='btn ghost sm' data-sx='mskip'>Skip ⏭</button>`:"")+tgl(mus(),"mus")),volRow("mv",mvol())])
-    +sgrp("Work",[`<button class="srow" id="chprof">${p?`<span class="ic" style="background:${PCOL[p.id]}22">${ICO(p.id,PCOL[p.id],17)}</span>`:`<span class="ic">💼</span>`}<div class="g"><div class="tt">Profession</div><div class="st">${p?p.n:"None yet"}</div></div><span class="t">Change</span><span class="chev">›</span></button>`])
-    +sgrp("App",[UPD.ready?`<div class="srow" id="updrow"><span class="ic">⬆️</span><div class="g"><div class="tt">Update ready${UPD.ver?`: version ${UPD.ver}`:""}</div><div class="st">You're on version ${APPV}. Your game is saved first.</div></div><button class="btn gold sm" data-sx="updgo">Update now</button></div>`:srow("ℹ️",`Version ${APPV}`,"Updates only install when you choose to",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
+    +sgrp("Work",[`<button class="srow" id="chprof">${p?`<span class="ic" style="background:${PCOL[p.id]}22">${ICO(p.id,PCOL[p.id],17)}</span>`:sic("💼")}<div class="g"><div class="tt">Profession</div><div class="st">${p?p.n:"None yet"}</div></div><span class="t">Change</span><span class="chev">›</span></button>`])
+    +sgrp("App",[UPD.ready?`<div class="srow" id="updrow">${sic("⬆️")}<div class="g"><div class="tt">Update ready${UPD.ver?`: version ${UPD.ver}`:""}</div><div class="st">You're on version ${APPV}. Your game is saved first.</div></div><button class="btn gold sm" data-sx="updgo">Update now</button></div>`:srow("ℹ️",`Version ${APPV}`,"Updates only install when you choose to",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
   else if(SETV==="save") h+=SAVEHTML();
   else h+=stats_html();
-  modal("✕|⚙︎ Settings",h,[]); fixBox(); /* same size on every tab */ musLbl();
+  modal("✕|"+ICO("gear","#94a3b8",20)+" Settings",h,[]); fixBox(); /* same size on every tab */ musLbl();
   $("modal").querySelectorAll("[data-setv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openSettings(b.dataset.setv); });
   const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
@@ -1817,7 +1837,7 @@ function notifHTML(){ const P=pushGet(), L="Notifications";
   return sgrp(L,[srow("📰","Big market news","Crashes, breaking news, bull and bear markets",tgl(P.news,"p_news")),
     srow("👥","Friends","Requests, messages, tips, competition results",tgl(P.friends,"p_friends")),
     DEVS.includes(UNAME)?srow("🧪","Send a test push","Developer only. Arrives in a few seconds if the push worker is running.",`<button class='btn ghost sm' data-sx='pushtest'>Send</button>`):"",
-    `<button class="srow" data-sx="pushoff"><span class="ic">🔕</span><div class="g tt" style="color:var(--dn)">Turn off on this device</div></button>`]); }
+    `<button class="srow" data-sx="pushoff">${sic("🔕")}<div class="g tt" style="color:var(--dn)">Turn off on this device</div></button>`]); }
 // developer accounts: can send themselves a test push (the push worker checks the same list)
 const DEVS=["rytheguy18","rytheguy"];
 async function pushOn(){ try{ if(await Notification.requestPermission()!=="granted"){ toast("Notifications weren't allowed"); return openSettings(); }
@@ -1838,13 +1858,15 @@ if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("messa
 
 // settings building blocks: a grouped list of rows (icon tile, title, subtitle, control on the right)
 const sgrp=(lab,rows,foot)=>`${lab?`<div class="slab">${lab}</div>`:""}<div class="sgrp">${rows.filter(Boolean).join("")}</div>${foot?`<div class="sfoot">${foot}</div>`:""}`;
-const srow=(ic,tt,st,right,attr)=>`<div class="srow" ${attr||""}><span class="ic">${ic}</span><div class="g" style="min-width:0"><div class="tt">${tt}</div>${st?`<div class="st">${st}</div>`:""}</div>${right||""}</div>`;
+const SIC={"👤":["user","#60a5fa"],"🔑":["key","#f59e0b"],"🔔":["bell","#f59e0b"],"🔕":["belloff","#ef4444"],"📰":["news","#60a5fa"],"👥":["crew","#22c55e"],"🧪":["flask","#a855f7"],"🔊":["vol","#22c55e"],"🎵":["music","#ec4899"],"ℹ️":["info","#94a3b8"],"⬆️":["up","#3b82f6"],"☁️":["cloud","#60a5fa"],"🗂️":["archive","#f59e0b"],"📖":["book","#a855f7"],"🗑️":["trash","#ef4444"],"💼":["brief","#94a3b8"],"🔈":["vollo","#94a3b8"]};
+const sic=ic=>{ const m=SIC[ic]; return m?`<span class="ic" style="background:${m[1]}1f">${ICO(m[0],m[1],17)}</span>`:`<span class="ic">${ic}</span>`; };
+const srow=(ic,tt,st,right,attr)=>`<div class="srow" ${attr||""}>${sic(ic)}<div class="g" style="min-width:0"><div class="tt">${tt}</div>${st?`<div class="st">${st}</div>`:""}</div>${right||""}</div>`;
 const tgl=(on,sx)=>`<button class="tg ${on?"on":""}" data-sx="${sx}" aria-label="toggle"></button>`;
 function acctHTML(){
   if(!window.NET) return sgrp("Account",[srow("👤","Offline mode","Online features aren't set up for this copy of the game.")]);
   if(!UID) return sgrp("Account",[srow("👤","Not signed in","Your game saves on this device only.",`<button class='btn gold sm' data-sx='login'>Sign in</button>`)]);
   return sgrp("Account",[srow("👤","@"+UNAME,"Progress saves to your account",`<button class='btn ghost sm' data-sx='logout'>Sign out</button>`),
-    `<div class="srow"><span class="ic">🔑</span><input id='newpw' class='inp g' type='password' placeholder='New password' autocomplete='new-password' style='padding:8px 10px'><button class='btn ghost sm' data-sx='pw'>Change</button></div>`],
+    `<div class="srow">${sic("🔑")}<input id='newpw' class='inp g' type='password' placeholder='New password' autocomplete='new-password' style='padding:8px 10px'><button class='btn ghost sm' data-sx='pw'>Change</button></div>`],
     isIOS()&&!standalone()?"📲 To install: in Safari tap <b>Share</b> → <b>Add to Home Screen</b>. It opens full-screen like a real app.":""); }
 function installHint(){ if(!isIOS()||standalone()||S.instHint||!S.prof||!$('modal').classList.contains('hide')||$('auth')||$('intro')||$('tut')) return;
   S.instHint=1; save(); modal('📲 Install the app',`<p>In Safari, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p><p>Stock Tycoon then opens full-screen from your home screen, like a real app.</p>`,[['Got it','gold']]); }
@@ -2539,7 +2561,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="93";
+const APPV="94";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

@@ -66,6 +66,7 @@ nav button.on{color:var(--text)} nav button.on span{opacity:1;color:var(--gold)}
 .gold{background:var(--gold);color:#2a1d00} .ghost{background:var(--c2);border:1px solid var(--line);color:var(--text)}
 .sm{padding:7px 10px;font-size:12.5px}
 .btn:disabled{opacity:.3}
+.btn.taxw{background:#8a5a00;color:#fff} .taxw-t{font-size:11.5px;color:#ffb347;margin-top:3px} .taxw-t b{color:#ff6b74}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .qty{display:flex;gap:5px;margin-bottom:6px}
@@ -840,7 +841,7 @@ function ordBtns(side){ const o=ORD(S.sel), k1=side+"sl", k2=side+"tp", b=(k,lab
   const tip=ARM?"Tap the chart where you want it.":PHONE()?"":"Pick one, then tap the chart to place it. Drag the handle on the right to move it.";
   return `${tip?`<div class="t" style="margin-top:4px">${tip}</div>`:""}<div class="g2" style="margin:${tip?6:0}px 0 4px">${b(k1,"Stop loss",IC.sl,"sell")}${b(k2,"Take profit",IC.tp,"buy")}</div>`; }
 function sellLong(sym,q,why){ const p=P(sym); if(q<1) return; const b=fillSell(sym,q), pl=q*(b-p.lc), en=p.lc; S.cash+=q*b; const tx=salesTax(q*b); flowPush(sym,-1,q*b); p.l-=q; if(!p.l) p.lc=0;
-  rec(sym,"L",q,en,b,pl); mark(sym,"S",sp(sym),pl); winFx(pl); tipCredit(sym,pl); toast(`${why||"Sold"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`); chips(); }
+  rec(sym,"L",q,en,b,pl); mark(sym,"S",sp(sym),pl); const net=pl-tx2(q*en)-tx; if(taxTrap(pl,net)) sfx('loss'); else winFx(pl); tipCredit(sym,pl); toast(taxTrap(pl,net)?`${why||"Sold"} ${q} ${sym}: PROFIT ${sg(pl)}, but after taxes you LOST ${money(-net)}`:`${why||"Sold"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0&&!taxTrap(pl,net)?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`); chips(); }
 // ---------- automations (lost if you go broke) ----------
 const AUTOS=[
  {id:"asl",cat:"Trading",n:"Default stop loss",c:50,d:"Every new trade automatically gets a stop loss this far from your entry.",set:[1,20,1,5,"% from entry"]},
@@ -940,8 +941,8 @@ function setOrder(arg){ const [key,v]=arg.split(":"), o=ORD(S.sel), now=sp(S.sel
   if(up?val<=now:val>=now) return toast(`That price needs to be ${up?"above":"below"} ${px(now)}`);
   o[key]=val; closeModal(); toast(`${stop?"Stop loss":"Take profit"} set at ${px(val)}`); build(true); }
 function cover(sym,q,why){ const p=P(sym); if(q<1) return; const a=fillBuy(sym,q), col=q*p.se, pl=Math.max(q*(p.se-a),-col), en=p.se; flowPush(sym,1,q*a);
-  S.cash+=col+pl; const tx=salesTax(q*a); p.s-=q; if(!p.s) p.se=0; rec(sym,"S",q,en,a,pl); mark(sym,"C",sp(sym),pl); winFx(pl); tipCredit(sym,pl);
-  toast(`${why||"Covered"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`);  chips(); }
+  S.cash+=col+pl; const tx=salesTax(q*a); p.s-=q; if(!p.s) p.se=0; rec(sym,"S",q,en,a,pl); mark(sym,"C",sp(sym),pl); const net=pl-tx2(q*en)-tx; if(taxTrap(pl,net)) sfx('loss'); else winFx(pl); tipCredit(sym,pl);
+  toast(taxTrap(pl,net)?`${why||"Covered"} ${q} ${sym}: PROFIT ${sg(pl)}, but after taxes you LOST ${money(-net)}`:`${why||"Covered"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0&&!taxTrap(pl,net)?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`);  chips(); }
 
 // ---------- mom's practice trades ----------
 const PQ=2; // Mom's practice rounds count as 2 shares
@@ -993,6 +994,11 @@ const taxDayAt=w=>{ const g=w*604800+345600+604800; return g+new Date(g*1000).ge
 const warYear=w=>RNG("war"+w)()<1/6;                                                                         // about 1 week in 6
 function TX(){ const w=taxWk(NOW); if(!S.tx||S.tx.w==null) S.tx={w,inc:0,gain:0,sales:0}; return S.tx; }
 const txInc=a=>{ TX().inc+=a; }, txGain=a=>{ TX().gain+=a; };
+// after-tax result of an open trade: profit minus the sales tax paid to open it and the tax you'd pay to close it now
+const tx2=v=>Math.round(v*SALES_TAX*100)/100;
+const netLine=(g,n)=>taxTrap(g,n)?`<div class="taxw-t">⚠️ Taxes eat this profit. After tax you'd <b>lose ${money(-n)}</b></div>`:`<div class="t" style="font-size:11.5px;margin-top:2px;text-align:right">after tax ${sg(n)}</div>`;
+function netPL(sym){ const p=P(sym); if(p.l){ const b=bid(sym); return p.l*(b-p.lc)-tx2(p.l*p.lc)-tx2(p.l*b); } if(p.s){ const a=ask(sym); return Math.max(p.s*(p.se-a),-p.s*p.se)-tx2(p.s*p.se)-tx2(p.s*a); } return 0; }
+const taxTrap=(g,n)=>g>0&&n<0; // "profit" that is really a loss once taxes are paid
 function salesTax(amt){ const t=Math.round(amt*SALES_TAX*100)/100; if(t<=0) return 0; S.cash-=t; TX().sales+=t; S.st.taxes=(S.st.taxes||0)+t; return t; }
 function incomeTax(x){ let t=0, lo=0; for(const [hi,r] of BRACKETS){ if(x<=lo) break; t+=(Math.min(x,hi)-lo)*r; lo=hi; } return t; }
 function taxBill(tx,war){ const base=Math.max(0,tx.inc+Math.max(0,tx.gain)), acct=S.ms.acct?.85:1, it=incomeTax(base)*acct;
@@ -1084,15 +1090,15 @@ function upd(){
   document.querySelectorAll(".tf button").forEach(b=>b.classList.toggle("on",+b.dataset.tf===S.tf));
   const nw=newsSince(NOW-7200,NOW).filter(x=>x.s==="*"||x.s===S.sel||(BYSYM[x.s]&&unlocked(BYSYM[x.s]))).sort((a,b)=>b.at-a.at); $("news").textContent=nw[0]?nw[0].t+" · "+dur(NOW-nw[0].at)+" ago":"No headlines in the last 2 hours.";
   let h="";
-  if(p.l){ const b=bid(sym), pl=p.l*(b-p.lc); h+=`<div class="row"><div class="g t">🟢 <b style="color:var(--text)">${p.l} sh</b> bought at ${px(p.lc)} · worth ${money(p.l*sp(sym))}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((b/p.lc-1)*100).toFixed(2)}%)</b></div>`+ordBtns("l"); }
-  if(p.s){ const a=ask(sym), pl=Math.max(p.s*(p.se-a),-p.s*p.se); h+=`<div class="row"><div class="g t">🟣 <b style="color:var(--text)">${p.s} sh</b> shorted at ${px(p.se)} · margin call ${px(2*p.se)}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((1-a/p.se)*100).toFixed(2)}%)</b></div>`+ordBtns("s"); }
+  if(p.l){ const b=bid(sym), pl=p.l*(b-p.lc); h+=`<div class="row"><div class="g t">🟢 <b style="color:var(--text)">${p.l} sh</b> bought at ${px(p.lc)} · worth ${money(p.l*sp(sym))}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((b/p.lc-1)*100).toFixed(2)}%)</b></div>`+netLine(pl,netPL(sym))+ordBtns("l"); }
+  if(p.s){ const a=ask(sym), pl=Math.max(p.s*(p.se-a),-p.s*p.se); h+=`<div class="row"><div class="g t">🟣 <b style="color:var(--text)">${p.s} sh</b> shorted at ${px(p.se)} · margin call ${px(2*p.se)}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((1-a/p.se)*100).toFixed(2)}%)</b></div>`+netLine(pl,netPL(sym))+ordBtns("s"); }
   if(h&&!P(sym).bot&&["rit","openb","pscalp","pflush","ppump","pswing"].some(aOn)) h+=`<div class="t" style="margin-top:6px">🤖 Your bots sit out while you have a trade open.</div>`; else if(h&&P(sym).bot) h+=`<div class="t" style="margin-top:6px">🤖 A bot opened this trade and will close it.</div>`;
-  if(PHONE()&&(p.l||p.s)) h=ordBtns(p.l?"l":"s")+(P(sym).bot?`<div class="t" style="margin-top:4px">🤖 A bot opened this trade and will close it.</div>`:["rit","openb","pscalp","pflush","ppump","pswing"].some(aOn)?`<div class="t" style="margin-top:4px">🤖 Your bots sit out while you have a trade open.</div>`:"");
+  if(PHONE()&&(p.l||p.s)) h=(()=>{ const g=p.l?p.l*(bid(sym)-p.lc):Math.max(p.s*(p.se-ask(sym)),-p.s*p.se), n=netPL(sym); return taxTrap(g,n)?netLine(g,n):""; })()+ordBtns(p.l?"l":"s")+(P(sym).bot?`<div class="t" style="margin-top:4px">🤖 A bot opened this trade and will close it.</div>`:["rit","openb","pscalp","pflush","ppump","pswing"].some(aOn)?`<div class="t" style="margin-top:4px">🤖 Your bots sit out while you have a trade open.</div>`:"");
   $("pos").innerHTML=h||(PHONE()?"":`<div class="t">No position in ${sym}. Small orders fill at the chart price; big ones move it a little.</div>`); $("pos").style.display=h||!PHONE()?"":"none";
   const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+" + "+money(S.qty*a*SALES_TAX)+" tax"+(sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
   const q=s=>main.querySelector(s);
   const open=p.l>0||p.s>0; { const qr=q(".qty"); if(qr) qr.style.display=PHONE()&&open?"none":""; } q("[data-a=buy]").disabled=open||inDebt()||S.qty*fillBuy(sym,S.qty)*(1+SALES_TAX)>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||S.qty*fillSell(sym,S.qty)*(1+SALES_TAX)>S.cash+1e-9;
-  const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; cb.className="btn "+(open?(cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?`CLOSE<small>${sg(cpl)}</small>`:"CLOSE";
+  const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; const cn=open?netPL(sym):0, ctr=taxTrap(cpl,cn); cb.className="btn "+(open?(ctr?"taxw":cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?(ctr?`CLOSE<small>after tax ${sg(cn)}</small>`:`CLOSE<small>${sg(cpl)}</small>`):"CLOSE";
   preCard(open); jobCard(); momCard(); tipCard(); compCard(); draw();
   if(NOW%5===0){ fundCard(); taxCard(); } }
 // ---- stop loss / take profit chosen before you trade: tap to cycle, applied the moment a trade opens
@@ -1215,7 +1221,8 @@ function draw(){
   else if(S.paper&&S.paper.sym===sym){ const c0=S.paper; pl=(c0.dir==="L"?bid(sym)-c0.en:c0.en-ask(sym))*PQ; lab="PRACTICE "; gold=true; }
   if(pl!=null&&!ph){ const tx=lab+sg(pl); c.font="bold 12px JetBrains Mono"; const tw=c.measureText(tx).width+12, bx=pw-tw-3;
     c.fillStyle=pl>=0?"#16c784":"#ea3943"; c.fillRect(bx,y-11,tw,22); if(gold){ c.strokeStyle="#f5b301"; c.lineWidth=2; c.strokeRect(bx,y-11,tw,22); }
-    c.fillStyle=pl>=0?"#03250f":"#fff"; c.fillText(tx,bx+6,y); } }
+    c.fillStyle=pl>=0?"#03250f":"#fff"; c.fillText(tx,bx+6,y);
+    if(!gold){ const n=netPL(sym); if(taxTrap(pl,n)){ const t2="⚠ after tax "+sg(n); c.font="bold 10.5px JetBrains Mono"; const w2=c.measureText(t2).width+10, by=y+13; c.fillStyle="#8a5a00"; c.fillRect(pw-w2-3,by,w2,17); c.fillStyle="#fff"; c.fillText(t2,pw-w2+2,by+8.5); } } } }
 
 // Buy buttons are drawn already greyed out when you can't afford them (they used to be drawn bright and greyed a
 // moment later, which flashed every second), and the tab isn't redrawn at all when nothing on it changed.
@@ -1897,7 +1904,7 @@ function tbarUpd(){ const el=$("tbar"); if(!el) return; const sym=PHONE()&&!LAND
   const p=P(sym), pl=p.l?p.l*(sp(sym)-p.lc):Math.max(p.s*(p.se-sp(sym)),-p.s*p.se), k=sym+"|"+p.l+"|"+p.s;
   if(el.dataset.k!==k){ el.dataset.k=k; el.innerHTML=`<div class="tr"><span>${p.l?"🟢":"🟣"}</span><span class="g"><b>${sym}</b> · ${p.l||p.s} sh ${p.l?"bought":"shorted"} at ${px(p.l?p.lc:p.se)}</span><b id="tbpl"></b></div>
     <div class="g4"><button class="btn buy" disabled>BUY</button><button class="btn short" disabled>SHORT</button><button class="btn" id="tbc" data-tbc="${sym}">CLOSE</button></div>`; }
-  const c=$("tbc"), t=$("tbpl"); t.className=pl>=0?"up":"dn"; t.textContent=sg(pl); c.className="btn "+(pl>=0?"buy":"sell"); c.innerHTML=`CLOSE<small>${sg(pl)}</small>`; }
+  const c=$("tbc"), t=$("tbpl"), n=netPL(sym), tr=taxTrap(pl,n); t.className=pl>=0?"up":"dn"; t.textContent=sg(pl); c.className="btn "+(tr?"taxw":pl>=0?"buy":"sell"); c.innerHTML=tr?`CLOSE<small>after tax ${sg(n)}</small>`:`CLOSE<small>${sg(pl)}</small>`; }
 $("tbar").addEventListener("click",e=>{ const b=e.target.closest("[data-tbc]"); if(!b) return; const sym=b.dataset.tbc, p=P(sym);
   if(p.l) sellLong(sym,p.l); else if(p.s) cover(sym,p.s); resetPeak(); build(true); tbarUpd(); });
 addEventListener("resize",()=>{ try{ tbarUpd(); }catch(_){} });

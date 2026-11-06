@@ -150,6 +150,13 @@ header{position:relative}
 .pchips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px} .pchips div{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 6px;text-align:center} .pchips b{display:block;font:700 14px "JetBrains Mono";white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .pchips span{font-size:10.5px;color:var(--mut)}
 .pbar{height:5px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden} .pbar i{display:block;height:100%;border-radius:9px}
 .kdet summary{list-style:none;cursor:pointer} .kdet summary::-webkit-details-marker{display:none} .kdet[open] summary .t{opacity:.6}
+.sgrp{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:4px}
+.srow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);width:100%;text-align:left} .srow:last-child{border-bottom:0}
+.srow .ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;background:var(--c2)}
+.srow .tt{font-weight:600;font-size:14px} .srow .st{font-size:11.5px;color:var(--mut);margin-top:1px;line-height:1.35} .srow .chev{color:var(--mut);font-size:18px;flex:none}
+.slab{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;margin:14px 6px 6px} .slab:first-of-type{margin-top:6px}
+.tg{width:46px;height:28px;border-radius:99px;background:#2a3442;position:relative;flex:none;transition:background .15s;padding:0} .tg:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s} .tg.on{background:var(--up)} .tg.on:after{transform:translateX(18px)}
+.sfoot{font-size:11.5px;color:var(--mut);margin:4px 8px 0;line-height:1.4}
 .ntf{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;padding:10px 4px;border-bottom:1px solid var(--line);position:relative}
 .ntf:last-child{border-bottom:0} .ntf .ic{width:34px;height:34px;border-radius:10px;background:var(--c2);display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
 .ntf .tx{flex:1;min-width:0;font-size:13.5px;line-height:1.35} .ntf .mt{font-size:11.5px;color:var(--mut);margin-top:3px} .ntf .tm{font:500 11px "JetBrains Mono";color:var(--mut);flex:none;margin-top:2px}
@@ -1324,17 +1331,30 @@ function stats_html(){ const s=S.st; return `<div class="card kv">
    <div>Best / worst<b class="m"><span class="up">${sg(s.best)}</span> / <span class="dn">${sg(s.worst)}</span></b></div><div>Job pay<b class="m">${money(s.jobPay)} · ${s.jobs} jobs</b></div>
    <div>Mom's practice<b class="m">${s.paperWon}/${s.paper} · ${money(s.paperPay)}</b></div><div>Bills · broke<b class="m">${money(s.bills)} · ${s.broke}×</b></div></div>
   `; }
-function SAVEHTML(){ return `<h3>Save</h3><div class="card"><div class="t">☁️ ${cloudSt}</div><div class="g2" style="margin-top:8px"><button class="btn ghost sm" data-sx="exp">Copy save code</button><button class="btn ghost sm" data-sx="imp">Load code</button></div>
-  <input id="sbox" class="inp" style="margin-top:6px" placeholder="Paste save code"><button class="btn sell sm" style="width:100%;margin-top:6px" data-sx="wipe">Wipe save</button><button class="btn ghost sm" style="width:100%;margin-top:6px" data-sx="replay">Replay intro & tutorial</button></div>${bakHTML()}`; }
-function bakHTML(){ const L=baks(); if(!L.length) return ""; return `<h3>Backups on this device</h3><div class="card">${L.map((b,i)=>`<div class="li"><div class="g"><b class="m">Best ${money(b.nw)}</b> · cash ${money(b.cash)}<div class="t">${new Date(b.at).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} · ${b.why}</div></div><button class="btn ghost sm" data-sx="bak${i}">Restore</button></div>`).join("")}<div class="t" style="margin-top:6px">Taken automatically right before a save gets replaced. Restoring one also saves it to your account.</div></div>`; }
+function SAVEHTML(){ const L=baks();
+  return sgrp("",[srow("☁️","Saving",cloudSt)])
+   +sgrp("Save code",[`<div class="srow" style="flex-wrap:wrap"><input id="sbox" class="inp" style="flex:1;min-width:0;padding:8px 10px" placeholder="Paste a save code"><button class="btn ghost sm" data-sx="imp">Load</button><button class="btn ghost sm" data-sx="exp">Copy mine</button></div>`],"Copy your code to move your game somewhere without signing in, or paste one to load it.")
+   +(L.length?sgrp("Backups on this device",L.map((b,i)=>srow("🗂️",`Best ${money(b.nw)} · cash ${money(b.cash)}`,`${new Date(b.at).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} · ${b.why}`,`<button class="btn ghost sm" data-sx="bak${i}">Restore</button>`)),"Taken automatically right before a save gets replaced. Restoring one also saves it to your account."):"")
+   +sgrp("Start over",[`<button class="srow" data-sx="replay"><span class="ic">📖</span><div class="g tt">Replay intro & tutorial</div><span class="chev">›</span></button>`,`<button class="srow" data-sx="wipe"><span class="ic">🗑️</span><div class="g tt" style="color:var(--dn)">Wipe save</div><span class="chev">›</span></button>`]); }
 // volume slider under the Sound effects / Music rows: changes are heard while you drag, saved when you let go
-const volRow=(k,v)=>`<div class="row" style="margin:-2px 2px 10px;gap:10px"><span class="t">🔈</span><input type="range" class="vol g" data-vol="${k}" min="0" max="1" step="0.01" value="${v}" style="width:100%;accent-color:var(--gold)"><span class="t m" style="width:34px;text-align:right" id="vl-${k}">${Math.round(v*100)}%</span></div>`;
+const volRow=(k,v)=>`<div class="srow" style="padding:6px 12px 8px"><span class="ic" style="background:none">🔈</span><input type="range" class="vol g" data-vol="${k}" min="0" max="1" step="0.01" value="${v}" style="width:100%;accent-color:var(--gold)"><span class="t m" style="width:36px;text-align:right" id="vl-${k}">${Math.round(v*100)}%</span></div>`;
 document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.dataset.vol; if(!k) return; const v=+e.target.value; S.set=S.set||{}; S.set[k]=v; const l=$("vl-"+k); if(l) l.textContent=Math.round(v*100)+"%";
   if(k==="sv"&&SFXB) SFXB.gain.setTargetAtTime(sfxGain(),AC.currentTime,.02);
   if(k==="mv"&&MUSB&&MUS.cur>=0&&MUS.on) MUSB.gain.setTargetAtTime(musV()*SONGS[MUS.cur].g,AC.currentTime,.05); });
 document.addEventListener("change",e=>{ const k=e.target.dataset&&e.target.dataset.vol; if(!k) return; save(); act(); if(k==="sv") sfx('ping'); });
-function openSettings(){ const s=S.st;
-  modal("✕|⚙︎ Settings",acctHTML()+notifHTML()+`<h3>Work</h3><button class="btn ghost" style="width:100%" id="chprof">${prof()?prof().i+" ":""}Change your profession</button><h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div>${volRow("sv",svol())}<div class="card row"><div class="g"><div class="b">Music</div><div class="t" id="muslbl"></div></div>${mus()&&MUS.on?`<button class="btn ghost sm" data-sx="mskip">Skip ⏭</button>`:""}<button class="btn ${mus()?"buy":"ghost"} sm" data-sx="mus">${mus()?"ON":"OFF"}</button></div>${volRow("mv",mvol())}<h3>App</h3><div class="card row"><div class="g"><div class="b">Version ${APPV}</div><div class="t">Updates install automatically when you open the app. Tap to check right now.</div></div><button class="btn ghost sm" data-sx="upd">Check for updates</button></div><h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); musLbl(); const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
+let SETV="gen";
+function openSettings(v){ if(v) SETV=v; const p=prof();
+  let h=`<div class="seg"><button data-setv="gen" class="${SETV==="gen"?"on":""}">⚙️ General</button><button data-setv="save" class="${SETV==="save"?"on":""}">💾 Save</button><button data-setv="stats" class="${SETV==="stats"?"on":""}">📊 Stats</button></div>`;
+  if(SETV==="gen") h+=acctHTML()+notifHTML()
+    +sgrp("Sound",[srow("🔊","Sound effects","On iPhone, also check the volume and silent switch",tgl(snd(),"snd")),volRow("sv",svol()),
+      srow("🎵","Music",`<span id="muslbl"></span>`,(mus()&&MUS.on?`<button class='btn ghost sm' data-sx='mskip'>Skip ⏭</button>`:"")+tgl(mus(),"mus")),volRow("mv",mvol())])
+    +sgrp("Work",[`<button class="srow" id="chprof"><span class="ic">${p?p.i:"💼"}</span><div class="g"><div class="tt">Profession</div><div class="st">${p?p.n:"None yet"}</div></div><span class="t">Change</span><span class="chev">›</span></button>`])
+    +sgrp("App",[srow("ℹ️",`Version ${APPV}`,"Updates install automatically when you open the app",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
+  else if(SETV==="save") h+=SAVEHTML();
+  else h+=stats_html();
+  modal("✕|⚙︎ Settings",h,[]); musLbl();
+  $("modal").querySelectorAll("[data-setv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openSettings(b.dataset.setv); });
+  const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
 function fitHdr(){ for(const id of ["cash","fund","nw"]){ const e=$(id); if(!e) continue; e.style.fontSize="";
   const w=e.parentElement.clientWidth, base=parseFloat(getComputedStyle(e).fontSize); let f=base;
@@ -1662,14 +1682,16 @@ const pushSet=v=>{ try{ v?localStorage.setItem(PUSHK,JSON.stringify(v)):localSto
 const pushOK=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
 function b64u(s){ const b=atob((s+"=".repeat((4-s.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from(b,c=>c.charCodeAt(0)); }
 async function sidOf(ep){ const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(ep)); return Array.from(new Uint8Array(h)).slice(0,12).map(x=>x.toString(16).padStart(2,"0")).join(""); }
-function notifHTML(){ let h=`<h3>Notifications</h3>`; const P=pushGet();
-  if(!window.NET||!window.NET.vapid) return h+`<div class='card t'>Notifications aren't set up for this copy of the game.</div>`;
-  if(!UID) return h+`<div class='card t'>Sign in to get notifications about big market news and your friends.</div>`;
-  if(!pushOK()) return h+`<div class='card t'>${isIOS()&&!standalone()?"On iPhone, add Stock Tycoon to your Home Screen first (<b>Share → Add to Home Screen</b>), then open it from there to turn on notifications.":"This browser can't show notifications."}</div>`;
-  if(Notification.permission==="denied") return h+`<div class='card t'>Notifications are blocked. Turn them on for Stock Tycoon in your phone's Settings → Notifications.</div>`;
-  if(!P||P.uid!==UID) return h+`<div class='card row'><div class='g t'>Get notified about big market news (crashes, breaking news, bull and bear markets) and your friends, even when the app is closed.</div><button class='btn gold sm' data-sx='pushon'>Turn on</button></div>`;
-  const tg=(k,n,d)=>`<div class='card row' style='margin-bottom:6px'><div class='g'><div class='b'>${n}</div><div class='t'>${d}</div></div><button class='btn ${P[k]?"buy":"ghost"} sm' data-sx='p_${k}'>${P[k]?"ON":"OFF"}</button></div>`;
-  return h+tg("news","Big market news","Crash warnings, breaking news, and bull or bear markets starting")+tg("friends","Friends","Friend requests, messages, tips, and weekly competition results")+`<button class='btn ghost sm' style='width:100%' data-sx='pushoff'>Turn off on this device</button>`+(DEVS.includes(UNAME)?`<button class='btn gold sm' style='width:100%;margin-top:6px' data-sx='pushtest'>🧪 Send a test push to this device</button><div class='t' style='margin-top:4px'>Developer only. Arrives in a few seconds if the push worker is running.</div>`:""); }
+function notifHTML(){ const P=pushGet(), L="Notifications";
+  if(!window.NET||!window.NET.vapid) return sgrp(L,[srow("🔔","Not available","Notifications aren't set up for this copy of the game.")]);
+  if(!UID) return sgrp(L,[srow("🔔","Sign in first","Get notified about big market news and your friends.")]);
+  if(!pushOK()) return sgrp(L,[srow("🔔","Not available here",isIOS()&&!standalone()?"Add Stock Tycoon to your Home Screen first (<b>Share → Add to Home Screen</b>), then open it from there.":"This browser can't show notifications.")]);
+  if(Notification.permission==="denied") return sgrp(L,[srow("🔕","Blocked","Turn them on for Stock Tycoon in your phone's Settings → Notifications.")]);
+  if(!P||P.uid!==UID) return sgrp(L,[srow("🔔","Push notifications","Big market news and your friends, even when the app is closed.",`<button class='btn gold sm' data-sx='pushon'>Turn on</button>`)]);
+  return sgrp(L,[srow("📰","Big market news","Crashes, breaking news, bull and bear markets",tgl(P.news,"p_news")),
+    srow("👥","Friends","Requests, messages, tips, competition results",tgl(P.friends,"p_friends")),
+    DEVS.includes(UNAME)?srow("🧪","Send a test push","Developer only. Arrives in a few seconds if the push worker is running.",`<button class='btn ghost sm' data-sx='pushtest'>Send</button>`):"",
+    `<button class="srow" data-sx="pushoff"><span class="ic">🔕</span><div class="g tt" style="color:var(--dn)">Turn off on this device</div></button>`]); }
 // developer accounts: can send themselves a test push (the push worker checks the same list)
 const DEVS=["rytheguy18","rytheguy"];
 async function pushOn(){ try{ if(await Notification.requestPermission()!=="granted"){ toast("Notifications weren't allowed"); return openSettings(); }
@@ -1688,12 +1710,16 @@ async function pushToggle(k){ const P=pushGet(); if(!P) return; P[k]=P[k]?0:1; p
 const TABS=["trade","store","auto","friends","me"];
 if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message",e=>{ const d=e.data||{}; if(d.type==="open-tab"&&TABS.includes(d.tab)&&!$("tut")) setTab(d.tab); });
 
-function acctHTML(){ let h=`<h3>Account</h3>`;
-  if(!window.NET) h+=`<div class='card t'>Offline mode. Online features aren't set up for this copy of the game.</div>`;
-  else if(!UID) h+=`<div class='card row'><div class='g t'>Not signed in. Your game saves on this device only.</div><button class='btn gold sm' data-sx='login'>Sign in</button></div>`;
-  else h+=`<div class='card'><div class='row'><div class='g'><div class='b'>@${UNAME}</div><div class='t'>Progress saves to your account</div></div><button class='btn ghost sm' data-sx='logout'>Sign out</button></div><div class='row' style='margin-top:8px'><input id='newpw' class='inp g' type='password' placeholder='New password' autocomplete='new-password'><button class='btn ghost sm' data-sx='pw'>Change</button></div></div>`;
-  if(isIOS()&&!standalone()) h+=`<h3>Install</h3><div class='card t'>In Safari, tap <b style='color:var(--text)'>Share</b> → <b style='color:var(--text)'>Add to Home Screen</b>. It opens full-screen like a real app.</div>`;
-  return h; }
+// settings building blocks: a grouped list of rows (icon tile, title, subtitle, control on the right)
+const sgrp=(lab,rows,foot)=>`${lab?`<div class="slab">${lab}</div>`:""}<div class="sgrp">${rows.filter(Boolean).join("")}</div>${foot?`<div class="sfoot">${foot}</div>`:""}`;
+const srow=(ic,tt,st,right,attr)=>`<div class="srow" ${attr||""}><span class="ic">${ic}</span><div class="g" style="min-width:0"><div class="tt">${tt}</div>${st?`<div class="st">${st}</div>`:""}</div>${right||""}</div>`;
+const tgl=(on,sx)=>`<button class="tg ${on?"on":""}" data-sx="${sx}" aria-label="toggle"></button>`;
+function acctHTML(){
+  if(!window.NET) return sgrp("Account",[srow("👤","Offline mode","Online features aren't set up for this copy of the game.")]);
+  if(!UID) return sgrp("Account",[srow("👤","Not signed in","Your game saves on this device only.",`<button class='btn gold sm' data-sx='login'>Sign in</button>`)]);
+  return sgrp("Account",[srow("👤","@"+UNAME,"Progress saves to your account",`<button class='btn ghost sm' data-sx='logout'>Sign out</button>`),
+    `<div class="srow"><span class="ic">🔑</span><input id='newpw' class='inp g' type='password' placeholder='New password' autocomplete='new-password' style='padding:8px 10px'><button class='btn ghost sm' data-sx='pw'>Change</button></div>`],
+    isIOS()&&!standalone()?"📲 To install: in Safari tap <b>Share</b> → <b>Add to Home Screen</b>. It opens full-screen like a real app.":""); }
 function installHint(){ if(!isIOS()||standalone()||S.instHint||!S.prof||!$('modal').classList.contains('hide')||$('auth')||$('intro')||$('tut')) return;
   S.instHint=1; save(); modal('📲 Install the app',`<p>In Safari, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.</p><p>Stock Tycoon then opens full-screen from your home screen, like a real app.</p>`,[['Got it','gold']]); }
 
@@ -2360,7 +2386,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:") navigator.service
 // APPV is bumped with every release (same number as the service worker cache). The app downloads the live index.html,
 // reads its APPV, and if it's different saves your game and reloads into the new version. Runs on its own when the app
 // comes back to the screen and every 5 minutes, and on demand from Settings → Check for updates.
-const APPV="70";
+const APPV="71";
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }
 async function checkUpdate(manual){ if(location.protocol!=="https:"&&!manual) return; const v=await liveVer();
   if(!v){ if(manual) toast("Couldn't check for updates. Are you online?"); return; }

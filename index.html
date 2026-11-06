@@ -1189,13 +1189,17 @@ function preStops(sym){ const pr=S.pre||{}, p=P(sym), o=ORD(sym); if(!pr.sl&&!pr
 main.addEventListener("click",e=>{ const b=e.target.closest("[data-pre]"); if(!b) return; const pr=S.pre=S.pre||{sl:0,tp:0}, L=b.dataset.pre==="sl"?PRE_SL:PRE_TP, k=b.dataset.pre;
   pr[k]=L[(L.indexOf(pr[k])+1)%L.length]; save(); preCard(false);
   toast(k==="sl"?(pr.sl?`New trades auto-sell if they drop ${pr.sl}%`:"Stop loss off"):(pr.tp?`New trades auto-sell at +${pr.tp}% profit`:"Take profit off")); });
-function jobCard(){ const el=$("job"); if(!el) return; const p=prof();
-  if(!p){ el.innerHTML=`<button class="btn gold" style="width:100%" data-x="pick">Pick a profession</button>`; return; }
-  const s=pst(), t=tier(); let h=`<div class="row"><div style="font-size:22px">${p.i}</div><div class="g"><div class="b">${p.n} <span class="pill">★ ${s.rep} rep</span></div><div class="t">${t>=0?p.gear[t]:"<span class=dn>gear broken</span>"}${FUSE[t]>0?` · ${p.sup} ${s.fuel.toFixed(1)}/${FUSE[t]*4}`:""}${aOn("book")?" · 📅 auto-booking":""}</div></div></div>`;
-  if(S.job){ const j=p.jobs[S.job.k]; h+=`<div class="bar"><i style="width:${(NOW-S.job.start)/(S.job.end-S.job.start)*100}%"></i></div><div class="row t"><span class="g">${j.n} · ${money(S.job.pay)}</span><span>${dur(S.job.end-NOW)}</span></div>`; }
-  else if(t<0) h+=`<div class="t" style="margin-top:6px">${s.momFix?"Mom's getting it fixed: "+dur(s.momFix-NOW)+". ":""}Repair it in the Store.</div>`;
-  else h+=`<button class="btn gold" style="width:100%;margin-top:8px" data-x="jobs">Find a job</button>`;
-  el.innerHTML=h; }
+// Your hustle (Market tab): same look as the Profession store (colored line-art icon, tier bar, big blue button)
+function jobCard(){ const el=$("job"); if(!el) return; const p=prof(); let h;
+  if(!p) h=`<button class="btn buybig" style="margin-top:0" data-x="pick">Pick a profession</button>`;
+  else { const s=pst(), t=tier(), col=PCOL[p.id]||"#3b82f6";
+    h=`<div class="row" style="gap:12px">${ICOB(p.id,col,24)}<div class="g" style="min-width:0"><div class="b">${p.n} <span class="pill">★ ${s.rep} rep</span></div>
+      <div class="t">${t>=0?p.gear[t]:"<span class=dn>gear broken</span>"}${FUSE[t]>0?` · ${p.sup} ${s.fuel.toFixed(1)}/${FUSE[t]*4}`:""}${aOn("book")?" · auto-booking":""}</div>
+      <div class="tiers">${p.gear.map((_,i)=>`<i style="${i<=s.own?`background:${col}`:""}"></i>`).join("")}</div></div></div>`;
+    if(S.job){ const j=p.jobs[S.job.k]; h+=`<div class="bar" style="margin-top:12px"><i style="width:${(NOW-S.job.start)/(S.job.end-S.job.start)*100}%;background:${col}"></i></div><div class="row t"><span class="g">${j.n} · <b class="up">${money(S.job.pay)}</b></span><span>${dur(S.job.end-NOW)}</span></div>`; }
+    else if(t<0) h+=`<div class="t" style="margin-top:8px">${s.momFix?"Mom's getting it fixed: "+dur(s.momFix-NOW)+". ":""}Repair it in the Store.</div>`;
+    else h+=`<button class="btn buybig" data-x="jobs">Find a job</button>`; }
+  if(el.dataset.h!==h){ el.dataset.h=h; el.innerHTML=h; } } // only redraw when something changed, so the glow doesn't restart every second
 function momCard(){ const w=$("momw"); if(!w) return; if(S.momDone){ w.style.display="none"; return; }
   const mult=5, c=S.paper;
   if(c){ const ex=c.dir==="L"?bid(c.sym):ask(c.sym), pl=(c.dir==="L"?ex-c.en:c.en-ex)*PQ;
@@ -2561,7 +2565,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="94";
+const APPV="95";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

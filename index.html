@@ -193,6 +193,16 @@ header{position:relative}
 .nsec{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;margin:10px 4px 2px}
 .mood{display:flex;align-items:center;justify-content:space-between;background:var(--c2);border-radius:10px;padding:7px 10px;margin:2px 0 4px;font-size:12px;color:var(--mut)}
 .fme{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;margin-bottom:10px;border:1px solid rgba(255,255,255,.08)}
+.fme{padding:12px;margin-bottom:8px;display:block!important} .fcomp{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:linear-gradient(180deg,#1d1a0c,var(--card));border-color:#5a4a1a;padding:10px 12px;font-family:inherit;color:var(--text)}
+.frq{display:flex;align-items:center;gap:8px;border-style:dashed;padding:9px 10px;margin-bottom:6px} .frl{padding:0;overflow:hidden}
+.frr{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:10px;border-bottom:1px solid var(--line);background:none;font-family:inherit;color:var(--text)} .frl>.frr:last-child{border-bottom:0}
+.frr.me{background:rgba(245,179,1,.07)} .frr.op{background:#10161e;border-bottom-color:transparent} .frk{width:16px;text-align:center;flex:none}
+.fnm,.fsb{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .fch{width:12px;text-align:center}
+.fav{position:relative;flex:none;display:flex} .fav.on:after{content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:var(--up);border:2px solid var(--card)}
+.frx{background:#10161e;padding:2px 12px 12px;border-bottom:1px solid var(--line)} .frs{display:grid;grid-template-columns:1fr 1fr;gap:6px} .frs>div{background:var(--card);border-radius:8px;padding:6px 8px} .frs .t{display:block;font-size:11.5px}
+.pod{display:flex;align-items:flex-end;gap:6px;margin:12px 0 8px} .pc{flex:1;text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.pw{display:flex;border-radius:50%;border:2px solid;padding:1px} .pn{font-size:12.5px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .pb{width:100%;border-radius:8px 8px 0 0;margin-top:4px;padding-top:4px}
+.li.lme{background:rgba(245,179,1,.07);border-radius:8px}
 .frow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);width:100%;text-align:left} .frow:last-child{border-bottom:0}
 .frow .nm{font-weight:700;font-size:14px} .frow .sub{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px} .frow .tm{font:500 11px "JetBrains Mono";color:var(--mut);flex:none}
 .frow.un .sub{color:var(--text)} .frow.un .tm{color:var(--gold)}
@@ -1380,6 +1390,7 @@ const LI={
  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
  save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
  chart:'<path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
+ tro:'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
  robot:'<rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4M8 16h.01M16 16h.01"/>',
  target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
  trend:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
@@ -1769,11 +1780,21 @@ let DB=null, UID=null, FR={list:null,view:"friends",busy:false,last:""};
 const myCode=()=>UID?UID.replace(/[^a-zA-Z0-9]/g,"").slice(-6).toUpperCase():"";
 function myCard(){ S.me=S.me||{name:"Trader"+Math.floor(1000+Math.random()*9000),av:"👨"}; if(!AVS.includes(S.me.av)) S.me.av="👨"; return S.me; }
 function homeName(){ return S.ms.island?"🏝 Private island":S.ms.house?"🏡 Dream house":S.ms.condo?"🏙 Condo":S.ms.apt?"🏢 Apartment":"🏠 Mom's basement"; }
+// what friends see under your name while you're online
+function doingNow(){ if(compCur()) return "In the weekly comp"; const o=STOCKS.find(d=>{ const p=S.pos[d.s]; return p&&(p.l||p.s); });
+  if(o){ const p=S.pos[o.s]; return (p.l?"Holding ":"Shorting ")+o.s; } if(S.job){ const pb=PB[S.job.p], j=pb&&pb.jobs[S.job.k]; return j?"Working · "+j.n:"Working"; } return ""; }
+const ONLINE=180000; // seen in the last 3 minutes = online
 async function pubProfile(){ if(!DB||!UID) return; const m=myCard();
   const doc={name:m.name.slice(0,20),av:m.av,img:okImg(m.img)?m.img:"",tag:(m.tag||"").slice(0,40),col:m.col||0,code:myCode(),nw:Math.round(netWorth()*100)/100,best:Math.round(S.bestNW),pl:Math.round(S.st.realized*100)/100,home:homeName(),
-    stories:MS.filter(x=>S.ms[x.id]).length,lessons:Object.keys(S.know||{}).length,broke:S.st.broke,prof:S.prof?PB[S.prof].n:"",title:cosGet("title").id,bd:cosGet("border").id,uname:UNAME,tro:S.st.tro||null,ach:Object.keys(S.ach||{}).length,ab:achTop(),at:Date.now()};
-  const j=JSON.stringify(Object.assign({},doc,{at:0})); if(j===FR.last) return;
-  try{ await DB.doc("profiles/"+UID).set(doc); FR.last=j; }catch(_){} }
+    stories:MS.filter(x=>S.ms[x.id]).length,lessons:Object.keys(S.know||{}).length,broke:S.st.broke,prof:S.prof?PB[S.prof].n:"",title:cosGet("title").id,bd:cosGet("border").id,uname:UNAME,tro:S.st.tro||null,ach:Object.keys(S.ach||{}).length,ab:achTop(),doing:doingNow(),at:Date.now()};
+  const j=JSON.stringify(Object.assign({},doc,{at:0})); if(j===FR.last&&Date.now()-(FR.pubAt||0)<120000) return;
+  try{ await DB.doc("profiles/"+UID).set(doc); FR.last=j; FR.pubAt=Date.now(); }catch(_){} }
+setInterval(()=>{ if(!document.hidden&&UID) pubProfile(); },60000);
+// keep friends' profiles fresh (online status, what they're doing, net worth) while the Friends tab is open
+async function frFresh(force){ const N=window.NET; if(!N||!UID||FR.fbusy) return; FS.pAt=FS.pAt||{}; const ids=FS.list.filter(f=>f.status==='accepted').map(f=>f.other).filter(id=>force||Date.now()-(FS.pAt[id]||0)>45000);
+  if(!ids.length) return; FR.fbusy=1; await Promise.allSettled(ids.map(async id=>{ const p=await N.getProfile(id); if(p){ FS.prof[id]=p; FS.pAt[id]=Date.now(); } })); FR.fbusy=0;
+  if(tab==='friends'&&FSEG==='friends'&&!FS.chat) buildFriends(); }
+setInterval(()=>{ if(!document.hidden&&tab==='friends'&&FSEG==='friends') frFresh(); },30000);
 async function loadBoard(){ if(!DB||FR.busy) return; FR.busy=true; try{ const q=await DB.collection("profiles").orderBy("nw","desc").limit(100).get(); FR.list=q.docs.map(d=>Object.assign({id:d.id},d.data())); }catch(_){ FR.list=[]; } FR.busy=false; if(tab==="friends") buildFriends(); }
 // Friends tab: your card on top, then three sub-tabs so each screen stays short:
 // Friends (requests, chats, add a friend) · Compete (weekly competition) · Ranks (leaderboard)
@@ -1786,12 +1807,18 @@ function lbRow(p,i,me){ const st=+p.stories||0, col=(COLS[p.col||0]||COLS[0])[1]
     <div class="sub">${p.home||"🏠 Mom's basement"} · Ch ${chOf(st)+1}${p.uname?" · @"+esc(p.uname):""}</div>
     <div class="pbar"><i style="width:${Math.min(100,st/MS.length*100)}%;background:${col}"></i></div></div>
     <div class="lnw">${money(p.nw||0)}<small>${st}/${MS.length} story</small></div></div>`; }
+// small weekly-competition card at the top of Friends; tap it to open Compete
+function compMini(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW, pz=prizeOf(w), r=CB.list&&CB.w===w?CB.list.findIndex(x=>x.id===UID):-1;
+  const line=c?`You're ${r>=0?"#"+(r+1):"in"} · ends in ${dur(left)}`:isReg(w)?`You're registered · start trading`:isReg(w+1)?`Registered for next week · starts in ${dur(left)}`:`Register for next week · starts in ${dur(left)}`;
+  return `<button class="card fcomp" data-fseg="comp"><span class="g" style="display:flex;align-items:center;gap:10px">${ICOB("tro","#f5b301",18)}<span class="g" style="min-width:0"><b style="display:block">Weekly comp</b><span class="t">${line}</span></span></span>${pz?`<b class="m" style="color:var(--gold);font-size:16px">${money(pz[0])}</b>`:""}<span class="t" style="font-size:18px">›</span></button>`; }
 function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[], cc=COLS[m.col||0]||COLS[0];
   // top of the tab: your own leaderboard row, drawn exactly the way friends see it
   const meP={name:m.name,av:m.av,img:okImg(m.img)?m.img:"",col:m.col||0,nw:netWorth(),stories:MS.filter(x=>S.ms[x.id]).length,home:homeName(),uname:UNAME,tro:S.st.tro||null};
   if(DB&&FR.list===null&&!FR.busy) loadBoard(); // your rank medal needs the leaderboard, so fetch it as soon as the tab opens
   const myRank=FR.list?FR.list.findIndex(p=>p.id===UID):-1;
-  let h=`<div class="pad"><div class="row" style="margin:0 3px 6px"><div class="g t">How friends see you</div><button class="btn ghost sm" data-fx="edit" style="padding:5px 12px">Edit</button></div><div class="card" style="padding:4px 10px;margin-bottom:12px">${lbRow(meP,myRank>=0?myRank:null,false)}</div>`;
+  let h=`<div class="pad"><div class="card fme" style="border-color:${cc[1]}66"><div class="row" style="gap:12px">${avh(meP,48)}<div class="g" style="min-width:0"><div class="b" style="font-size:16px">${esc(meP.name)}${troStr(meP.tro)}</div><div class="t">How friends see you</div></div><button class="btn ghost sm" data-fx="edit" style="padding:5px 12px">Edit</button></div>
+    <div class="row" style="margin-top:10px;align-items:flex-end"><div class="g"><div class="t">Net worth</div><b class="m" style="font-size:22px;color:var(--gold)">${money(meP.nw)}</b></div><div class="t" style="text-align:right">${myRank>=0?`<b style="color:var(--text)">#${myRank+1}</b> overall<br>`:""}${meP.home} · Ch ${chOf(meP.stories)+1}</div></div></div>`;
+  if(DB&&FSEG!=="comp") h+=compMini();
   if(!DB){ h+=window.NET?`<div class="card"><div class="t">Sign in to add friends, chat, join weekly competitions and see the leaderboard.</div><button class="btn gold" style="width:100%;margin-top:8px" data-sx2="login">Sign in or create an account</button></div>`:`<div class="card t">Online features aren't set up for this copy of the game. Single-player works the same.</div>`; main.dataset.h=main.innerHTML=h+"</div>"; return; }
   const nreq=FS.list.filter(f=>f.status==='pending'&&f.from!==UID).length, nun=FS.list.filter(f=>unread(f)).length, c=compCur();
   const dot=n=>n?` <span class="pill bad" style="padding:0 6px">${n}</span>`:"";
@@ -1804,7 +1831,10 @@ function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[], cc=COLS[m
       h+=`<div class="card" style="padding:4px 10px">${rows.length?rows.map((p,i)=>lbRow(p,i,p.id===UID)).join(""):`<div class="t" style="padding:10px 2px">${FR.view==="friends"?"No friends on the board yet. Add some in the Friends tab.":"Nobody here yet."}</div>`}</div>
       <button class="btn ghost sm" style="width:100%" data-fx="ref">↻ Refresh</button>`; } }
   else h+=socialHTML();
-  main.dataset.h=main.innerHTML=h+"</div>"; compTick(); }
+  h+="</div>"; const fi=$('funame'), keepV=fi?fi.value:"", typing=document.activeElement===fi; if(typing&&main.dataset.h!==h&&FSEG==="friends") return; // don't wipe what you're typing
+  if(main.dataset.h!==h){ main.dataset.h=main.innerHTML=h; if(keepV&&$('funame')) $('funame').value=keepV; } compTick(); if(FSEG==="friends") frFresh(); }
+let FOPEN=null;
+main.addEventListener("click",e=>{ const b=e.target.closest("[data-fop]"); if(!b) return; FOPEN=FOPEN===b.dataset.fop?null:b.dataset.fop; sfx('tick'); buildFriends(); });
 main.addEventListener("click",e=>{ const b=e.target.closest("[data-fseg]"); if(!b) return; FSEG=b.dataset.fseg; main.scrollTop=0; buildFriends(); });
 main.addEventListener("click",e=>{ const b=e.target.closest("[data-fx],[data-fv]"); if(!b) return; const m=myCard();
   if(b.dataset.fv){ FR.view=b.dataset.fv; return buildFriends(); }
@@ -1939,12 +1969,26 @@ function socialStart(N,uid){ socialStop(); FS.first=true;
 const unread=f=>f.status==='accepted'&&f.last&&f.last.from!==UID&&f.last.at>((S.readAt||{})[f.id]||0);
 function navDot(){ const b=document.querySelector('nav [data-tab="friends"]'); if(!b) return; const n=FS.list.filter(f=>(f.status==='pending'&&f.from!==UID)||unread(f)).length; let d=b.querySelector('.ndot');
   if(n&&!d){ d=document.createElement('i'); d.className='ndot'; b.appendChild(d); } if(!n&&d) d.remove(); }
-function socialHTML(){ const uid=UID, pn=f=>Object.assign({},FS.prof[f.other]||{},(FR.list||[]).find(x=>x.id===f.other)||{});
-  const inc=FS.list.filter(f=>f.status==='pending'&&f.from!==uid), out=FS.list.filter(f=>f.status==='pending'&&f.from===uid), acc=FS.list.filter(f=>f.status==='accepted').sort((a,b)=>((b.last||{}).at||0)-((a.last||{}).at||0));
+function socialHTML(){ const uid=UID, pn=f=>Object.assign({},(FR.list||[]).find(x=>x.id===f.other)||{},FS.prof[f.other]||{});
+  const inc=FS.list.filter(f=>f.status==='pending'&&f.from!==uid), out=FS.list.filter(f=>f.status==='pending'&&f.from===uid), acc=FS.list.filter(f=>f.status==='accepted');
+  const m=myCard(), now=Date.now(), RK=["#f5b301","#cbd5e1","#d6884a"];
+  const me={me:1,id:uid,name:m.name,av:m.av,img:okImg(m.img)?m.img:"",col:m.col||0,nw:netWorth(),at:now,doing:doingNow(),tro:S.st.tro||null,prof:S.prof?PB[S.prof].n:"",stories:MS.filter(x=>S.ms[x.id]).length};
+  const rows=[me,...acc.map(f=>Object.assign(pn(f),{f,id:f.other}))].sort((a,b)=>(b.nw||0)-(a.nw||0));
   let h="";
-  if(inc.length) h+=`<h3>Requests · ${inc.length}</h3><div class='card' style='padding:2px 10px'>${inc.map(f=>{ const p=pn(f); return `<div class='frow'>${avh(p,38)}<div class='g' style='min-width:0'><div class='nm'>${esc(p.name)}</div><div class='sub'>@${esc(p.uname||'')} wants to be friends</div></div><button class='btn buy sm' data-facc='${f.id}'>Accept</button><button class='btn ghost sm' data-frem='${f.id}'>✕</button></div>`; }).join('')}</div>`;
-  h+=`<h3>Friends · ${acc.length}</h3><div class='card' style='padding:2px 10px'>${acc.length?acc.map(f=>{ const p=pn(f), un=unread(f), L=f.last;
-     return `<button class='frow${un?" un":""}' data-fchat='${f.id}'>${avh(p,40)}<div class='g' style='min-width:0'><div class='nm'>${esc(p.name)}${troStr(p.tro)}${un?` <span class='dot' style='background:var(--gold)'></span>`:''}</div><div class='sub'>${L?(L.from===uid?'You: ':'')+String(L.text||'').replace(/</g,''):'Say hi 👋 · '+money(p.nw||0)}</div></div><span class='tm'>${L?ago(nowSec()-Math.floor(L.at/1000)):''}</span></button>`; }).join(''):`<div class='t' style='padding:12px 2px'>No friends yet. Add one below with their username.</div>`}</div>`;
+  if(inc.length) h+=`<h3>Requests · ${inc.length}</h3>`+inc.map(f=>{ const p=pn(f); return `<div class='card frq'>${avh(p,34)}<div class='g' style='min-width:0'><div class='b'>${esc(p.name)}</div><div class='t'>@${esc(p.uname||'')} wants to be friends</div></div><button class='btn buy sm' data-facc='${f.id}'>Accept</button><button class='btn ghost sm' data-frem='${f.id}' aria-label='Decline'>✕</button></div>`; }).join('');
+  const onl=rows.filter(p=>!p.me&&now-(p.at||0)<ONLINE).length;
+  h+=`<h3>Friends · ${acc.length}${acc.length?` <span style="color:var(--up);text-transform:none;letter-spacing:0">· ${onl} online</span>`:''}</h3>`;
+  h+=`<div class='card frl'>`+rows.map((p,i)=>{ const on=now-(p.at||0)<ONLINE, f=p.f, un=f&&unread(f), op=!p.me&&FOPEN===p.id, rc=RK[i]||"var(--mut)";
+    const sub=p.me?(p.doing||"That's you"):on?`<span class='up'>● Online</span>${p.doing?" · "+esc(p.doing):""}`:p.at?`Active ${ago(Math.floor((now-p.at)/1000))} ago`:"Offline";
+    let r=`<${p.me?"div":"button"} class='frr${p.me?" me":""}${op?" op":""}' ${p.me?"":`data-fop='${p.id}'`}><b class='m frk' style='color:${rc}'>${i+1}</b><span class='fav${on?" on":""}'>${avh(p,36)}</span>
+      <span class='g' style='min-width:0'><span class='b fnm'>${esc(p.name||'Player')}${p.me?" <span class='pill ok'>you</span>":""}${troStr(p.tro)}</span><span class='t fsb'>${sub}</span></span>
+      ${un?`<span class='pill bad' style='padding:0 6px'>new</span>`:""}<b class='m'>${money(p.nw||0)}</b>${p.me?"":`<span class='t fch'>${op?"▴":"▾"}</span>`}</${p.me?"div":"button"}>`;
+    if(op){ const L=f.last;
+      r+=`<div class='frx'><div class='frs'><div><span class='t'>Profession</span><b>${esc(p.prof||"None yet")}</b></div><div><span class='t'>Story</span><b>Ch ${chOf(p.stories)+1}</b></div><div><span class='t'>Best</span><b class='m'>${money(p.best||p.nw||0)}</b></div><div><span class='t'>Achievements</span><b>${p.ach||0}</b></div></div>
+        ${L?`<div class='t' style='margin-top:8px'>${L.from===uid?'You: ':''}${esc(String(L.text||''))} · ${ago(nowSec()-Math.floor(L.at/1000))}</div>`:""}
+        <button class='btn gold' style='width:100%;margin-top:8px' data-fchat='${f.id}'>${un?"Read new message":"Chat"}</button></div>`; }
+    return r; }).join('')+`</div>`;
+  if(!acc.length) h+=`<div class='t' style='margin:-4px 3px 10px'>No friends yet. Add one below with their username.</div>`;
   h+=`<h3>Add a friend</h3><div class='addf'><input id='funame' class='inp' maxlength='17' placeholder='Their username' autocapitalize='none' autocorrect='off' spellcheck='false'><button class='btn buy sm' data-freq='1'>Add</button></div>
     <div class='t' style='margin:6px 3px 0'>You're <b style='color:var(--text)'>@${UNAME}</b>. Share it so friends can add you.${out.length?` Waiting on ${out.map(f=>`${esc(pn(f).name)} (<button class='t' style='text-decoration:underline;padding:0' data-frem='${f.id}'>cancel</button>)`).join(', ')}.`:''}</div>
     <div class='t' style='margin:10px 3px 0'>💡 Tips: sent ${S.st.tipsSent||0} · paid off ${S.st.tipWins||0} · earned <b style='color:var(--text)'>${money(S.st.tipPay||0)}</b>. Send them from the Market tab.</div>`;
@@ -2036,10 +2080,11 @@ async function loadComp(){ if(!DB||CB.busy) return; CB.busy=true; const w=wkIdx(
 function compHTML(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW, nx=w+1;
   [w,nx].forEach(k=>{ const R=RG[k]; if(!R||(!R.busy&&Date.now()-R.at>30000)) regsLoad(k).then(()=>{ if(tab==='friends'&&FSEG==='comp') buildFriends(); }); });
   const Lw=(RG[w]||{}).list, Ln=(RG[nx]||{}).list, regW=isReg(w), regN=isReg(nx), meN=(Ln||[]).find(x=>x.id===UID);
-  let h=`<h3>📝 Next week · starts in ${dur(left)}</h3><div class='card'>
+  const nextH=`<h3>📝 Next week · starts in ${dur(left)}</h3><div class='card'>
     <div class='t'>Register to play next week. Your net worth is recorded when you register, and the cash prizes come from the <b style='color:var(--text)'>average net worth of everyone registered</b>. Unregister any time before it starts; then it locks.</div>
     ${prizeBoxes(prizeOf(nx))}<div class='t' style='margin-bottom:8px'>${Ln?`${Ln.length} registered${Ln.length?` · average ${money(regAvg(Ln))}`:''}${Ln.length<2?' · prizes need 2+ players':' · can still change until it starts'}`:'Loading…'}</div>
     ${regN?`<div class='row'><div class='g t'>✅ You're registered${meN?` with ${money(meN.nw)}`:''}</div><button class='btn ghost sm' data-creg='0'>Unregister</button></div>`:`<button class='btn gold' style='width:100%' data-creg='1'>Register for next week</button>`}</div>`;
+  let h=``;
   h+=`<h3>🏆 This week · ends in ${dur(left)}</h3><div class='card'>${prizeBoxes(prizeOf(w))}<div class='t' style='margin-bottom:6px'>${Lw?`${Lw.length} registered · prizes locked when it started`:'Loading…'}</div>`;
   if(!c&&regW) h+=`<button class='btn gold' style='width:100%;margin-top:4px' data-cj='1'>Start trading your $1,000</button>`;
   else if(!c) h+=`<div class='t'>🔒 Registration for this week closed when it started. Register for next week above.</div>`;
@@ -2048,8 +2093,13 @@ function compHTML(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW, nx=
   if(CB.list===null||CB.w!==w){ CB.list=null; loadComp(); h+=`<div class='t' style='margin-top:8px'>Loading standings…</div>`; }
   else { const rows=CB.list.filter(x=>CB.view==='all'||FRUIDS.has(x.id)||x.id===UID);
     h+=`<div class='seg' style='margin:10px 0 4px'><button data-cv='friends' class='${CB.view==='friends'?'on':''}'>Friends</button><button data-cv='all' class='${CB.view==='all'?'on':''}'>Everyone</button></div>`+
-      (rows.length?rows.slice(0,25).map((x,i)=>`<div class='li'><span><b class='m' style='display:inline-block;width:26px'>${['🥇','🥈','🥉'][i]||i+1}</b>${esc(x.name)}${x.id===UID?" <span class='pill ok'>you</span>":''}</span><b class='m ${x.value>=COMP_START?'up':'dn'}'>${money(x.value)}</b></div>`).join(''):`<div class='t' style='margin-top:6px'>Nobody has joined yet. Be the first.</div>`); }
-  return h+`</div>`; }
+      (rows.length?podium(rows.slice(0,3),prizeOf(w))+rows.slice(3,25).map((x,i)=>`<div class='li${x.id===UID?" lme":""}'><span><b class='m' style='display:inline-block;width:26px;color:var(--mut)'>${i+4}</b>${esc(x.name)}${x.id===UID?" <span class='pill ok'>you</span>":''}</span><b class='m ${x.value>=COMP_START?'up':'dn'}'>${money(x.value)}</b></div>`).join(''):`<div class='t' style='margin-top:6px'>Nobody has joined yet. Be the first.</div>`); }
+  return h+`</div>`+nextH; }
+// gold, silver and bronze podium for the top 3 of this week's competition
+function podium(top,pz){ const C=[["#f5b301","#3a2f0a",76],["#cbd5e1","#1e2733",56],["#d6884a","#2a1a10",42]], ord=[1,0,2];
+  return `<div class='pod'>`+ord.map(i=>{ const x=top[i], c=C[i]; if(!x) return `<div class='pc'></div>`; const p=Object.assign({},x,(FR.list||[]).find(y=>y.id===x.id)||{},FS.prof[x.id]||{}), r=(x.value/COMP_START-1)*100;
+    return `<div class='pc'>${i===0?`<div style='color:${c[0]};font-size:16px;line-height:1'>♛</div>`:""}<span class='pw' style='border-color:${c[0]}'>${avh(p,i?36:44)}</span><div class='b pn'>${esc(x.name)}${x.id===UID?" (you)":""}</div><div class='m ${r>=0?"up":"dn"}' style='font-size:12px'>${r>=0?"+":""}${r.toFixed(1)}%</div>
+      <div class='pb' style='height:${c[2]}px;background:${c[1]};border-top:2px solid ${c[0]}'><b class='m' style='color:${c[0]};font-size:18px'>${i+1}</b></div></div>`; }).join('')+`</div>`; }
 main.addEventListener('click',e=>{ const t=e.target;
   if(t.closest('[data-cj]')) return compJoin();
   const rg=t.closest('[data-creg]'); if(rg) return compReg(rg.dataset.creg==='1');
@@ -2617,7 +2667,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="100";
+const APPV="101";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

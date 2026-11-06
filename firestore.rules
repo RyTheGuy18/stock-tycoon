@@ -62,5 +62,11 @@ service cloud.firestore {
 
     // Weekly competition standings: one entry per player per week.
     match /comps/{week}/entries/{uid} { allow read: if signedIn(); allow write: if me(uid); }
+    // This week's cash prizes: the first player to open the competition sets them; nobody can change them after.
+    match /comps/{week} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.keys().hasOnly(['p','base','n','at'])
+        && request.resource.data.p is list && request.resource.data.p.size() == 3;
+    }
   }
 }

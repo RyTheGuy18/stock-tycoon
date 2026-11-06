@@ -150,6 +150,17 @@ header{position:relative}
 .pchips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px} .pchips div{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 6px;text-align:center} .pchips b{display:block;font:700 14px "JetBrains Mono";white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .pchips span{font-size:10.5px;color:var(--mut)}
 .pbar{height:5px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden} .pbar i{display:block;height:100%;border-radius:9px}
 .kdet summary{list-style:none;cursor:pointer} .kdet summary::-webkit-details-marker{display:none} .kdet[open] summary .t{opacity:.6}
+.ntf{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;padding:10px 4px;border-bottom:1px solid var(--line);position:relative}
+.ntf:last-child{border-bottom:0} .ntf .ic{width:34px;height:34px;border-radius:10px;background:var(--c2);display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+.ntf .tx{flex:1;min-width:0;font-size:13.5px;line-height:1.35} .ntf .mt{font-size:11.5px;color:var(--mut);margin-top:3px} .ntf .tm{font:500 11px "JetBrains Mono";color:var(--mut);flex:none;margin-top:2px}
+.ntf.new .ic{background:#2a2410;box-shadow:inset 0 0 0 1px rgba(245,179,1,.45)} .ntf.new .tm{color:var(--gold)}
+.nsec{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;margin:10px 4px 2px}
+.mood{display:flex;align-items:center;justify-content:space-between;background:var(--c2);border-radius:10px;padding:7px 10px;margin:2px 0 4px;font-size:12px;color:var(--mut)}
+.fme{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;margin-bottom:10px;border:1px solid rgba(255,255,255,.08)}
+.frow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);width:100%;text-align:left} .frow:last-child{border-bottom:0}
+.frow .nm{font-weight:700;font-size:14px} .frow .sub{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px} .frow .tm{font:500 11px "JetBrains Mono";color:var(--mut);flex:none}
+.frow.un .sub{color:var(--text)} .frow.un .tm{color:var(--gold)}
+.addf{display:flex;gap:8px} .addf .inp{flex:1;min-width:0}
 .lbr{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)} .lbr:last-child{border-bottom:0} .lbr.me{background:rgba(245,179,1,.05);border-radius:10px;padding:10px 6px}
 .lbr .rk{width:26px;text-align:center;font:700 13px "JetBrains Mono";color:var(--mut);flex:none} .lbr .rk.top{font-size:19px}
 .lbr .nm{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .lbr .sub{font-size:11.5px;color:var(--mut);margin:2px 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1548,26 +1559,31 @@ async function pubProfile(){ if(!DB||!UID) return; const m=myCard();
   const j=JSON.stringify(Object.assign({},doc,{at:0})); if(j===FR.last) return;
   try{ await DB.doc("profiles/"+UID).set(doc); FR.last=j; }catch(_){} }
 async function loadBoard(){ if(!DB||FR.busy) return; FR.busy=true; try{ const q=await DB.collection("profiles").orderBy("nw","desc").limit(100).get(); FR.list=q.docs.map(d=>Object.assign({id:d.id},d.data())); }catch(_){ FR.list=[]; } FR.busy=false; if(tab==="friends") buildFriends(); }
-function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[];
-  const cc=COLS[m.col||0]||COLS[0];
-  let h=`<div class="pad"><div class="pcard${bdCls()}" style="background:linear-gradient(135deg,${cc[0]},#0d1219 85%);padding:12px"><div class="row"><div class="pav" style="width:48px;height:48px;font-size:26px;border-color:${cc[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><div class="g"><b style="font-size:16px">${(m.name||"").replace(/</g,"")}</b><div class="ptag">${(m.tag||"").replace(/</g,"")}</div>${ttl()}<div class="t" style="margin-top:3px">${UNAME?`<b style="color:var(--text)">@${UNAME}</b>`:"Not signed in"}</div></div><button class="btn ghost sm" data-fx="edit">Customize</button></div></div>`;
+// Friends tab: your card on top, then three sub-tabs so each screen stays short:
+// Friends (requests, chats, add a friend) · Compete (weekly competition) · Ranks (leaderboard)
+let FSEG="friends";
+function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[], cc=COLS[m.col||0]||COLS[0];
+  let h=`<div class="pad"><div class="fme${bdCls()}" style="background:linear-gradient(135deg,${cc[0]},#0d1219 90%)"><div class="pav" style="width:44px;height:44px;font-size:24px;border-color:${cc[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><div class="g" style="min-width:0"><b style="font-size:15px">${(m.name||"").replace(/</g,"")}</b><div class="t">${UNAME?"@"+UNAME:"Not signed in"} · ${money(netWorth())}</div></div><button class="btn ghost sm" data-fx="edit">Edit</button></div>`;
   if(!DB){ h+=window.NET?`<div class="card"><div class="t">Sign in to add friends, chat, join weekly competitions and see the leaderboard.</div><button class="btn gold" style="width:100%;margin-top:8px" data-sx2="login">Sign in or create an account</button></div>`:`<div class="card t">Online features aren't set up for this copy of the game. Single-player works the same.</div>`; main.dataset.h=main.innerHTML=h+"</div>"; return; }
-  h+=socialHTML()+compHTML()+`
-  <div class="t" style="margin:-2px 3px 10px">💡 Tips: sent ${S.st.tipsSent||0} · paid off ${S.st.tipWins||0} · earned <b style="color:var(--text)">${money(S.st.tipPay||0)}</b>. Send tips from the Market tab, under the trade buttons.</div>
-  <h3>Leaderboard</h3><div class="seg"><button data-fv="friends" class="${FR.view==="friends"?"on":""}">Friends (${fr.length})</button><button data-fv="all" class="${FR.view==="all"?"on":""}">Everyone</button></div>`;
-  if(FR.list===null){ h+=`<div class="t">Loading the leaderboard…</div>`; loadBoard(); }
-  else { const rows=FR.list.filter(p=>FR.view==="all"||fr.includes(p.code)||p.id===UID);
-    // clean rows: rank, picture, name, where they are in the story (chapter + bar), net worth. Top 3 get medals.
-    const chOf=n=>{ let c=0; CHAP.forEach((x,k)=>{ if((n||0)>=x.at) c=k; }); return c; };
-    h+=`<div class="card" style="padding:4px 10px">${rows.length?rows.map((p,i)=>{ const st=+p.stories||0, col=(COLS[p.col||0]||COLS[0])[1], me=p.id===UID;
-      return `<div class="lbr${me?" me":""}"><div class="rk${i<3?" top":""}">${i<3?["🥇","🥈","🥉"][i]:i+1}</div>${avh(p,40)}
-        <div class="g" style="min-width:0"><div class="nm">${String(p.name||"Trader").replace(/</g,"")}${me?' <span class="pill ok">you</span>':""}${troStr(p.tro)}</div>
-        <div class="sub">${p.home||"🏠 Mom's basement"} · Ch ${chOf(st)+1}${p.uname?" · @"+esc(p.uname):""}</div>
-        <div class="pbar"><i style="width:${Math.min(100,st/MS.length*100)}%;background:${col}"></i></div></div>
-        <div class="lnw">${money(p.nw||0)}<small>${st}/${MS.length} story</small></div></div>`; }).join(""):`<div class="t">${FR.view==="friends"?"No friends added yet. Share your code and ask for theirs.":"Nobody here yet."}</div>`}</div>
-    <button class="btn ghost sm" style="width:100%" data-fx="ref">↻ Refresh</button>`; }
-  h+=`<div class="t" style="margin:12px 3px">Other players can see your card, net worth and trophies.</div>`;
+  const nreq=FS.list.filter(f=>f.status==='pending'&&f.from!==UID).length, nun=FS.list.filter(f=>unread(f)).length, c=compCur();
+  const dot=n=>n?` <span class="pill bad" style="padding:0 6px">${n}</span>`:"";
+  h+=`<div class="seg"><button data-fseg="friends" class="${FSEG==="friends"?"on":""}">👥 Friends${dot(nreq+nun)}</button><button data-fseg="comp" class="${FSEG==="comp"?"on":""}">🏆 Compete${c?' <span class="dot" style="background:var(--up)"></span>':""}</button><button data-fseg="ranks" class="${FSEG==="ranks"?"on":""}">📊 Ranks</button></div>`;
+  if(FSEG==="comp") h+=compHTML().replace("<h3>🏆 Weekly competition</h3>","");
+  else if(FSEG==="ranks"){
+    h+=`<div class="seg" style="margin-top:-2px"><button data-fv="friends" class="${FR.view==="friends"?"on":""}">Friends</button><button data-fv="all" class="${FR.view==="all"?"on":""}">Everyone</button></div>`;
+    if(FR.list===null){ h+=`<div class="t">Loading the leaderboard…</div>`; loadBoard(); }
+    else { const rows=FR.list.filter(p=>FR.view==="all"||fr.includes(p.code)||p.id===UID);
+      const chOf=n=>{ let c=0; CHAP.forEach((x,k)=>{ if((n||0)>=x.at) c=k; }); return c; };
+      h+=`<div class="card" style="padding:4px 10px">${rows.length?rows.map((p,i)=>{ const st=+p.stories||0, col=(COLS[p.col||0]||COLS[0])[1], me=p.id===UID;
+        return `<div class="lbr${me?" me":""}"><div class="rk${i<3?" top":""}">${i<3?["🥇","🥈","🥉"][i]:i+1}</div>${avh(p,40)}
+          <div class="g" style="min-width:0"><div class="nm">${String(p.name||"Trader").replace(/</g,"")}${me?' <span class="pill ok">you</span>':""}${troStr(p.tro)}</div>
+          <div class="sub">${p.home||"🏠 Mom's basement"} · Ch ${chOf(st)+1}${p.uname?" · @"+esc(p.uname):""}</div>
+          <div class="pbar"><i style="width:${Math.min(100,st/MS.length*100)}%;background:${col}"></i></div></div>
+          <div class="lnw">${money(p.nw||0)}<small>${st}/${MS.length} story</small></div></div>`; }).join(""):`<div class="t" style="padding:10px 2px">${FR.view==="friends"?"No friends on the board yet. Add some in the Friends tab.":"Nobody here yet."}</div>`}</div>
+      <button class="btn ghost sm" style="width:100%" data-fx="ref">↻ Refresh</button>`; } }
+  else h+=socialHTML();
   main.dataset.h=main.innerHTML=h+"</div>"; compTick(); }
+main.addEventListener("click",e=>{ const b=e.target.closest("[data-fseg]"); if(!b) return; FSEG=b.dataset.fseg; main.scrollTop=0; buildFriends(); });
 main.addEventListener("click",e=>{ const b=e.target.closest("[data-fx],[data-fv]"); if(!b) return; const m=myCard();
   if(b.dataset.fv){ FR.view=b.dataset.fv; return buildFriends(); }
   const x=b.dataset.fx;
@@ -1693,11 +1709,13 @@ function navDot(){ const b=document.querySelector('nav [data-tab="friends"]'); i
   if(n&&!d){ d=document.createElement('i'); d.className='ndot'; b.appendChild(d); } if(!n&&d) d.remove(); }
 function socialHTML(){ const uid=UID, pn=f=>Object.assign({},FS.prof[f.other]||{},(FR.list||[]).find(x=>x.id===f.other)||{});
   const inc=FS.list.filter(f=>f.status==='pending'&&f.from!==uid), out=FS.list.filter(f=>f.status==='pending'&&f.from===uid), acc=FS.list.filter(f=>f.status==='accepted').sort((a,b)=>((b.last||{}).at||0)-((a.last||{}).at||0));
-  let h=`<h3>Add a friend</h3><div class='card row'><input id='funame' class='inp g' maxlength='17' placeholder='Their username' autocapitalize='none' autocorrect='off' spellcheck='false'><button class='btn buy sm' data-freq='1'>Send request</button></div><div class='t' style='margin:-2px 3px 10px'>Your username is <b style='color:var(--text)'>@${UNAME}</b>. Share it so friends can add you.</div>`;
-  if(inc.length) h+=`<h3>Friend requests · ${inc.length}</h3><div class='card'>${inc.map(f=>{ const p=pn(f); return `<div class='li'><div class='row g'>${avh(p,34)}<div class='g'><b>${esc(p.name)}</b><div class='t'>@${esc(p.uname||'')}</div></div></div><button class='btn buy sm' data-facc='${f.id}'>Accept</button><button class='btn ghost sm' data-frem='${f.id}'>Decline</button></div>`; }).join('')}</div>`;
-  h+=`<h3>Friends · ${acc.length}</h3><div class='card'>${acc.length?acc.map(f=>{ const p=pn(f), un=unread(f);
-     return `<div class='li' data-fchat='${f.id}' style='cursor:pointer'><div class='row g' style='min-width:0'>${avh(p,38)}<div class='g' style='min-width:0'><b>${esc(p.name)}</b>${troStr(p.tro)}${achStr(p)}${un?` <span class='dot' style='background:var(--gold)'></span>`:''}<div class='t' style='white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>${f.last?(f.last.from===uid?'You: ':'')+String(f.last.text||'').replace(/</g,''):'@'+esc(p.uname||'')+' · '+money(p.nw||0)}</div></div></div><span style='font-size:18px'>💬</span></div>`; }).join(''):`<div class='t'>No friends yet. Send a request using their username.</div>`}</div>`;
-  if(out.length) h+=`<div class='t' style='margin:-2px 3px 10px'>Waiting on: ${out.map(f=>`${esc(pn(f).name)} (<button class='t' style='text-decoration:underline;padding:0' data-frem='${f.id}'>cancel</button>)`).join(' · ')}</div>`;
+  let h="";
+  if(inc.length) h+=`<h3>Requests · ${inc.length}</h3><div class='card' style='padding:2px 10px'>${inc.map(f=>{ const p=pn(f); return `<div class='frow'>${avh(p,38)}<div class='g' style='min-width:0'><div class='nm'>${esc(p.name)}</div><div class='sub'>@${esc(p.uname||'')} wants to be friends</div></div><button class='btn buy sm' data-facc='${f.id}'>Accept</button><button class='btn ghost sm' data-frem='${f.id}'>✕</button></div>`; }).join('')}</div>`;
+  h+=`<h3>Friends · ${acc.length}</h3><div class='card' style='padding:2px 10px'>${acc.length?acc.map(f=>{ const p=pn(f), un=unread(f), L=f.last;
+     return `<button class='frow${un?" un":""}' data-fchat='${f.id}'>${avh(p,40)}<div class='g' style='min-width:0'><div class='nm'>${esc(p.name)}${troStr(p.tro)}${un?` <span class='dot' style='background:var(--gold)'></span>`:''}</div><div class='sub'>${L?(L.from===uid?'You: ':'')+String(L.text||'').replace(/</g,''):'Say hi 👋 · '+money(p.nw||0)}</div></div><span class='tm'>${L?ago(nowSec()-Math.floor(L.at/1000)):''}</span></button>`; }).join(''):`<div class='t' style='padding:12px 2px'>No friends yet. Add one below with their username.</div>`}</div>`;
+  h+=`<h3>Add a friend</h3><div class='addf'><input id='funame' class='inp' maxlength='17' placeholder='Their username' autocapitalize='none' autocorrect='off' spellcheck='false'><button class='btn buy sm' data-freq='1'>Add</button></div>
+    <div class='t' style='margin:6px 3px 0'>You're <b style='color:var(--text)'>@${UNAME}</b>. Share it so friends can add you.${out.length?` Waiting on ${out.map(f=>`${esc(pn(f).name)} (<button class='t' style='text-decoration:underline;padding:0' data-frem='${f.id}'>cancel</button>)`).join(', ')}.`:''}</div>
+    <div class='t' style='margin:10px 3px 0'>💡 Tips: sent ${S.st.tipsSent||0} · paid off ${S.st.tipWins||0} · earned <b style='color:var(--text)'>${money(S.st.tipPay||0)}</b>. Send them from the Market tab.</div>`;
   return h; }
 function openChat(pid){ const N=window.NET, f=FS.list.find(x=>x.id===pid); if(!N||!f) return; closeChat(true); FS.chat=pid; const p=Object.assign({},FS.prof[f.other]||{});
   const el=document.createElement('div'); el.id='chat';
@@ -1935,24 +1953,29 @@ function openNews(view){ const f=newsFeed(NOW-86400*2,NOW).slice(0,60), seen=S.n
   if(view==="act") return openAct(segH);
   S.newsSeen=NOW; $("bell").classList.toggle("new",an>0);
   const g=regimeAt(Math.floor(NOW/3600)), day=Math.floor((NOW/3600-6)/24);
-  const mood=!g||!g.type?`<span class="pill">😐 Calm market</span>`:`<span class="pill ${g.type>0?"ok":"bad"}">${g.type>0?"📈 Bull run":"📉 Bear market"} · day ${day-g.d0+1} of ${g.d1-g.d0}</span>`;
-  const row=x=>{ let sub=dur(NOW-x.at)+" ago";
-    if(x.ev){ const e=x.ev, live=NOW-e.t0<e.T; sub+=(live?` · <b style="color:var(--gold)">${e.sc.k==="f"?"moving now":"still unfolding"}</b>`:"")+" · "+Object.entries(e.sc.fx).filter(([k])=>k!=="*"&&BYSYM[k]&&!BYSYM[k].gone).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,4).map(([k,w])=>{ const up=w*e.sc.dir>0; return `<span class="m ${up?"up":"dn"}">${up?"▲":"▼"}${k}</span>`; }).join(" "); }
+  const mood=!g||!g.type?`<span>😐 Calm market</span>`:`<span class="${g.type>0?"up":"dn"}">${g.type>0?"📈 Bull run":"📉 Bear market"} · day ${day-g.d0+1} of ${g.d1-g.d0}</span>`;
+  const row=x=>{ let sub="";
+    if(x.ev){ const e=x.ev, live=NOW-e.t0<e.T; sub+=(live?`<b style="color:var(--gold)">${e.sc.k==="f"?"Moving now":"Still unfolding"}</b> · `:"")+Object.entries(e.sc.fx).filter(([k])=>k!=="*"&&BYSYM[k]&&!BYSYM[k].gone).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,4).map(([k,w])=>{ const up=w*e.sc.dir>0; return `<span class="m ${up?"up":"dn"}">${up?"▲":"▼"}${k}</span>`; }).join(" "); }
     const tv=x.s&&x.s!=="*"&&BYSYM[x.s]&&unlocked(BYSYM[x.s]);
-    return `<button class="nw ${x.at>seen?"unseen":""}" ${tv?`data-nview="${x.s}"`:""}><div style="font-size:13.5px">${x.t.replace("BREAKING: ","")}</div><div class="t">${sub}${tv?" · tap to view":""}</div></button>`; };
-  modal("✕|🔔 Notifications",segH+`<div class="row" style="margin-bottom:6px"><div class="g t">Market mood</div>${mood}</div>`+(f.length?f.map(row).join(""):`<div class="t">Quiet couple of days. Big stories, crashes and huge spikes show up here.</div>`),[["Close","ghost"]]);
+    return nrow({t:x.t.replace("BREAKING: ",""),meta:sub+(tv?(sub?" · ":"")+"Tap to view "+x.s:""),tm:ago(NOW-x.at),nw:x.at>seen,attr:tv?`data-nview="${x.s}"`:""}); };
+  modal("✕|🔔 Notifications",segH+`<div class="mood"><span>Market mood</span>${mood}</div>`+(f.length?f.map(row).join(""):`<div class="t" style="padding:14px 4px">Quiet couple of days. Big stories, crashes and huge spikes show up here.</div>`),[]);
   $("modal").querySelectorAll("[data-nview]").forEach(b=>b.onclick=()=>{ S.sel=b.dataset.nview; ZOFF=0; closeModal(); setTab("trade"); }); nvWire(); }
 function nvWire(){ $("modal").querySelectorAll("[data-nv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openNews(b.dataset.nv); }); }
 function openAct(segH){ const seen=S.actSeen||0; S.actSeen=nowSec(); bellUpd(true); const uid=UID, nm=f=>esc((FS.prof[f.other]||{}).name||"A player");
   const inc=(FS.list||[]).filter(f=>f.status==='pending'&&f.from!==uid), unr=(FS.list||[]).filter(f=>unread(f));
   let h=segH;
-  if(!DB) h+=`<div class="t" style="margin-bottom:8px">Sign in to get friend requests, messages and tips here.</div>`;
-  if(inc.length||unr.length) h+=`<h3 style="margin-top:4px">Waiting on you</h3>`+inc.map(f=>`<button class="nw unseen" data-ago="friends"><div style="font-size:13.5px">👥 <b>${nm(f)}</b> sent you a friend request</div><div class="t">tap to accept or decline</div></button>`).join("")
-    +unr.map(f=>`<button class="nw unseen" data-ago="chat:${f.id}"><div style="font-size:13.5px">💬 <b>${nm(f)}</b>: ${String(f.last.text||"").replace(/</g,"").slice(0,70)}</div><div class="t">${dur(Math.max(0,nowSec()-Math.floor(f.last.at/1000)))} ago · tap to reply</div></button>`).join("");
-  const L=(S.alog||[]).filter(x=>nowSec()-x.at<86400*7);
-  h+=`<h3 style="margin-top:4px">Recent</h3>`+(L.length?L.map(x=>`<button class="nw ${x.at>seen?"unseen":""}" ${x.go?`data-ago="${x.go}"`:""}><div style="font-size:13.5px">${x.ic} ${x.t}</div><div class="t">${dur(Math.max(0,nowSec()-x.at))} ago${x.go?" · tap to open":""}</div></button>`).join(""):`<div class="t">Nothing yet. Friend requests, messages, tips and competition results show up here.</div>`);
-  modal("✕|🔔 Notifications",h,[["Close","ghost"]]); nvWire();
+  if(!DB) h+=`<div class="t" style="padding:6px 4px 8px">Sign in to get friend requests, messages and tips here.</div>`;
+  if(inc.length||unr.length) h+=`<div class="nsec">Waiting on you</div>`+inc.map(f=>nrow({ic:"👥",t:`<b>${nm(f)}</b> wants to be friends`,meta:"Tap to accept or decline",tm:ago(nowSec()-Math.floor((f.at||0)/1000)),nw:1,attr:`data-ago="friends"`})).join("")
+    +unr.map(f=>nrow({ic:"💬",t:`<b>${nm(f)}</b>: ${String(f.last.text||"").replace(/</g,"").slice(0,70)}`,meta:"Tap to reply",tm:ago(nowSec()-Math.floor(f.last.at/1000)),nw:1,attr:`data-ago="chat:${f.id}"`})).join("");
+  const L=(S.alog||[]).filter(x=>nowSec()-x.at<86400*7&&!(x.go&&x.go.startsWith("chat:")&&unr.some(f=>"chat:"+f.id===x.go)));
+  h+=`<div class="nsec">Recent</div>`+(L.length?L.map(x=>nrow({ic:x.ic,t:x.t,tm:ago(nowSec()-x.at),nw:x.at>seen,attr:x.go?`data-ago="${x.go}"`:""})).join(""):`<div class="t" style="padding:10px 4px">Nothing yet. Friend requests, messages, tips and competition results show up here.</div>`);
+  modal("✕|🔔 Notifications",h,[]); nvWire();
   $("modal").querySelectorAll("[data-ago]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const g=b.dataset.ago; closeModal(); setTab("friends"); if(g.startsWith("chat:")) setTimeout(()=>openChat(g.slice(5)),50); }); }
+// one clean row for every notification: icon tile, text, a small detail line, short time on the right
+const ago=sec=>{ sec=Math.max(0,sec); return sec<60?"now":sec<3600?Math.floor(sec/60)+"m":sec<86400?Math.floor(sec/3600)+"h":Math.floor(sec/86400)+"d"; };
+const EMO=/^(\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)\s*/u;
+function nrow(o){ let ic=o.ic, t=o.t; if(!ic){ const m=t.match(EMO); if(m){ ic=m[1]; t=t.slice(m[0].length); } else ic="📰"; }
+  return `<button class="ntf${o.nw?" new":""}" ${o.attr||""}><span class="ic">${ic}</span><span class="tx">${t}${o.meta?`<div class="mt">${o.meta}</div>`:""}</span><span class="tm">${o.tm}</span></button>`; }
 $("bell").onclick=()=>openNews();
 // ---------- texts from Mom (pop up, then gone) ----------
 const TEXTS=[

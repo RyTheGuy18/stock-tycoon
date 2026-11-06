@@ -140,7 +140,19 @@ header{position:relative}
 .aexp{background:none;border:0;padding:6px 0 0;color:var(--gold);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.axd{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}.axl{margin:0;padding-left:18px;font-size:13px;line-height:1.5;color:#c9d3de}.axl li{margin:3px 0}.axl b{color:var(--text)}
 .achg{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}.ach{background:#121922;border:1px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center}.ach .ag{font-size:24px;line-height:1.2}.ach b{display:block;font-size:12px;margin-top:2px}.ach .t{font-size:10.5px;line-height:1.3;margin-top:2px}.ach.off{opacity:.38}.ach.off .ag{filter:grayscale(1)}.achs{font-size:12px;margin-left:3px;letter-spacing:1px}
 .pmeta{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px} .pmeta span{background:rgba(0,0,0,.28);border-radius:99px;padding:3px 9px;font-size:11.5px}
-.avgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px} .avgrid button{font-size:22px;padding:6px 0;border-radius:10px;background:var(--c2);border:1px solid var(--line)} .avgrid button.on{border-color:var(--gold);background:#2a2410}
+.phero{position:relative;border-radius:16px;overflow:hidden;height:190px;border:1px solid var(--line);margin-bottom:12px}
+.phero>svg{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+.phero .tint{position:absolute;inset:0} .phero .pin{position:absolute;left:0;right:0;bottom:0;padding:40px 14px 12px;background:linear-gradient(transparent,rgba(5,8,12,.92));display:flex;align-items:flex-end;gap:12px}
+.pavt{position:relative;flex:none;cursor:pointer} .pavt .pav{width:74px;height:74px;font-size:40px;border-width:3px;background-color:#0d1219}
+.pavt .cam{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px}
+.pchips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px} .pchips div{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 6px;text-align:center} .pchips b{display:block;font:700 14px "JetBrains Mono";white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .pchips span{font-size:10.5px;color:var(--mut)}
+.pbar{height:5px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden} .pbar i{display:block;height:100%;border-radius:9px}
+.kdet summary{list-style:none;cursor:pointer} .kdet summary::-webkit-details-marker{display:none} .kdet[open] summary .t{opacity:.6}
+.lbr{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)} .lbr:last-child{border-bottom:0} .lbr.me{background:rgba(245,179,1,.05);border-radius:10px;padding:10px 6px}
+.lbr .rk{width:26px;text-align:center;font:700 13px "JetBrains Mono";color:var(--mut);flex:none} .lbr .rk.top{font-size:19px}
+.lbr .nm{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .lbr .sub{font-size:11.5px;color:var(--mut);margin:2px 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbr .lnw{font:700 14px "JetBrains Mono";text-align:right;flex:none} .lbr .lnw small{display:block;font:500 10.5px Inter,sans-serif;color:var(--mut);margin-top:2px}
+.avgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px} .avgrid button{font-size:22px;padding:6px 0;border-radius:10px;background:var(--c2);border:1px solid var(--line)} .avgrid button.on{border-color:var(--gold);background:#2a2410}
 .swat{display:flex;gap:8px;flex-wrap:wrap} .swat button{width:34px;height:34px;border-radius:50%;border:2px solid transparent} .swat button.on{border-color:#fff}
 .ic{width:15px;height:15px;vertical-align:-3px;margin-right:5px}
 .lbl2{font-size:12px;color:var(--mut);margin:12px 2px 6px}
@@ -907,7 +919,7 @@ function buildAuto(){ let h=`<div class="pad"><div class="t" style="margin:0 3px
       const ex=AEXP.has(x.id);
       h+=`<div class="card"><div class="row"><div class="g"><div class="b">${x.n}</div><div class="t">${x.d}</div><button class="aexp" data-aexp="${x.id}">${ex?"Hide details ▴":"How it works ▾"}</button></div>${a.own?`<button class="btn ${a.on?"buy":"ghost"} sm" data-atog="${x.id}">${a.on?"ON":"OFF"}</button>`:`<button class="btn gold sm" data-abuy="${x.id}" data-cost="${x.c}">${money(x.c)}</button>`}</div>
       ${a.own&&x.set?`<div class="t" style="margin-top:8px">Setting: <b style="color:var(--text)" id="av-${x.id}">${a.v}${x.set[4]}</b></div><input type="range" style="width:100%" min="${x.set[0]}" max="${x.set[1]}" step="${x.set[2]}" value="${a.v}" data-aset="${x.id}">`:""}${ex?`<div class="axd">${autoInfo(x)}</div>`:""}</div>`; }); });
-  main.innerHTML=h+"</div>"; }
+  main.dataset.h=main.innerHTML=h+"</div>"; }
 // ---------- stop loss / take profit ----------
 const ORD=sym=>{ S.ord=S.ord||{}; return S.ord[sym]||(S.ord[sym]={}); };
 function checkOrders(){ if(!S.ord) return; for(const sym in S.ord){ const o=S.ord[sym], p=P(sym), pr=sp(sym);
@@ -1045,7 +1057,7 @@ const FOLD={};
 const fold=(id,t,body)=>`<details class="fold" id="fd-${id}" ${(FOLD[id]??!PHONE())?"open":""}><summary><span class="ft">${t}</span><span class="fs" id="fs-${id}"></span><span class="fa">▾</span></summary>${body}</details>`;
 document.addEventListener("toggle",e=>{ const d=e.target; if(d.classList&&d.classList.contains("fold")) FOLD[d.id.slice(3)]=d.open; },true);
 function buildTrade(){
-  main.innerHTML=`<div class="mk"><div class="mk-l"><div id="chips"></div>
+  main.dataset.h=main.innerHTML=`<div class="mk"><div class="mk-l"><div id="chips"></div>
   <div class="q"><div><span class="t" id="qn"></span><div class="row"><span id="qp" class="m"></span><span id="qc" class="m" style="font-size:12.5px"></span></div></div>
   </div><div class="tf">${TFS.map(([s,l])=>`<button data-tf="${s}">${l}</button>`).join("")}</div>
   <div class="chw"><canvas id="chart"></canvas><button id="zlive" style="display:none">↻ Live</button><div id="ctools"><button id="ldraw" title="Draw a line">✏️<span> Line</span></button><button id="lclear" title="Clear lines">🗑</button></div></div><div id="news"></div></div>
@@ -1204,20 +1216,29 @@ function draw(){
     c.fillStyle=pl>=0?"#16c784":"#ea3943"; c.fillRect(bx,y-11,tw,22); if(gold){ c.strokeStyle="#f5b301"; c.lineWidth=2; c.strokeRect(bx,y-11,tw,22); }
     c.fillStyle=pl>=0?"#03250f":"#fff"; c.fillText(tx,bx+6,y); } }
 
+// Buy buttons are drawn already greyed out when you can't afford them (they used to be drawn bright and greyed a
+// moment later, which flashed every second), and the tab isn't redrawn at all when nothing on it changed.
+const costDis=h=>h.replace(/<button([^>]*?)data-cost="([\d.e+]+)"/g,(m,a,c)=>S.cash<+c?`<button${a}disabled data-cost="${c}"`:m);
+function setMain(h){ h=costDis(h); if(main.dataset.h===h) return; main.dataset.h=h; main.innerHTML=h; }
 function buildStore(){
   let h=`<div class="pad"><div class="seg"><button data-seg="job" class="${seg==="job"?"on":""}">Profession</button><button data-seg="know" class="${seg==="know"?"on":""}">Knowledge</button><button data-seg="style" class="${seg==="style"?"on":""}">Style</button></div>`;
-  if(seg==="style"){ main.innerHTML=h+styleHTML()+"</div>"; return; }
-  if(seg==="know"){ h+=`<div class="t" style="margin:0 3px 8px">Lessons are permanent, even if you go broke. You won't know what a lesson teaches until you buy it. Nothing on the chart changes; you just learn what to look for.</div>`;
-    // Unbought lessons show nothing but a number and a price: no title, picture or teaser. Buying reveals everything.
-    const kc=(k,ok,num)=>{ const own=S.know[k.id]; if(!own) return `<div class="card"><div class="row"><div class="g b" style="color:var(--dim)">📘 Lesson ${num} · ???</div>${ok?`<button class="btn gold sm" data-kn="${k.id}" data-cost="${k.c}">${money(k.c)}</button>`:`<span class="pill">🔒 ${money(k.c)}</span>`}</div></div>`;
-      return `<div class="card"><div class="row"><div class="g b">📘 ${k.n}${k.ch?` <span class="pill">${k.ch}</span>`:""}</div><span class="pill ok">Learned</span></div>${lessonPic(k.id)}<div class="t" style="margin-top:6px">${kd(k)}</div></div>`; };
-    h+=`<h3>All stocks · ${KNOW.filter(k=>S.know[k.id]).length}/${KNOW.length}</h3>`;
-    KNOW.forEach((k,i)=>{ h+=kc(k,i===0||S.know[KNOW[i-1].id],i+1); });
-    h+=`<h3>Longer charts · ${LONG.filter(k=>S.know[k.id]).length}/${LONG.length}</h3><div class="t" style="margin:0 3px 8px">Slower trades for the 10m to 1D charts. Fewer chances, bigger swings.</div>`;
-    LONG.forEach((k,i)=>{ h+=kc(k,i===0||S.know[LONG[i-1].id],i+1); });
-    STOCKS.filter(unlocked).forEach(d=>{ const ks=SK.filter(k=>k.sym===d.s); h+=`<h3>${d.s} · ${d.n} · ${ks.filter(k=>S.know[k.id]).length}/${ks.length}</h3>`; ks.forEach((k,j)=>h+=kc(k,true,j+1)); });
+  if(seg==="style"){ setMain(h+styleHTML()+"</div>"); return; }
+  if(seg==="know"){
+    // Story-style progression: a banner with your overall progress, then each set of lessons as a timeline.
+    // Learned = gold dot (tap to read it again), next to buy = pulsing dot + price button, later ones dimmed with a lock.
+    // Unbought lessons still show nothing but a number and a price: buying reveals everything.
+    const sets=[["📈 All stocks","The patterns every stock repeats.",KNOW,false],["🕰️ Longer charts","Slower trades for the 10m to 1D charts. Fewer chances, bigger swings.",LONG,false]]
+      .concat(STOCKS.filter(unlocked).map(d=>[`${d.s} · ${d.n}`,`How ${d.s} moves, and when.`,SK.filter(k=>k.sym===d.s),true]));
+    const all=sets.reduce((a,x)=>a.concat(x[2]),[]), got=all.filter(k=>S.know[k.id]).length;
+    h+=`<div class="scene" style="height:165px">${KSCENE}<div class="scap"><div class="t" style="color:#cfd8e3">${got} of ${all.length} lessons learned</div><b>📘 Knowledge</b><div class="sd">Lessons are permanent, even if you go broke. Nothing on the chart changes; you just learn what to look for.</div><div class="pbar" style="margin-top:7px"><i style="width:${all.length?got/all.length*100:0}%;background:var(--gold)"></i></div></div></div>`;
+    sets.forEach(([nm,sub,L,free])=>{ if(!L.length) return; const n=L.filter(k=>S.know[k.id]).length, nx=L.findIndex(k=>!S.know[k.id]);
+      h+=`<h3>${nm} · ${n}/${L.length}</h3><div class="t" style="margin:-4px 3px 8px">${sub}</div><div class="tl">`;
+      L.forEach((k,i)=>{ const own=S.know[k.id], open=free?!own:i===nx;
+        if(own) h+=`<div class="tn done"><details class="kdet"><summary class="row"><div class="g"><b style="color:var(--text)">${k.n}</b>${k.ch?` <span class="pill">${k.ch}</span>`:""}</div><span class="t">Read ▾</span></summary>${lessonPic(k.id)}<div class="t" style="margin-top:6px">${kd(k)}</div></details></div>`;
+        else h+=`<div class="tn ${open?"cur":""}"><div class="row"><div class="g"><b>Lesson ${i+1} · ???</b><div class="t">${open?"Buy it to find out what it teaches.":"🔒 Learn the one before it first."}</div></div>${open?`<button class="btn gold sm" data-kn="${k.id}" data-cost="${k.c}">${money(k.c)}</button>`:`<span class="t m">${money(k.c)}</span>`}</div></div>`; });
+      h+=`</div>`; });
     const lk=STOCKS.filter(d=>!unlocked(d)&&!d.gone); if(lk.length) h+=`<div class="t" style="margin:8px 3px">🔒 ${SK.filter(k=>lk.some(d=>d.s===k.sym)).length} more lessons unlock as you unlock ${lk.map(d=>d.s).join(", ")}.</div>`;
-    main.innerHTML=h+"</div>"; return; }
+    setMain(h+"</div>"); return; }
   const p=prof();
   if(p){ const s=pst(), t=tier();
     h+=`<div class="card"><div class="row"><div style="font-size:26px">${p.i}</div><div class="g"><div class="b">${p.n} <span class="pill">★ ${s.rep} rep · +${Math.round(Math.min(s.rep,200)*1.5)}% pay</span></div><div class="t">Pay multiplier ×${payMult(p.id).toFixed(2)} · every job you finish adds reputation</div></div></div></div><h3>Gear</h3>`;
@@ -1228,7 +1249,7 @@ function buildStore(){
       h+=`<h3>Supplies</h3><div class="card"><div class="t">${p.sup}: ${s.fuel.toFixed(1)} / ${cap} ${p.unit} · ${money(supP(p))} each</div><div class="bar f"><i style="width:${s.fuel/cap*100}%"></i></div><button class="btn gold sm" data-x="fill" ${need>.01&&S.cash>=supP(p)*.1?"":"disabled"}>Fill up (${money(Math.min(need*supP(p),Math.max(0,S.cash)))})</button></div>`; }
     h+=`<h3>Business upgrades</h3>`;
     UPS.forEach(u=>{ h+=`<div class="card row"><div class="g"><div class="b">${u.n}</div><div class="t">${u.d}</div></div>${s.up[u.id]?'<span class="pill ok">Owned</span>':`<button class="btn gold sm" data-up="${u.id}" data-cost="${u.c}">${money(u.c)}</button>`}</div>`; }); }
-  main.innerHTML=h+"</div>"; }
+  setMain(h+"</div>"); }
 // Settings → Change your profession
 function profSwitch(){ modal("Change your profession",`<div class="t" style="margin-bottom:6px">Ones you've done before keep your gear, reputation and job skills. New ones start with borrowed gear.${S.job?" <b>Finish your current job first.</b>":""}</div>`+
   PROFS.map(x=>{ const k=S.profs[x.id], cur=S.prof===x.id; return `<button class="opt" data-pfs="${x.id}" ${cur||S.job?"disabled":""}><b>${x.i} ${x.n}</b> ${cur?'<span class="pill ok">Current</span>':k?'<span class="pill">Resume</span>':""}<div class="t">${k?x.gear[k.own]+" · ★"+k.rep:"Borrow: "+x.gear[0]}</div></button>`; }).join(""),[["Close","ghost"]]);
@@ -1242,28 +1263,34 @@ const CHAP=[{at:0,n:"Chapter 1 · The Basement",d:"Broke, 19, and living under M
  {at:7,n:"Chapter 4 · Building an Empire",d:"Property, an accountant, your own firm. You're not trading for rent anymore. You're building something."},
  {at:11,n:"Chapter 5 · Legacy",d:"Dream house, a scholarship fund, and the one goal that's been there since the basement: taking care of Mom."}];
 const chapIdx=()=>{ const n=MS.filter(x=>S.ms[x.id]).length; let c=0; CHAP.forEach((x,i)=>{ if(n>=x.at) c=i; }); return c; };
+const KSCENE=`<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="gk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2440"/><stop offset="1" stop-color="#141a26"/></linearGradient></defs><rect width="360" height="130" fill="url(#gk)"/><g fill="#3a3252"><rect x="20" y="30" width="150" height="6"/><rect x="20" y="70" width="150" height="6"/><rect x="20" y="110" width="150" height="6"/></g><g><rect x="28" y="6" width="9" height="24" fill="#5b7bb5"/><rect x="39" y="10" width="8" height="20" fill="#b5835b"/><rect x="49" y="4" width="11" height="26" fill="#7b5bb5"/><rect x="62" y="12" width="7" height="18" fill="#5bb58a"/><rect x="72" y="8" width="10" height="22" fill="#b55b6a"/><rect x="30" y="46" width="10" height="24" fill="#b5a55b"/><rect x="42" y="50" width="8" height="20" fill="#5b9db5"/><rect x="60" y="44" width="12" height="26" fill="#8a5bb5" transform="rotate(-12 66 57)"/><rect x="92" y="48" width="9" height="22" fill="#5bb57a"/><rect x="104" y="52" width="8" height="18" fill="#b5785b"/><rect x="30" y="88" width="11" height="22" fill="#5b6bb5"/><rect x="44" y="92" width="8" height="18" fill="#b55b8f"/></g><g transform="translate(250 72)"><ellipse cx="0" cy="40" rx="62" ry="8" fill="#000" opacity=".25"/><path d="M-50 30 L0 18 L50 30 L50 34 L0 22 L-50 34Z" fill="#e8dcc0"/><path d="M-50 30 L0 18 L0 -10 L-50 2Z" fill="#f4ead2"/><path d="M50 30 L0 18 L0 -10 L50 2Z" fill="#efe3c6"/><g stroke="#b9ab8a" stroke-width="1.2" opacity=".7"><path d="M-42 6 L-8 -2 M-42 12 L-8 4 M-42 18 L-8 10 M8 -2 L42 6 M8 4 L42 12 M8 10 L30 15"/></g></g><circle cx="320" cy="22" r="12" fill="#f5b301" opacity=".25"/><circle cx="320" cy="22" r="5" fill="#f5b301" opacity=".7"/></svg>`;
 const SCENES=[
 `<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3142"/><stop offset="1" stop-color="#151a24"/></linearGradient></defs><rect width="360" height="130" fill="url(#g0)"/><rect x="250" y="14" width="56" height="26" rx="3" fill="#2b3a55"/><rect x="252" y="16" width="52" height="22" fill="#5b7bb5" opacity=".55"/><circle cx="290" cy="24" r="5" fill="#e8eef4" opacity=".8"/><path d="M250 40 L210 130 L330 130 L306 40Z" fill="#5b7bb5" opacity=".07"/><g fill="#3a4456"><rect x="20" y="70" width="18" height="60"/><rect x="38" y="85" width="18" height="45"/><rect x="56" y="100" width="18" height="30"/><rect x="74" y="115" width="18" height="15"/></g><rect x="150" y="104" width="90" height="16" rx="4" fill="#2a3242"/><rect x="152" y="98" width="24" height="10" rx="4" fill="#3a4558"/><rect x="250" y="96" width="34" height="24" rx="2" fill="#2a3242"/><rect x="254" y="100" width="26" height="14" fill="#16c784" opacity=".25"/></svg>`,
 `<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2f5a"/><stop offset="1" stop-color="#e07a5f"/></linearGradient></defs><rect width="360" height="130" fill="url(#g1)"/><g fill="#141826"><rect x="0" y="70" width="50" height="60"/><rect x="55" y="50" width="40" height="80"/><rect x="100" y="80" width="60" height="50"/><rect x="200" y="40" width="70" height="90"/><rect x="280" y="65" width="80" height="65"/></g><g fill="#f5b301" opacity=".75"><rect x="210" y="52" width="8" height="8"/><rect x="226" y="52" width="8" height="8"/><rect x="242" y="68" width="8" height="8"/><rect x="226" y="84" width="8" height="8"/><rect x="64" y="62" width="6" height="6"/><rect x="80" y="78" width="6" height="6"/><rect x="292" y="78" width="8" height="8"/></g><rect x="226" y="68" width="8" height="8" fill="#fff"/></svg>`,
 `<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b6ea5"/><stop offset="1" stop-color="#f2c57c"/></linearGradient></defs><rect width="360" height="130" fill="url(#g2)"/><circle cx="270" cy="88" r="26" fill="#ffe3a3"/><path d="M0 100 Q90 80 180 98 T360 92 V130 H0Z" fill="#33503a"/><path d="M150 130 L176 98 L186 98 L230 130Z" fill="#2a2a2a"/><path d="M178 104 h6 M176 114 h10 M172 124 h16" stroke="#f5b301" stroke-width="2"/><g transform="translate(60 92)"><rect width="56" height="16" rx="3" fill="#c0392b"/><rect x="30" y="-10" width="22" height="12" rx="2" fill="#c0392b"/><rect x="34" y="-8" width="14" height="7" fill="#9fd3ff"/><circle cx="12" cy="17" r="5" fill="#111"/><circle cx="44" cy="17" r="5" fill="#111"/></g></svg>`,
 `<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6a54b"/><stop offset="1" stop-color="#6b3b5e"/></linearGradient></defs><rect width="360" height="130" fill="url(#g3)"/><g fill="#1e1a2b"><rect x="10" y="60" width="30" height="70"/><rect x="45" y="30" width="34" height="100"/><rect x="84" y="50" width="26" height="80"/><rect x="118" y="12" width="40" height="118"/><rect x="134" y="2" width="8" height="12"/><rect x="166" y="44" width="36" height="86"/><rect x="210" y="26" width="30" height="104"/><rect x="248" y="56" width="44" height="74"/><rect x="300" y="38" width="50" height="92"/></g><g fill="#ffd27a" opacity=".6"><rect x="124" y="24" width="5" height="5"/><rect x="134" y="40" width="5" height="5"/><rect x="146" y="58" width="5" height="5"/><rect x="216" y="40" width="5" height="5"/><rect x="306" y="52" width="5" height="5"/><rect x="52" y="44" width="5" height="5"/></g></svg>`,
 `<svg viewBox="0 0 360 130" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9a76"/><stop offset="1" stop-color="#ffd1a1"/></linearGradient></defs><rect width="360" height="130" fill="url(#g4)"/><circle cx="90" cy="70" r="30" fill="#fff1d0" opacity=".8"/><path d="M0 104 Q180 74 360 104 V130 H0Z" fill="#4a7a4a"/><g transform="translate(190 56)"><path d="M0 26 L36 0 L72 26Z" fill="#7b3f2a"/><rect x="6" y="26" width="60" height="34" fill="#f3e9dc"/><rect x="30" y="40" width="12" height="20" fill="#7b3f2a"/><rect x="12" y="32" width="12" height="10" fill="#f5b301"/><rect x="48" y="32" width="12" height="10" fill="#f5b301"/></g><g transform="translate(290 60)"><rect x="8" y="22" width="6" height="26" fill="#5a3a22"/><circle cx="11" cy="16" r="18" fill="#3d6b3d"/></g></svg>`];
-const AVS=["🧑","👩","👨","🧔","👱","🧑‍💼","🤠","😎","🦊","🐻","🐸","🦁","🐼","🐺","🦉","🐢"];
-const COLS=[["#1f3a5f","#3b82f6"],["#3a1f5f","#a855f7"],["#14432f","#16c784"],["#5f3a14","#f5b301"],["#5f1f2a","#ea3943"],["#163f4a","#22d3ee"],["#2b2b33","#9aa4b2"],["#4a2a14","#fb923c"]];
+const AVS=["👨","👩","🤠","😎"];
+const COLS=[["#2b2b33","#9aa4b2"],["#3a1f5f","#a855f7"],["#14432f","#16c784"],["#5f3a14","#f5b301"],["#5f1f2a","#ea3943"],["#163f4a","#22d3ee"],["#1f3a5f","#3b82f6"],["#4a2a14","#fb923c"]]; // gray is the default (0)
 let pseg="profile";
 function buildMe(){ const m=myCard(); m.col=m.col==null?0:m.col;
   let h=`<div class="pad"><div class="seg"><button data-ps="profile" class="${pseg==="profile"?"on":""}">Profile</button><button data-ps="story" class="${pseg==="story"?"on":""}">Story</button></div>`;
-  if(pseg==="profile"){ const c=COLS[m.col]||COLS[0];
-    h+=`<div class="pcard${bdCls()}" style="background:linear-gradient(135deg,${c[0]},#0d1219 85%)"><div class="row"><div class="pav" style="border-color:${c[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><div class="g"><div class="pname">${(m.name||"").replace(/</g,"")}</div><div class="ptag">${(m.tag||"Just getting started.").replace(/</g,"")}</div>${ttl()}</div></div>
-      <div class="pmeta"><span>${homeName()}</span><span>${prof()?prof().i+" "+prof().n:"No job"}</span><span>${money(netWorth())}</span><span>📘 ${Object.keys(S.know||{}).length}</span><span>🎖️ ${Object.keys(S.ach||{}).length}/${ACH.length}</span>${myCode()?`<span>Code ${myCode()}</span>`:""}</div></div>
-      <div class="lbl2">Name</div><input id="pname" class="inp" maxlength="20" value="${(m.name||"").replace(/"/g,"")}">
+  if(pseg==="profile"){ const c=COLS[m.col]||COLS[0], ci=chapIdx(), done=MS.filter(x=>S.ms[x.id]).length, p=prof();
+    // hero in the Story tab's style: this chapter's scene, tinted with your card color; tap the picture to change it
+    h+=`<div class="phero${bdCls()}"><div class="tint" style="background:linear-gradient(135deg,${c[0]},#0d1219 90%)"></div>${SCENES[ci]}<div class="pin">
+      <div class="pavt" data-pavtap="1"><div class="pav" style="border-color:${c[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><span class="cam">📷</span></div>
+      <div class="g" style="min-width:0"><div class="pname">${(m.name||"").replace(/</g,"")}</div><div class="ptag">${(m.tag||"Just getting started.").replace(/</g,"")}</div>${ttl()}
+      <div class="t" style="color:#cfd8e3;margin-top:5px">${homeName()} · Chapter ${ci+1} of ${CHAP.length}</div><div class="pbar" style="margin-top:4px"><i style="width:${done/MS.length*100}%;background:${c[1]}"></i></div></div></div></div>
+      <div class="pchips"><div><b>${money(netWorth())}</b><span>Net worth</span></div><div><b>${p?p.i:"—"}</b><span>${p?p.n.split(" ")[0]:"No job"}</span></div><div><b>📘 ${Object.keys(S.know||{}).length}</b><span>Lessons</span></div><div><b>🎖️ ${Object.keys(S.ach||{}).length}</b><span>of ${ACH.length}</span></div></div>
+      ${myCode()?`<div class="t" style="margin:4px 2px 0">Friend code <b class="m" style="color:var(--text)">${myCode()}</b></div>`:""}
+      <h3>Your card</h3><div class="card">
+      <div class="lbl2" style="margin-top:0">Name</div><input id="pname" class="inp" maxlength="20" value="${(m.name||"").replace(/"/g,"")}">
       <div class="lbl2">Tagline</div><input id="ptag" class="inp" maxlength="40" placeholder="Something about you" value="${(m.tag||"").replace(/"/g,"")}">
-      <div class="lbl2">Profile photo</div><div class="row"><label class="btn ghost sm" style="flex:1;text-align:center;cursor:pointer">📷 ${okImg(m.img)?"Change photo":"Upload a photo"}<input type="file" accept="image/*" id="pimg" style="display:none"></label>${okImg(m.img)&&LASTIMG?`<button class="btn ghost sm" data-pcrop="1">Adjust crop</button>`:""}${okImg(m.img)?`<button class="btn sell sm" data-pimgx="1">Remove</button>`:""}</div>
-      <div class="lbl2">${okImg(m.img)?"Or switch back to an emoji":"Or pick an emoji"}</div><div class="avgrid">${AVS.map(a=>`<button data-pav="${a}" class="${a===m.av&&!okImg(m.img)?"on":""}">${a}</button>`).join("")}</div>
+      <div class="lbl2">${okImg(m.img)?"Or use an emoji instead of your photo":"Picture · tap your picture above to upload a photo"}</div><div class="avgrid">${AVS.map(a=>`<button data-pav="${a}" class="${a===m.av&&!okImg(m.img)?"on":""}">${a}</button>`).join("")}</div>
       <div class="lbl2">Card color</div><div class="swat">${COLS.map((c,k)=>`<button data-pcol="${k}" class="${k===m.col?"on":""}" style="background:linear-gradient(135deg,${c[1]},${c[0]})"></button>`).join("")}</div>
-      <button class="btn gold" style="width:100%;margin-top:14px" data-psave="1">Save profile</button>
-      <div class="t" style="margin:8px 2px">Friends see this card on the leaderboard. Unlock titles, borders and themes in Store → Style.</div>${achHTML()}</div>`;
-    main.innerHTML=h; return; }
+      <button class="btn gold" style="width:100%;margin-top:14px" data-psave="1">Save profile</button></div>
+      <div class="t" style="margin:8px 2px">Friends see your card on the leaderboard. Unlock titles, borders and themes in Store → Style.</div>${achHTML()}</div>`;
+    main.dataset.h=main.innerHTML=h; return; }
   const ci=chapIdx(), c=CHAP[ci], nx=MS.findIndex(x=>!S.ms[x.id]), done=MS.filter(x=>S.ms[x.id]).length;
   h+=`<div class="scene">${SCENES[ci]}<div class="scap"><div class="t" style="color:#cfd8e3">Chapter ${ci+1} of ${CHAP.length} · ${done}/${MS.length} done</div><b>${c.n.split(" · ")[1]}</b><div class="sd">${c.d}</div></div></div>`;
   CHAP.forEach((ch,k)=>{ const end=k+1<CHAP.length?CHAP[k+1].at:MS.length;
@@ -1271,7 +1298,7 @@ function buildMe(){ const m=myCard(); m.col=m.col==null?0:m.col;
     MS.slice(ch.at,end).forEach(m=>{ const i=MS.indexOf(m), own=S.ms[m.id], cur=i===nx;
       h+=`<div class="tn ${own?"done":cur?"cur":""}"><div class="row"><div class="g"><b>${m.n}</b><div class="perk">${m.p}</div></div>${own?"":cur?`<button class="btn gold sm" data-ms="${m.id}" data-cost="${m.c}">${money(m.c)}</button>`:`<span class="t m">${money(m.c)}</span>`}</div></div>`; });
     h+=`</div>`; });
-  main.innerHTML=h+"</div>"; }
+  setMain(h+"</div>"); }
 function stats_html(){ const s=S.st; return `<div class="card kv">
    <div>Time played<b class="m">${dur(s.played)}</b></div><div>Net worth<b class="m">${money(netWorth())}</b></div>
    <div>Trading P/L<b class="m ${s.realized>=0?"up":"dn"}">${sg(s.realized)}</b></div><div>Win rate<b class="m">${s.trades?Math.round(s.wins/s.trades*100):0}% of ${s.trades}</b></div>
@@ -1505,7 +1532,7 @@ async function flowSync(){ if(!DB||!UID||flowBusy) return; flowBusy=true; const 
 // ---------- friends (first version: profile card, friend codes, leaderboard) ----------
 let DB=null, UID=null, FR={list:null,view:"friends",busy:false,last:""};
 const myCode=()=>UID?UID.replace(/[^a-zA-Z0-9]/g,"").slice(-6).toUpperCase():"";
-function myCard(){ S.me=S.me||{name:"Trader"+Math.floor(1000+Math.random()*9000),av:"🧑"}; return S.me; }
+function myCard(){ S.me=S.me||{name:"Trader"+Math.floor(1000+Math.random()*9000),av:"👨"}; if(!AVS.includes(S.me.av)) S.me.av="👨"; return S.me; }
 function homeName(){ return S.ms.island?"🏝 Private island":S.ms.house?"🏡 Dream house":S.ms.condo?"🏙 Condo":S.ms.apt?"🏢 Apartment":"🏠 Mom's basement"; }
 async function pubProfile(){ if(!DB||!UID) return; const m=myCard();
   const doc={name:m.name.slice(0,20),av:m.av,img:okImg(m.img)?m.img:"",tag:(m.tag||"").slice(0,40),col:m.col||0,code:myCode(),nw:Math.round(netWorth()*100)/100,best:Math.round(S.bestNW),pl:Math.round(S.st.realized*100)/100,home:homeName(),
@@ -1516,16 +1543,23 @@ async function loadBoard(){ if(!DB||FR.busy) return; FR.busy=true; try{ const q=
 function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[];
   const cc=COLS[m.col||0]||COLS[0];
   let h=`<div class="pad"><div class="pcard${bdCls()}" style="background:linear-gradient(135deg,${cc[0]},#0d1219 85%);padding:12px"><div class="row"><div class="pav" style="width:48px;height:48px;font-size:26px;border-color:${cc[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><div class="g"><b style="font-size:16px">${(m.name||"").replace(/</g,"")}</b><div class="ptag">${(m.tag||"").replace(/</g,"")}</div>${ttl()}<div class="t" style="margin-top:3px">${UNAME?`<b style="color:var(--text)">@${UNAME}</b>`:"Not signed in"}</div></div><button class="btn ghost sm" data-fx="edit">Customize</button></div></div>`;
-  if(!DB){ h+=window.NET?`<div class="card"><div class="t">Sign in to add friends, chat, join weekly competitions and see the leaderboard.</div><button class="btn gold" style="width:100%;margin-top:8px" data-sx2="login">Sign in or create an account</button></div>`:`<div class="card t">Online features aren't set up for this copy of the game. Single-player works the same.</div>`; main.innerHTML=h+"</div>"; return; }
+  if(!DB){ h+=window.NET?`<div class="card"><div class="t">Sign in to add friends, chat, join weekly competitions and see the leaderboard.</div><button class="btn gold" style="width:100%;margin-top:8px" data-sx2="login">Sign in or create an account</button></div>`:`<div class="card t">Online features aren't set up for this copy of the game. Single-player works the same.</div>`; main.dataset.h=main.innerHTML=h+"</div>"; return; }
   h+=socialHTML()+compHTML()+`
   <div class="t" style="margin:-2px 3px 10px">💡 Tips: sent ${S.st.tipsSent||0} · paid off ${S.st.tipWins||0} · earned <b style="color:var(--text)">${money(S.st.tipPay||0)}</b>. Send tips from the Market tab, under the trade buttons.</div>
   <h3>Leaderboard</h3><div class="seg"><button data-fv="friends" class="${FR.view==="friends"?"on":""}">Friends (${fr.length})</button><button data-fv="all" class="${FR.view==="all"?"on":""}">Everyone</button></div>`;
   if(FR.list===null){ h+=`<div class="t">Loading the leaderboard…</div>`; loadBoard(); }
   else { const rows=FR.list.filter(p=>FR.view==="all"||fr.includes(p.code)||p.id===UID);
-    h+=`<div class="card">${rows.length?rows.map((p,i)=>`<div class="li"><div class="row g"><b class="m" style="width:22px">${i+1}</b><span class="pav${["silver","gold","dia"].includes(p.bd)?" bd-"+p.bd:""}" style="width:34px;height:34px;font-size:19px;border-width:2px;border-color:${(COLS[p.col||0]||COLS[0])[1]}${pavBg(p.img)}">${okImg(p.img)?"":p.av||"🧑"}</span><div class="g"><b>${String(p.name||"Trader").replace(/</g,"")}${troStr(p.tro)}${achStr(p)}${p.id===UID?' <span class="pill ok">you</span>':""}</b>${p.title&&p.title!=="none"&&TBY[p.title]?`<div class="ptitle" style="margin:2px 0 3px">🏅 ${TBY[p.title].n}</div>`:""}<div class="t">${p.tag?`<i>${String(p.tag).replace(/</g,"")}</i><br>`:""}${p.uname?"@"+esc(p.uname)+" · ":""}${p.home||""} · ${p.prof||"no job"} · ${p.lessons||0} lessons${p.broke?` · broke ${p.broke}×`:""}</div></div></div><b class="m">${money(p.nw||0)}</b></div>`).join(""):`<div class="t">${FR.view==="friends"?"No friends added yet. Share your code and ask for theirs.":"Nobody here yet."}</div>`}</div>
+    // clean rows: rank, picture, name, where they are in the story (chapter + bar), net worth. Top 3 get medals.
+    const chOf=n=>{ let c=0; CHAP.forEach((x,k)=>{ if((n||0)>=x.at) c=k; }); return c; };
+    h+=`<div class="card" style="padding:4px 10px">${rows.length?rows.map((p,i)=>{ const st=+p.stories||0, col=(COLS[p.col||0]||COLS[0])[1], me=p.id===UID;
+      return `<div class="lbr${me?" me":""}"><div class="rk${i<3?" top":""}">${i<3?["🥇","🥈","🥉"][i]:i+1}</div>${avh(p,40)}
+        <div class="g" style="min-width:0"><div class="nm">${String(p.name||"Trader").replace(/</g,"")}${me?' <span class="pill ok">you</span>':""}${troStr(p.tro)}</div>
+        <div class="sub">${p.home||"🏠 Mom's basement"} · Ch ${chOf(st)+1}${p.uname?" · @"+esc(p.uname):""}</div>
+        <div class="pbar"><i style="width:${Math.min(100,st/MS.length*100)}%;background:${col}"></i></div></div>
+        <div class="lnw">${money(p.nw||0)}<small>${st}/${MS.length} story</small></div></div>`; }).join(""):`<div class="t">${FR.view==="friends"?"No friends added yet. Share your code and ask for theirs.":"Nobody here yet."}</div>`}</div>
     <button class="btn ghost sm" style="width:100%" data-fx="ref">↻ Refresh</button>`; }
   h+=`<div class="t" style="margin:12px 3px">Other players can see your card, net worth and trophies.</div>`;
-  main.innerHTML=h+"</div>"; compTick(); }
+  main.dataset.h=main.innerHTML=h+"</div>"; compTick(); }
 main.addEventListener("click",e=>{ const b=e.target.closest("[data-fx],[data-fv]"); if(!b) return; const m=myCard();
   if(b.dataset.fv){ FR.view=b.dataset.fv; return buildFriends(); }
   const x=b.dataset.fx;
@@ -1634,7 +1668,7 @@ function installHint(){ if(!isIOS()||standalone()||S.instHint||!S.prof||!$('moda
 // ---------- friends: requests by username, friends list, private chat ----------
 let FS={list:[],prof:{},unsub:null,chatUnsub:null,chat:null,first:true}, FRUIDS=new Set();
 const troStr=t=>t?['g','s','b'].map((k,i)=>t[k]?` ${['🥇','🥈','🥉'][i]}${t[k]>1?'×'+t[k]:''}`:'').join(''):'';
-const avh=(p,s)=>`<span class='pav' style='width:${s}px;height:${s}px;font-size:${Math.round(s*.55)}px;border-width:2px;border-color:${(COLS[p.col||0]||COLS[0])[1]}${pavBg(p.img)}'>${okImg(p.img)?'':p.av||'🧑'}</span>`;
+const avh=(p,s)=>`<span class='pav' style='width:${s}px;height:${s}px;font-size:${Math.round(s*.55)}px;border-width:2px;border-color:${(COLS[p.col||0]||COLS[0])[1]}${pavBg(p.img)}'>${okImg(p.img)?'':AVS.includes(p.av)?p.av:'👨'}</span>`;
 function socialStop(){ if(FS.unsub) FS.unsub(); FS.unsub=null; FS.list=[]; FRUIDS=new Set(); closeChat(true); navDot(); }
 function socialStart(N,uid){ socialStop(); FS.first=true;
   FS.unsub=N.watchFriendships(uid,async list=>{
@@ -1964,6 +1998,12 @@ function cropPhoto(im){ LASTIMG=im; const W=im.naturalWidth||im.width, H=im.natu
 function savePhoto(im,cx,cy,s){ const m=myCard(), cv=document.createElement('canvas'); cv.width=cv.height=112; cv.getContext('2d').drawImage(im,cx-s/2,cy-s/2,s,s,0,0,112,112);
   let q=.82, d=cv.toDataURL('image/jpeg',q); while(d.length>30000&&q>.3){ q-=.15; d=cv.toDataURL('image/jpeg',q); }
   if(!okImg(d)) return toast("Couldn't use that image"); m.img=d; save(); act(); pubProfile(); FR.list=null; if(tab==='me') buildMe(); toast('📷 Photo saved','good'); }
+// tap your picture on the Profile tab: upload a photo, re-crop it, or remove it
+main.addEventListener('click',e=>{ if(!e.target.closest('[data-pavtap]')) return; const m=myCard(), n=$('pname'), g=$('ptag'); if(n) m.name=n.value.trim().slice(0,20)||m.name; if(g) m.tag=g.value.trim().slice(0,40); const has=okImg(m.img);
+  modal("✕|Profile picture",`<label class="btn gold" style="display:block;width:100%;text-align:center;cursor:pointer">📷 ${has?"Upload a new photo":"Upload a photo"}<input type="file" accept="image/*" id="pimg" style="display:none"></label>
+    ${has&&LASTIMG?`<button class="btn ghost" style="width:100%;margin-top:8px" data-pcrop2="1">✂️ Adjust crop</button>`:""}${has?`<button class="btn sell" style="width:100%;margin-top:8px" data-pimgx2="1">Remove photo</button>`:""}`,[]);
+  const md=$('modal'); md.querySelectorAll('[data-pcrop2]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); cropPhoto(LASTIMG); });
+  md.querySelectorAll('[data-pimgx2]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); closeModal(); delete myCard().img; save(); act(); pubProfile(); FR.list=null; buildMe(); toast('Photo removed'); }); });
 main.addEventListener('click',e=>{ if(e.target.closest('[data-pcrop]')&&LASTIMG) return cropPhoto(LASTIMG); if(!e.target.closest('[data-pimgx]')) return; delete myCard().img; save(); act(); pubProfile(); FR.list=null; buildMe(); toast('Photo removed'); });
 
 // ---------- Tip-offs: tip all your friends on a stock. If one of them trades it within 5 min and wins, the game pays you 10% of their profit as a bonus ----------

@@ -61,12 +61,16 @@ service cloud.firestore {
     match /push/{uid}/subs/{sid} { allow read, delete: if me(uid); allow create, update: if me(uid) && request.resource.data.size() <= 8; }
 
     // Weekly competition standings: one entry per player per week.
-    match /comps/{week}/entries/{uid} { allow read: if signedIn(); allow write: if me(uid); }
-    // This week's cash prizes: the first player to open the competition sets them; nobody can change them after.
-    match /comps/{week} {
+    // Register for week N's competition during week N-1: create/update/delete only before week N starts
+    // (weeks start Monday 00:00 UTC: 345600 + N*604800 seconds). After that the list is locked.
+    match /comps/{week}/regs/{uid} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.keys().hasOnly(['p','base','n','at'])
-        && request.resource.data.p is list && request.resource.data.p.size() == 3;
+      allow create, update, delete: if me(uid) && request.time.toMillis() < (345600 + int(week) * 604800) * 1000;
+    }
+    // Standings: only players who registered for that week can post a score.
+    match /comps/{week}/entries/{uid} {
+      allow read: if signedIn();
+      allow write: if me(uid) && exists(/databases/$(database)/documents/comps/$(week)/regs/$(uid));
     }
   }
 }

@@ -1749,25 +1749,28 @@ main.addEventListener('click',async e=>{ const t=e.target, N=window.NET;
 // ---------- weekly competition: opt-in, separate $1,000 wallet, your real money is never touched ----------
 const WEEK0=345600, COMP_START=1000, wkIdx=t=>Math.floor((t-WEEK0)/604800), wkStart=w=>WEEK0+w*604800; // weeks run Monday 00:00 UTC to Monday
 let CB={list:null,w:-1,busy:false,view:'all'}, CPL=0;
-// ---- real cash prizes, scaled to how rich the active players are ----
-// Set once per week by whoever opens the competition first (stored in comps/<week>, which can be created but never
-// changed), so everyone sees the same prizes all week. Base = median net worth of players active in the last 2 weeks.
-// 1st ≈ 60% of that (at least $50), 2nd half of 1st, 3rd a quarter. Everything rounds to $25.
+// ---- registration + real cash prizes ----
+// Week N's competition: register during week N-1 (register / unregister freely, your net worth is recorded when you
+// register). The moment week N starts, registration locks (the database refuses changes after that) and the prizes
+// are fixed from the AVERAGE recorded net worth of everyone registered. Only registered players can play week N.
+// Prizes: 1st = 60% of the average (at least $50), 2nd = 1st/4, 3rd = 1st/16, all rounded to $25 (min $25). Needs 2+ players.
 const r25=v=>Math.max(25,Math.round(v/25)*25);
-const prizesFor=base=>{ const p1=Math.max(50,r25(base*.6)); return [p1,r25(p1/2),r25(p1/4)]; };
-const PRZ={}, PRZL={};
-async function compPrize(w){ if(PRZ[w]) return PRZ[w]; if(!DB) return null;
-  try{ const ref=DB.doc('comps/'+w), sn=await ref.get(); if(sn.exists&&Array.isArray(sn.data().p)) return PRZ[w]=sn.data().p;
-    const q=await DB.collection('profiles').orderBy('nw','desc').limit(100).get(), now=Date.now();
-    const L=q.docs.map(d=>d.data()).filter(x=>now-(+x.at||0)<14*864e5).map(x=>+x.nw||0).sort((a,b)=>a-b), base=L.length?L[Math.floor(L.length/2)]:100, p=prizesFor(base);
-    try{ await ref.set({p,base:Math.round(base),n:L.length,at:now}); PRZ[w]=p; }catch(_){ const s2=await ref.get(); PRZ[w]=s2.exists&&Array.isArray(s2.data().p)?s2.data().p:null; }
-    return PRZ[w]; }catch(_){ return null; } }
-function prizeLine(w){ const p=PRZ[w]; if(!p){ if(!PRZL[w]&&DB){ PRZL[w]=1; compPrize(w).then(x=>{ if(x&&tab==='friends'&&FSEG==='comp') buildFriends(); }); } return `<div class='t' style='margin-bottom:8px'>Loading this week's prizes…</div>`; }
-  return `<div class='row' style='gap:6px;margin-bottom:8px'>${['🥇','🥈','🥉'].map((m,i)=>`<div class='g' style='background:var(--c2);border-radius:10px;padding:7px 4px;text-align:center'><div style='font-size:18px'>${m}</div><b class='m up' style='font-size:14px'>${money(p[i])}</b></div>`).join('')}</div><div class='t' style='margin:-2px 2px 8px'>Real cash prizes, set at the start of the week and fixed until it ends. They grow as everyone gets richer.</div>`; }
+const prizesFor=avg=>{ const p1=Math.max(50,r25(avg*.6)); return [p1,r25(p1/4),r25(p1/16)]; }; // each place a quarter of the one above
+const RG={}; // week -> {list:[{id,nw,name,uname,av}], busy, at}
+async function regsLoad(w,force){ const R=RG[w]=RG[w]||{list:null,busy:false,at:0}; if(!DB||R.busy||(!force&&R.list&&Date.now()-R.at<30000)) return R.list;
+  R.busy=true; try{ const q=await DB.collection('comps/'+w+'/regs').limit(500).get(); R.list=q.docs.map(d=>Object.assign({id:d.id},d.data())); R.at=Date.now(); }catch(_){ R.list=R.list||[]; R.at=Date.now(); } R.busy=false; return R.list; }
+const regAvg=L=>L&&L.length?L.reduce((a,x)=>a+(+x.nw||0),0)/L.length:0;
+const prizeOf=w=>{ const L=(RG[w]||{}).list; return L&&L.length>=2?prizesFor(regAvg(L)):null; };
+const isReg=w=>!!((RG[w]||{}).list||[]).find(x=>x.id===UID);
+async function compReg(on){ const w=wkIdx(NOW)+1; if(!DB||!UID) return toast('Sign in to register');
+  try{ const ref=DB.doc('comps/'+w+'/regs/'+UID); if(on){ const m=myCard(); await ref.set({nw:Math.round(netWorth()*100)/100,name:m.name.slice(0,20),uname:UNAME,av:m.av,at:Date.now()}); sfx('unlock'); toast(`🏆 Registered for next week with a net worth of ${money(netWorth())}`,'good'); }
+    else { await ref.del(); toast('Unregistered from next week'); }
+    await regsLoad(w,true); }catch(e){ toast(/permission/i.test((e&&e.code)||'')?"Registration for that week is closed":"Couldn't reach the server"); } if(tab==='friends') buildFriends(); }
+function prizeBoxes(p){ return `<div class='row' style='gap:6px;margin:8px 0 6px'>${['🥇','🥈','🥉'].map((m,i)=>`<div class='g' style='background:var(--c2);border-radius:10px;padding:7px 4px;text-align:center'><div style='font-size:18px'>${m}</div><b class='m up' style='font-size:14px'>${p?money(p[i]):'—'}</b></div>`).join('')}</div>`; }
 const compCur=()=>{ const c=S.comp; return c&&c.w===wkIdx(NOW)?c:null; };
 function compVal(c){ let v=c.cash; for(const k in c.pos){ const p=c.pos[k]; if(!BYSYM[k]) continue; const pr=sp(k); if(p.l) v+=p.l*pr; if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-pr)); } return v; }
-function compJoin(){ if(!DB) return toast('Sign in to join'); if(compCur()) return; if(S.comp&&!S.comp.done&&S.comp.w<wkIdx(NOW)) compSettle();
-  S.comp={w:wkIdx(NOW),cash:COMP_START,pos:{},tr:0,joined:NOW}; save(); compPub(true); sfx('unlock'); toast("🏆 You're in! Pick a stock below and trade your $1,000",'good'); CB.list=null; build(); }
+function compJoin(){ if(!DB) return toast('Sign in to join'); if(compCur()) return; if(!isReg(wkIdx(NOW))) return toast("You didn't register for this week. Register for next week in Friends → Compete"); if(S.comp&&!S.comp.done&&S.comp.w<wkIdx(NOW)) compSettle();
+  S.comp={w:wkIdx(NOW),cash:COMP_START,pos:{},tr:0,joined:NOW}; save(); compPub(true); sfx('unlock'); toast("🏆 Your competition has started! Pick a stock and trade your $1,000",'good'); CB.list=null; build(); }
 function compTrade(act){ const c=compCur(); if(!c) return; const sym=compSym(), pr=sp(sym), p=c.pos[sym]||(c.pos[sym]={l:0,lc:0,s:0,se:0});
   if(act==='close'){ let pl;
     if(p.l){ pl=p.l*(pr-p.lc); c.cash+=p.l*pr; toast(`🏆 Sold ${p.l} ${sym}: ${sg(pl)}`,pl>=0?'good':'bad'); p.l=0; p.lc=0; }
@@ -1779,7 +1782,7 @@ function compTrade(act){ const c=compCur(); if(!c) return; const sym=compSym(), 
 function compTick(){ if(!$('compw')) return; compCard(); STOCKS.forEach(d=>{ const e=$('cc-'+d.s); if(e) e.textContent=px(sp(d.s)); }); }
 function compSym(){ const s=S.csel; return s&&BYSYM[s]&&!BYSYM[s].gone&&unlocked(BYSYM[s])?s:"PNNY"; }
 function compCard(force){ const el=$('compw'); if(!el) return; if(!DB){ el.innerHTML=''; el.dataset.k=''; return; } const c=compCur(), sym=compSym();
-  if(!c){ if(el.dataset.k!=='no'){ el.dataset.k='no'; el.innerHTML=`<div class='card row' style='margin-top:8px'><div class='g t'>🏆 This week's competition is open. Everyone starts with $1,000 of competition money. Your real cash isn't touched.</div><button class='btn gold sm' data-cj='1'>Join</button></div>`; } return; }
+  if(!c){ const w=wkIdx(NOW); if(!RG[w]) regsLoad(w); const k=isReg(w)?'reg':'no'; if(el.dataset.k!==k){ el.dataset.k=k; el.innerHTML=k==='reg'?`<div class='card row' style='margin-top:8px'><div class='g t'>🏆 You're registered and this week's competition has started. You get $1,000 of competition money; your real cash isn't touched.</div><button class='btn gold sm' data-cj='1'>Start</button></div>`:''; } return; }
   const p=c.pos[sym]||{}, open=p.l||p.s, k=sym+'|'+(open?1:0);
   if(force||el.dataset.k!==k){ el.dataset.k=k; el.innerHTML=`<div class='card' style='margin-top:8px;border-color:#5a4a1a'><div class='row'><div class='g'><div class='b'>🏆 Competition wallet</div><div class='t' id='cpt'></div></div><b class='m' id='cpv'></b></div><div class='t' id='cpp' style='margin:6px 0'></div>${open?`<button class='btn ghost' style='width:100%' data-ct='close'>Close competition trade</button>`:`<div class='qty' style='margin:0 0 6px'><button data-cq='-1'>−</button><div class='mid'><b id='cpq'></b><span id='cpqc'></span></div><button data-cq='1'>+</button><button data-cq='max'>MAX</button></div><div class='g2'><button class='btn buy sm' data-ct='buy'>Comp BUY</button><button class='btn short sm' data-ct='short'>Comp SHORT</button></div>`}</div>`; }
   const v=compVal(c), r=(v/COMP_START-1)*100, pr=sp(sym);
@@ -1792,7 +1795,7 @@ async function compPub(force){ const c=compCur(); if(!DB||!UID||!c) return; if(!
 async function compSettle(){ const c=S.comp; if(!DB||!UID||!c||c.done||c.w>=wkIdx(nowSec())) return;
   try{ const q=await DB.collection('comps/'+c.w+'/entries').orderBy('value','desc').limit(200).get(), rows=q.docs.map(d=>Object.assign({id:d.id},d.data())), r=rows.findIndex(x=>x.id===UID);
     c.done=1; const tro=S.st.tro=S.st.tro||{g:0,s:0,b:0}, md=rows.length>=2?['g','s','b'][r]:null, fv=r>=0?+rows[r].value:compVal(c);
-    const pz=md?await compPrize(c.w):null, won=md&&pz?pz[['g','s','b'].indexOf(md)]:0;
+    if(md) await regsLoad(c.w,true); const pz=md?prizeOf(c.w):null, won=md&&pz?pz[['g','s','b'].indexOf(md)]:0;
     if(won){ S.cash+=won; if(typeof txInc==='function') txInc(won); resetPeak(); life(`🏆 Competition prize: +${money(won)}`); }
     if(md) tro[md]++; alog('🏆',`Weekly competition: you finished <b>#${r>=0?r+1:'?'}</b> of ${rows.length}${md?' '+{g:'🥇',s:'🥈',b:'🥉'}[md]:''}${won?` · <span class=up>+${money(won)}</span>`:''}`,'friends'); save(); act(); pubProfile(); sfx(md?'unlock':'ping'); if(won) setTimeout(()=>sfx('coin'),500);
     modal("🏆 Last week's competition",`<p>You finished <b>#${r>=0?r+1:'?'}</b> of ${rows.length} with <b>${money(fv)}</b> (${((fv/COMP_START-1)*100).toFixed(1)}%).</p>${md?`<p style='font-size:44px;text-align:center;margin:8px 0'>${{g:'🥇',s:'🥈',b:'🥉'}[md]}</p>${won?`<p style='text-align:center;font-size:22px;margin:4px 0 10px'><b class='m up'>+${money(won)}</b> cash</p>`:''}<p>You won ${won?'the prize and ':''}a trophy! It shows on your profile and the leaderboard.</p>`:`<p>No trophy this time${rows.length<2?' (trophies need at least 2 players)':''}. This week's competition is open now.</p>`}`,[['Nice','gold']]);
@@ -1800,9 +1803,16 @@ async function compSettle(){ const c=S.comp; if(!DB||!UID||!c||c.done||c.w>=wkId
 async function loadComp(){ if(!DB||CB.busy) return; CB.busy=true; const w=wkIdx(nowSec());
   try{ const q=await DB.collection('comps/'+w+'/entries').orderBy('value','desc').limit(100).get(); CB.list=q.docs.map(d=>Object.assign({id:d.id},d.data())); }catch(_){ CB.list=[]; }
   CB.w=w; CB.busy=false; if(tab==='friends'&&!FS.chat) buildFriends(); }
-function compHTML(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW;
-  let h=`<h3>🏆 Weekly competition</h3><div class='card'>`+prizeLine(w);
-  if(!c) h+=`<div class='t'>Want in? Everyone who joins gets <b style='color:var(--text)'>$1,000 of competition money</b> to trade on the same live market, right here. Your real cash is never touched. The top 3 when the week ends (in ${dur(left)}) win the cash prizes above and a trophy.</div><button class='btn gold' style='width:100%;margin-top:8px' data-cj='1'>Join this week</button>`;
+function compHTML(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW, nx=w+1;
+  [w,nx].forEach(k=>{ const R=RG[k]; if(!R||(!R.busy&&Date.now()-R.at>30000)) regsLoad(k).then(()=>{ if(tab==='friends'&&FSEG==='comp') buildFriends(); }); });
+  const Lw=(RG[w]||{}).list, Ln=(RG[nx]||{}).list, regW=isReg(w), regN=isReg(nx), meN=(Ln||[]).find(x=>x.id===UID);
+  let h=`<h3>📝 Next week · starts in ${dur(left)}</h3><div class='card'>
+    <div class='t'>Register to play next week. Your net worth is recorded when you register, and the cash prizes come from the <b style='color:var(--text)'>average net worth of everyone registered</b>. Unregister any time before it starts; then it locks.</div>
+    ${prizeBoxes(prizeOf(nx))}<div class='t' style='margin-bottom:8px'>${Ln?`${Ln.length} registered${Ln.length?` · average ${money(regAvg(Ln))}`:''}${Ln.length<2?' · prizes need 2+ players':' · can still change until it starts'}`:'Loading…'}</div>
+    ${regN?`<div class='row'><div class='g t'>✅ You're registered${meN?` with ${money(meN.nw)}`:''}</div><button class='btn ghost sm' data-creg='0'>Unregister</button></div>`:`<button class='btn gold' style='width:100%' data-creg='1'>Register for next week</button>`}</div>`;
+  h+=`<h3>🏆 This week · ends in ${dur(left)}</h3><div class='card'>${prizeBoxes(prizeOf(w))}<div class='t' style='margin-bottom:6px'>${Lw?`${Lw.length} registered · prizes locked when it started`:'Loading…'}</div>`;
+  if(!c&&regW) h+=`<button class='btn gold' style='width:100%;margin-top:4px' data-cj='1'>Start trading your $1,000</button>`;
+  else if(!c) h+=`<div class='t'>🔒 Registration for this week closed when it started. Register for next week above.</div>`;
   else { const v=compVal(c), r=(v/COMP_START-1)*100; h+=`<div class='row'><div class='g'><div class='b'>You're in</div><div class='t'>Trade below · ends in ${dur(left)}</div></div><b class='m'>${money(v)} <span class='${r>=0?'up':'dn'}'>${r>=0?'+':''}${r.toFixed(1)}%</span></b></div>`;
     const cs=compSym(); h+=`<div id='chips' style='padding:10px 0 2px'>${STOCKS.filter(d=>!d.gone&&unlocked(d)).sort((a,b)=>a.un-b.un).map(d=>{ const pp=c.pos[d.s]||{}, dot=pp.l?'<span class="dot" style="background:#16c784"></span>':pp.s?'<span class="dot" style="background:#ea3943"></span>':''; return `<button class='chip ${cs===d.s?'on':''}' data-csym='${d.s}'><b>${d.s}${dot}</b><small id='cc-${d.s}'>${px(sp(d.s))}</small></button>`; }).join('')}</div><div id='compw'></div>`; }
   if(CB.list===null||CB.w!==w){ CB.list=null; loadComp(); h+=`<div class='t' style='margin-top:8px'>Loading standings…</div>`; }
@@ -1812,6 +1822,7 @@ function compHTML(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW;
   return h+`</div>`; }
 main.addEventListener('click',e=>{ const t=e.target;
   if(t.closest('[data-cj]')) return compJoin();
+  const rg=t.closest('[data-creg]'); if(rg) return compReg(rg.dataset.creg==='1');
   const ct=t.closest('[data-ct]'); if(ct) return compTrade(ct.dataset.ct);
   const cq=t.closest('[data-cq]'); if(cq){ const c=compCur(); if(!c) return; const pr=sp(compSym()), v=cq.dataset.cq; S.cq=v==='max'?Math.max(1,Math.floor(c.cash/pr)):Math.max(1,(S.cq||1)+(+v)); return compCard(); }
   const cs=t.closest('[data-csym]'); if(cs){ S.csel=cs.dataset.csym; S.cq=1; return buildFriends(); }

@@ -1334,7 +1334,7 @@ document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.datase
   if(k==="mv"&&MUSB&&MUS.cur>=0&&MUS.on) MUSB.gain.setTargetAtTime(musV()*SONGS[MUS.cur].g,AC.currentTime,.05); });
 document.addEventListener("change",e=>{ const k=e.target.dataset&&e.target.dataset.vol; if(!k) return; save(); act(); if(k==="sv") sfx('ping'); });
 function openSettings(){ const s=S.st;
-  modal("✕|⚙︎ Settings",acctHTML()+notifHTML()+`<h3>Work</h3><button class="btn ghost" style="width:100%" id="chprof">${prof()?prof().i+" ":""}Change your profession</button><h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div>${volRow("sv",svol())}<div class="card row"><div class="g"><div class="b">Music</div><div class="t" id="muslbl"></div></div>${mus()&&MUS.on?`<button class="btn ghost sm" data-sx="mskip">Skip ⏭</button>`:""}<button class="btn ${mus()?"buy":"ghost"} sm" data-sx="mus">${mus()?"ON":"OFF"}</button></div>${volRow("mv",mvol())}<h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); musLbl(); const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
+  modal("✕|⚙︎ Settings",acctHTML()+notifHTML()+`<h3>Work</h3><button class="btn ghost" style="width:100%" id="chprof">${prof()?prof().i+" ":""}Change your profession</button><h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div>${volRow("sv",svol())}<div class="card row"><div class="g"><div class="b">Music</div><div class="t" id="muslbl"></div></div>${mus()&&MUS.on?`<button class="btn ghost sm" data-sx="mskip">Skip ⏭</button>`:""}<button class="btn ${mus()?"buy":"ghost"} sm" data-sx="mus">${mus()?"ON":"OFF"}</button></div>${volRow("mv",mvol())}<h3>App</h3><div class="card row"><div class="g"><div class="b">Version ${APPV}</div><div class="t">Updates install automatically when you open the app. Tap to check right now.</div></div><button class="btn ghost sm" data-sx="upd">Check for updates</button></div><h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); musLbl(); const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
 function fitHdr(){ for(const id of ["cash","fund","nw"]){ const e=$(id); if(!e) continue; e.style.fontSize="";
   const w=e.parentElement.clientWidth, base=parseFloat(getComputedStyle(e).fontSize); let f=base;
@@ -2332,6 +2332,7 @@ function sx(x){
   if(x==="logout"){ closeModal(); S.authSkip=0; csave().finally(()=>window.NET&&window.NET.signOut()); return; }
   if(x==="pw"){ const v=($("newpw")||{}).value||""; if(v.length<6) return toast("Password needs at least 6 characters"); window.NET.changePassword(v).then(()=>{ toast("Password changed","good"); closeModal(); },e=>toast(e.message)); return; }
   if(x==="pushon") return pushOn();
+  if(x==="upd"){ toast("Checking for updates…"); return checkUpdate(true); }
   if(x==="pushtest"){ if(!DEVS.includes(UNAME)) return; pushSave(null,true).then(ok=>toast(ok?"🧪 Test requested. Lock your phone to see it arrive.":"Couldn't request a test push")); return; }
   if(x==="pushoff") return pushOff();
   if(x==="p_news"||x==="p_friends") return pushToggle(x.slice(2));
@@ -2355,12 +2356,17 @@ setInterval(loop,250); setInterval(()=>{ if(Date.now()-lastTap<120000) csave(); 
 document.documentElement.classList.toggle("phone",PHONE()); addEventListener("resize",()=>{ document.documentElement.classList.toggle("phone",PHONE()); if(typeof tbarUpd==="function") tbarUpd(); if(tab==="trade") draw(); });
 if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
 { const h=location.hash.slice(1); if(TABS.includes(h)&&h!==tab){ history.replaceState(null,"",location.pathname+location.search); setTimeout(()=>{ if(!$("tut")) setTab(h); },600); } }
-// auto-update: when the app comes back to the screen (or every 5 min), check if index.html changed on the server; if so, save and reload
-let APPTAG=null;
-async function appTag(){ try{ const r=await fetch("index.html",{method:"HEAD",cache:"no-store"}); return r.headers.get("etag")||r.headers.get("last-modified"); }catch(_){ return null; } }
-async function checkUpdate(){ if(location.protocol!=="https:") return; const t=await appTag(); if(!t) return; if(APPTAG===null){ APPTAG=t; return; }
-  if(t!==APPTAG){ APPTAG=t; save(); csave(); toast("Updating to the newest version…"); setTimeout(()=>location.reload(),900); } }
-checkUpdate(); setInterval(checkUpdate,300000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
+// ---------- updates ----------
+// APPV is bumped with every release (same number as the service worker cache). The app downloads the live index.html,
+// reads its APPV, and if it's different saves your game and reloads into the new version. Runs on its own when the app
+// comes back to the screen and every 5 minutes, and on demand from Settings → Check for updates.
+const APPV="70";
+async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }
+async function checkUpdate(manual){ if(location.protocol!=="https:"&&!manual) return; const v=await liveVer();
+  if(!v){ if(manual) toast("Couldn't check for updates. Are you online?"); return; }
+  if(v!==APPV){ save(); if(ACT) csave(); toast(`Updating to version ${v}…`); try{ const r=await navigator.serviceWorker.getRegistration(); if(r) await r.update(); }catch(_){} setTimeout(()=>location.reload(),900); }
+  else if(manual) toast(`✅ You're on the newest version (${APPV})`,"good"); }
+checkUpdate(); setInterval(()=>checkUpdate(),300000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
 </script><script>(function(){ const de=document.documentElement;
   if(!(navigator.standalone===true||matchMedia('(display-mode: standalone)').matches)) return; de.classList.add('pwa');
   // iOS still drawing us under a see-through status bar? keep header text below its blur band

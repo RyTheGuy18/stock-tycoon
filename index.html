@@ -146,7 +146,7 @@ canvas.sp{width:100%;height:46px;display:block;margin:6px 0}
 .tn:not(.done):not(.cur){opacity:.55}
 .perk{display:inline-block;font-size:11px;color:#c8a24a;background:#1d1a10;border-radius:6px;padding:1px 6px;margin-top:3px}
 #hbtns{position:absolute;right:8px;top:calc(env(safe-area-inset-top) + 6px);display:flex;align-items:center;gap:4px}
-#gear.upd{position:relative} #gear.upd:after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px var(--panel)}
+#gear.upd{position:relative} #gear.upd:after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--dn);box-shadow:0 0 0 2px var(--panel)}
 #gear{background:none;color:var(--mut);line-height:1;padding:4px;display:flex;align-items:center} #gear svg{width:20px;height:20px;display:block}
 header{position:relative}
 #bell{position:relative;color:var(--mut);padding:4px;display:flex;align-items:center}
@@ -2539,7 +2539,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="92";
+const APPV="93";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }
@@ -2548,10 +2548,12 @@ const swReg=async()=>{ try{ return "serviceWorker" in navigator?await navigator.
 function swAsk(msg){ return new Promise(res=>{ const ctl=navigator.serviceWorker&&navigator.serviceWorker.controller; if(!ctl) return res(null);
   const ch=new MessageChannel(); ch.port1.onmessage=e=>res(e.data); ctl.postMessage(msg,[ch.port2]); setTimeout(()=>res(null),3000); }); }
 const verOf=c=>c&&c.replace(/^tt-v/,"");
-function updMark(){ const g=$("gear"); if(g) g.classList.toggle("upd",UPD.ready);
+// red "1" on the real app icon while an update is waiting (iPhone Home Screen app, needs notifications allowed)
+function appBadge(n){ try{ if(n&&navigator.setAppBadge) navigator.setAppBadge(n).catch(()=>{}); else if(!n&&navigator.clearAppBadge) navigator.clearAppBadge().catch(()=>{}); }catch(_){} }
+function updMark(){ const g=$("gear"); if(g) g.classList.toggle("upd",UPD.ready); appBadge(UPD.ready?1:0);
   if(UPD.ready&&!UPD.told){ UPD.told=true; toast(`⬆️ Version ${UPD.ver} is ready. Install it from Settings → Update now`); }
   if(!$("modal").classList.contains("hide")&&$("updrow")===null&&UPD.ready&&$("muslbl")) openSettings(); }
-async function swState(){ const st=await swAsk({type:"state"}); if(!st||!st.accepted) return; const ready=st.latest!==st.accepted&&verOf(st.latest)!==APPV;
+async function swState(){ const st=await swAsk({type:"state"}); if(!st||!st.accepted) return; const ready=st.latest!==st.accepted&&verOf(st.latest)!==APPV; if(!ready) appBadge(0);
   if(ready!==UPD.ready){ UPD.ready=ready; UPD.ver=verOf(st.latest); updMark(); } }
 // look for a new version (it downloads in the background if there is one); manual = from the Check button
 async function checkUpdate(manual){ const r=await swReg();
@@ -2563,7 +2565,7 @@ async function checkUpdate(manual){ const r=await swReg();
   if(v===APPV) return toast(`✅ You're on the newest version (${APPV})`,"good");
   toast(`⬆️ Version ${v} found. Downloading…`);
   const t0=Date.now(); const wait=async()=>{ await swState(); if(UPD.ready) return; if(Date.now()-t0<25000) setTimeout(wait,1500); else toast("Still downloading. Check again in a minute"); }; setTimeout(wait,1500); }
-async function applyUpdate(){ save(); if(ACT) await csave(); toast("Updating…"); await swAsk({type:"accept"}); setTimeout(()=>location.reload(),300); }
+async function applyUpdate(){ save(); if(ACT) await csave(); appBadge(0); toast("Updating…"); await swAsk({type:"accept"}); setTimeout(()=>location.reload(),300); }
 if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("controllerchange",()=>setTimeout(swState,500));
 swState(); setInterval(()=>checkUpdate(),600000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
 </script><script>(function(){ const de=document.documentElement;

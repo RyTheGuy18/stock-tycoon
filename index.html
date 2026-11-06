@@ -1668,7 +1668,7 @@ function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catc
   advance(t); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; sfx('tax'); modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); achCheck(); } compPub(); if(t%600===0) compSettle();
   if(t-lastSave>5){ save(); lastSave=t; if(ACT&&!cbusy) csave(); }
   const nw=newsSince(S.lastNews,t); S.lastNews=t;
-  nw.forEach(x=>{ const p=S.pos[x.s]; if(x.s==="*"||x.s===S.sel||(p&&(p.l||p.s))){ toast(x.t); sfx(/Market crash/.test(x.t)?'crash':x.tell?'alert':x.big?'news':'ping'); if(x.big&&tab==="trade") newsCard(); } }); }
+  nw.forEach(x=>{ const p=S.pos[x.s]; if(x.s==="*"||x.s===S.sel||(p&&(p.l||p.s))){ toast(x.t); nlog(x); sfx(/Market crash/.test(x.t)?'crash':x.tell?'alert':x.big?'news':'ping'); if(x.big&&tab==="trade") newsCard(); } }); }
 function intro(){ if(!S.prof){ if(!S.introSeen) storyIntro(); else profPicker(true); } }
 document.addEventListener("visibilitychange",()=>{ if(document.hidden){ save(); if(ACT) csave(); } else { loop(); cpull(); } });
 // ---------- set stop loss / take profit right on the chart ----------
@@ -2189,8 +2189,13 @@ function alog(ic,t,go){ S.alog=S.alog||[]; if(go&&go.startsWith("chat:")) S.alog
 const actNew=()=>(S.alog||[]).filter(x=>x.at>(S.actSeen||0)).length+(FS.list||[]).filter(f=>f.status==='pending'&&f.from!==UID&&(f.at||0)/1000>(S.actSeen||0)).length;
 let NEWSCHK=0, NV=null;
 function bellUpd(force){ if(!force&&NOW-NEWSCHK<20) return; NEWSCHK=NOW; const b=$("bell"); if(!b) return;
-  if(!S.newsSeen) S.newsSeen=NOW-3600; const f=newsFeed(Math.max(S.newsSeen,NOW-86400),NOW); b.classList.toggle("new",f.length>0||actNew()>0); }
-function openNews(view){ const f=newsFeed(NOW-86400*2,NOW).slice(0,60), seen=S.newsSeen||0, an=actNew(), nn=f.filter(x=>x.at>seen).length;
+  if(!S.newsSeen) S.newsSeen=NOW-3600; const f=feedAll(Math.max(S.newsSeen,NOW-86400),NOW); b.classList.toggle("new",f.length>0||actNew()>0); }
+// every news message that popped up on screen is also kept for the News tab (2 days), so nothing you saw goes missing
+function nlog(x){ S.nlog=(S.nlog||[]).filter(y=>NOW-y.at<172800); if(S.nlog.some(y=>y.at===x.at&&y.t===x.t)) return; S.nlog.unshift({at:x.at,s:x.s,t:x.t}); if(S.nlog.length>120) S.nlog.length=120; }
+function feedAll(t0,t1){ const f=newsFeed(t0,t1), key=new Set(f.map(x=>x.at+"|"+x.t));
+  (S.nlog||[]).forEach(y=>{ if(y.at>t0&&y.at<=t1&&!key.has(y.at+"|"+y.t)) f.push({at:y.at,s:y.s,t:y.t,k:"seen"}); });
+  return f.sort((a,b)=>b.at-a.at); }
+function openNews(view){ const f=feedAll(NOW-86400*2,NOW).slice(0,80), seen=S.newsSeen||0, an=actNew(), nn=f.filter(x=>x.at>seen).length;
   view=view||NV||(an&&!nn?"act":"news"); NV=view;
   const segH=`<div class="seg"><button data-nv="news" class="${view==="news"?"on":""}">📰 News${nn?` · ${nn}`:""}</button><button data-nv="act" class="${view==="act"?"on":""}">👥 Activity${an?` · ${an}`:""}</button></div>`;
   if(view==="act") return openAct(segH);
@@ -2586,7 +2591,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="98";
+const APPV="99";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

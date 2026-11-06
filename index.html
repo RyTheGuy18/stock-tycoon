@@ -935,7 +935,7 @@ const PQ=2; // Mom's practice rounds count as 2 shares
 function paper(dir){ const sym=S.sel; S.paper={sym,dir,en:dir==="L"?ask(sym):bid(sym),t:NOW}; sfx(dir==="S"?'short':'open'); toast(`📝 Practice ${dir==="L"?"buy":"short"}: ${PQ} ${sym} at ${px(S.paper.en)}`); build(true); }
 function paperClose(){ const c=S.paper; if(NOW-c.t<15) return toast("Hold it at least 15 seconds");
   const ex=c.dir==="L"?bid(c.sym):ask(c.sym), pl=(c.dir==="L"?ex-c.en:c.en-ex)*PQ; S.paper=null; S.st.paper++;
-  if(pl>0){ const pay=Math.round(pl*5*100)/100; S.streak++; S.cash+=pay; txInc(pay); S.st.paperWon++; S.st.paperPay+=pay; sfx('win'); toast(`✅ Practice profit ${sg(pl)}. Mom pays you ${money(pay)}!`,"good"); life(`📝 Practice trade won · Mom paid ${money(pay)}`); }
+  if(pl>0){ const pay=Math.round(pl*5*100)/100; S.streak++; S.cash+=pay; txInc(pay); S.st.paperWon++; S.st.paperPay+=pay; lunchMoney(); sfx('win'); toast(`✅ Practice profit ${sg(pl)}. Mom pays you ${money(pay)}!`,"good"); life(`📝 Practice trade won · Mom paid ${money(pay)}`); }
   else { S.streak=0; sfx('loss'); toast(`❌ Practice loss ${sg(pl)}. "Try again, sweetie."`,"bad"); }
   build(true); }
 
@@ -2231,7 +2231,7 @@ addEventListener("pagehide",save); addEventListener("resize",()=>tab==="trade"&&
 // boot
 for(const id in S.profs){ const u=S.profs[id].up||{}; ["book","resup"].forEach(k=>{ if(u[k]){ A(k).own=1; delete u[k]; } }); }
 NOW=nowSec(); if(!isNew) catchUp(); else { S.lastT=NOW; S.lastNews=NOW; }
-delistCheck(); if(S.prof) lunchMoney();
+delistCheck(); if(S.prof&&!S.lunch&&S.st&&S.st.jobs>0) S.lunch=1; // older saves that already started a job: count the $2 as given, never pay it on load
 if(!S.mt&&S.prof){ S.mt={}; TEXTS.forEach(([id,c])=>{ if(c()) S.mt[id]=1; }); }
 save(); build(); if($("modal").classList.contains("hide")) intro();
 setInterval(loop,250); setInterval(()=>{ if(Date.now()-lastTap<120000) csave(); },30000); setTimeout(cinit,0); setInterval(installHint,30000);

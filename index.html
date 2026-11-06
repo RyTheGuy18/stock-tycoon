@@ -207,6 +207,27 @@ html.phone #job{padding:10px 12px}
   #modal .box{max-width:480px} #chat{max-width:760px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
   .btn{font-size:14px}
 }
+/* ---- phone turned sideways: tabs become a rail on the left, slim header, chart fills the left, trading on the right ---- */
+@media (orientation:landscape) and (max-height:520px) and (pointer:coarse){
+  #app{max-width:none;display:grid;grid-template-columns:calc(62px + env(safe-area-inset-left)) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"nav header" "nav main"}
+  html header,html.pwa header{grid-area:header;padding:6px calc(12px + env(safe-area-inset-right)) 6px 14px}
+  html #hbtns,html.pwa #hbtns{top:50%;transform:translateY(-50%);right:calc(10px + env(safe-area-inset-right))}
+  html.phone .hr{grid-template-columns:repeat(3,minmax(0,170px));align-items:center;padding-right:80px} html.phone .hr>div:nth-child(2){display:block}
+  html.phone #cash{font-size:19px} html.phone .hv{font-size:16px} .l{font-size:9px}
+  main{grid-area:main} #tbar{display:none!important}
+  nav{grid-area:nav;flex-direction:column;justify-content:space-evenly;border-top:0;border-right:1px solid var(--line);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  html.pwa nav{padding-bottom:env(safe-area-inset-bottom)} html.pwa nav button,nav button{flex:none;padding:4px 0;font-size:9.5px} nav button span svg{width:21px;height:21px;margin-bottom:1px}
+  .mk{display:grid;grid-template-columns:minmax(0,1fr) clamp(250px,34vw,330px);height:100%}
+  .mk-l{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line)}
+  .mk-r{overflow-y:auto;min-height:0;padding-right:env(safe-area-inset-right)}
+  main:has(.mk){overflow:hidden}
+  #chips{padding:5px 10px 3px} .chip{padding:3px 8px} .chip b{font-size:11.5px;display:inline;margin-right:5px} .chip small{font-size:10.5px}
+  .q{padding:1px 12px} #qn{display:none} #qp{font-size:18px}
+  .tf{padding:2px 12px 3px} .tf button{padding:3px 0;font-size:11px}
+  .chw{flex:1;min-height:0;position:relative} html.phone .chw #chart{position:absolute;inset:0;width:100%;height:100%;min-height:0}
+  #news{display:none}
+  .mk-r .pad{padding:8px 8px 6px}
+}
 </style></head><body>
 <div id="app">
 <header>
@@ -1805,7 +1826,8 @@ async function refreshAll(){ const t0=Date.now();
 // ---------- phone: trade bar above the bottom tabs while a position is open ----------
 const PHONE=()=>!matchMedia("(min-width:1000px) and (pointer:fine)").matches;
 function tbarSym(){ const o=x=>{ const p=S.pos[x]; return p&&(p.l||p.s); }; if(o(S.sel)) return S.sel; for(const k in S.pos) if(o(k)&&BYSYM[k]&&!BYSYM[k].gone) return k; return null; }
-function tbarUpd(){ const el=$("tbar"); if(!el) return; const sym=PHONE()&&!$("tut")?tbarSym():null, acts=$("acts");
+const LAND=()=>matchMedia("(orientation:landscape) and (max-height:520px) and (pointer:coarse)").matches;
+function tbarUpd(){ const el=$("tbar"); if(!el) return; const sym=PHONE()&&!LAND()&&!$("tut")?tbarSym():null, acts=$("acts");
   if(!sym){ if(el.classList.contains("on")){ el.classList.remove("on"); el.innerHTML=""; el.dataset.k=""; } if(acts) acts.style.display=""; return; }
   el.classList.add("on"); if(acts) acts.style.display=(sym===S.sel)?"none":"";
   const p=P(sym), pl=p.l?p.l*(sp(sym)-p.lc):Math.max(p.s*(p.se-sp(sym)),-p.s*p.se), k=sym+"|"+p.l+"|"+p.s;
@@ -2150,7 +2172,7 @@ delistCheck(); if(S.prof) lunchMoney();
 if(!S.mt&&S.prof){ S.mt={}; TEXTS.forEach(([id,c])=>{ if(c()) S.mt[id]=1; }); }
 save(); build(); if($("modal").classList.contains("hide")) intro();
 setInterval(loop,250); setInterval(()=>{ if(Date.now()-lastTap<120000) csave(); },30000); setTimeout(cinit,0); setInterval(installHint,30000);
-document.documentElement.classList.toggle("phone",PHONE()); addEventListener("resize",()=>document.documentElement.classList.toggle("phone",PHONE()));
+document.documentElement.classList.toggle("phone",PHONE()); addEventListener("resize",()=>{ document.documentElement.classList.toggle("phone",PHONE()); if(typeof tbarUpd==="function") tbarUpd(); if(tab==="trade") draw(); });
 if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
 { const h=location.hash.slice(1); if(TABS.includes(h)&&h!==tab){ history.replaceState(null,"",location.pathname+location.search); setTimeout(()=>{ if(!$("tut")) setTab(h); },600); } }
 // auto-update: when the app comes back to the screen (or every 5 min), check if index.html changed on the server; if so, save and reload

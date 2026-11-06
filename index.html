@@ -1279,7 +1279,8 @@ function stats_html(){ const s=S.st; return `<div class="card kv">
    <div>Mom's practice<b class="m">${s.paperWon}/${s.paper} · ${money(s.paperPay)}</b></div><div>Bills · broke<b class="m">${money(s.bills)} · ${s.broke}×</b></div></div>
   `; }
 function SAVEHTML(){ return `<h3>Save</h3><div class="card"><div class="t">☁️ ${cloudSt}</div><div class="g2" style="margin-top:8px"><button class="btn ghost sm" data-sx="exp">Copy save code</button><button class="btn ghost sm" data-sx="imp">Load code</button></div>
-  <input id="sbox" class="inp" style="margin-top:6px" placeholder="Paste save code"><button class="btn sell sm" style="width:100%;margin-top:6px" data-sx="wipe">Wipe save</button><button class="btn ghost sm" style="width:100%;margin-top:6px" data-sx="replay">Replay intro & tutorial</button></div>`; }
+  <input id="sbox" class="inp" style="margin-top:6px" placeholder="Paste save code"><button class="btn sell sm" style="width:100%;margin-top:6px" data-sx="wipe">Wipe save</button><button class="btn ghost sm" style="width:100%;margin-top:6px" data-sx="replay">Replay intro & tutorial</button></div>${bakHTML()}`; }
+function bakHTML(){ const L=baks(); if(!L.length) return ""; return `<h3>Backups on this device</h3><div class="card">${L.map((b,i)=>`<div class="li"><div class="g"><b class="m">Best ${money(b.nw)}</b> · cash ${money(b.cash)}<div class="t">${new Date(b.at).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} · ${b.why}</div></div><button class="btn ghost sm" data-sx="bak${i}">Restore</button></div>`).join("")}<div class="t" style="margin-top:6px">Taken automatically right before a save gets replaced. Restoring one also saves it to your account.</div></div>`; }
 // volume slider under the Sound effects / Music rows: changes are heard while you drag, saved when you let go
 const volRow=(k,v)=>`<div class="row" style="margin:-2px 2px 10px;gap:10px"><span class="t">🔈</span><input type="range" class="vol g" data-vol="${k}" min="0" max="1" step="0.01" value="${v}" style="width:100%;accent-color:var(--gold)"><span class="t m" style="width:34px;text-align:right" id="vl-${k}">${Math.round(v*100)}%</span></div>`;
 document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.dataset.vol; if(!k) return; const v=+e.target.value; S.set=S.set||{}; S.set[k]=v; const l=$("vl-"+k); if(l) l.textContent=Math.round(v*100)+"%";
@@ -1358,9 +1359,9 @@ main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||
     case "dep": { const a=Math.min(+$("famt").value||0,S.cash); if(a<=0||inDebt()) return toast("Enter an amount you have"); const ip=price(II,NOW); S.cash-=a; S.fu+=a/ip; S.fbasis+=a; S.fh.push([NOW,fundVal()]); resetPeak(); sfx('coin'); toast("🏦 Invested "+money(a)+" in the index"); fundCard(); break; }
     case "wd": { const v=fundVal(), a=Math.min(+$("famt").value||0,v); if(a<=0) return toast("Enter an amount"); const ip=price(II,NOW); S.fbasis=Math.max(0,S.fbasis*(1-a/v)); S.fu-=a/ip; if(S.fu<1e-9) S.fu=0; S.cash+=a; S.fh.push([NOW,fundVal()]); sfx('coin'); toast("🏦 Withdrew "+money(a)); fundCard(); break; }
     case "exp": { const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); $("sbox").value=code; try{navigator.clipboard.writeText(code).then(()=>toast("Copied"));}catch(_){} return; }
-    case "imp": try{ S=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); save(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return;
+    case "imp": try{ const nx=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); backup(S,"before loading a code"); S=nx; S.resetAt=Date.now(); save(); act(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return;
     case "replay": S.tut=0; return storyIntro();
-    case "wipe": return modal("Wipe everything?","<p>No undo.</p>",[["Cancel","ghost"],["Wipe","sell",()=>{ S=fresh(); S.wipedAt=Date.now(); save(); build(); intro(); }]]);
+    case "wipe": return modal("Wipe everything?","<p>No undo.</p>",[["Cancel","ghost"],["Wipe","sell",()=>{ backup(S,"before wiping"); S=fresh(); S.wipedAt=S.resetAt=Date.now(); save(); act(); build(); intro(); }]]);
   }
   if(tab==="store") buildStore(); else if(tab==="me") buildMe(); hdr(); });
 
@@ -1373,6 +1374,17 @@ function catchUp(){ const away=nowSec()-S.lastT; if(away<=2){ advance(nowSec());
   modal("Welcome back",`<p>You were away <b>${dur(away)}</b>${away>offCap()?` (only the last ${dur(offCap())} counted)`:""}.</p><p>${S.st.realized!==bt0?`📈 Trades closed while away: <b class="${S.st.realized-bt0>=0?"up":"dn"}">${sg(S.st.realized-bt0)}</b><br>`:""}${BOTSKIP?`🤖 Your bots sat out ${BOTSKIP} trade${BOTSKIP>1?"s":""} because you had a trade of your own open.<br>`:""}${S.st.jobPay>j0?`💼 Jobs: <b class="up">+${money(S.st.jobPay-j0)}</b><br>`:""}${(S.st.botPay||0)!==bp0?`🪙 PNNY bots: <b class="${S.st.botPay-bp0>=0?"up":"dn"}">${sg(S.st.botPay-bp0)}</b><br>`:""}${S.st.bills>b0?`🧾 Bills: <b class="dn">-${money(S.st.bills-b0)}</b><br>`:""}Net worth: <b class="${dn>=0?"up":"dn"}">${sg(dn)}</b></p>`,[["OK","gold"]]); }
 function save(){ S.savedAt=Date.now(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} }
 let cref=null,cbusy=false,clast="";
+// ---------- progress guard + local backups ----------
+// A save "regresses" another if it has less than half the best net worth of the other (and the other is past $20),
+// unless it comes from a deliberate reset (Wipe save / Load code / Restore backup) made after the other's last reset.
+// No device ever silently swaps a real save for a regressed one, in either direction.
+const prog=x=>(x&&+x.bestNW)||0, resetT=x=>(x&&(x.resetAt||x.wipedAt))||0;
+const regress=(nw,old)=>!!nw&&!!old&&prog(old)>=20&&prog(nw)<prog(old)*.5&&!(resetT(nw)>resetT(old));
+// up to 5 snapshots on this device, taken right before anything replaces the save; the best one is always kept
+function backup(x,why){ try{ if(!x||prog(x)<1) return; let L=JSON.parse(localStorage.getItem("st.baks")||"[]"); const j=JSON.stringify(x);
+  L=L.filter(b=>Math.abs(b.nw-prog(x))>.005||b.cash!==x.cash); L.unshift({at:Date.now(),nw:prog(x),cash:x.cash||0,why:why||"",save:j});
+  const best=L.reduce((a,b)=>b.nw>a.nw?b:a,L[0]); L=L.slice(0,4); if(!L.includes(best)) L.push(best); localStorage.setItem("st.baks",JSON.stringify(L)); }catch(_){} }
+const baks=()=>{ try{ return JSON.parse(localStorage.getItem("st.baks")||"[]"); }catch(_){ return []; } };
 // ---------- live sync between your devices ----------
 // chart choices (timeframe, selected stock, share count) stay on each device
 const viewPrefs=()=>({tf:S.tf,sel:S.sel,qty:S.qty,cq:S.cq,csel:S.csel});
@@ -1396,8 +1408,10 @@ document.addEventListener("click",()=>{ if(ACT) setTimeout(save,0); }); // after
 const cloudRev=d=>d?(d.rev||0):0;
 function adoptCloud(d){ if(!d||typeof d.save!=="string"||d.dev===DEV) return false;
   const r=cloudRev(d); if(r?r<=BASE:(d.savedAt||0)<=SYNC) return false;
-  if(ACT){ csave(); return false; } // we have a fresh action of our own: push it instead of throwing it away
   let cs; try{ cs=JSON.parse(d.save); }catch(_){ return false; }
+  if(regress(cs,S)){ if(r) setBase(r); backup(S,"kept over an older save"); ACT=true; setPend(1); csave(true); toast("🛡️ Kept your progress. Your other device had an older save, so this one replaced it."); return false; }
+  if(ACT&&!regress(S,cs)){ csave(); return false; } // we have a fresh action of our own: push it instead of throwing it away
+  backup(S,"before syncing from another device"); ACT=false; setPend(0);
   const own=S.owner, vw=viewPrefs(); S=Object.assign(fresh(),cs); S.owner=own; Object.assign(S,vw); SYNC=d.savedAt||0; clast=d.save; if(r) setBase(r);
   NOW=nowSec(); catchUp(); delistCheck(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} build(); hdr&&hdr(); return true; }
 function watchSave(ref){ if(unwatch) unwatch(); unwatch=ref.watch?ref.watch(d=>{ if(adoptCloud(d)) toast("🔄 Synced from your other device"); }):null; }
@@ -1406,9 +1420,11 @@ async function cpull(){ if(!cref) return; try{ const sn=await cref.get(); if(sn.
 async function csave(force){ if(!cref) return; if(!ACT&&!force) return; if(cbusy){ clearTimeout(tapT); tapT=setTimeout(csave,800); return; }
   save(); const j=JSON.stringify(S), had=ACT; cbusy=true; ACT=false;
   try{ const doc={save:j,savedAt:S.savedAt,dev:DEV};
-    const r=cref.tx?await cref.tx(cur=>Math.max(cloudRev(cur),BASE)+1,doc):(await cref.set(Object.assign(doc,{rev:BASE+1})),BASE+1);
+    const r=cref.tx?await cref.tx(cur=>{ let cs=null; try{ cs=cur&&cur.save?JSON.parse(cur.save):null; }catch(_){}
+        if(regress(S,cs)) throw {code:"regress",cur}; return Math.max(cloudRev(cur),BASE)+1; },doc):(await cref.set(Object.assign(doc,{rev:BASE+1})),BASE+1);
     setBase(r); clast=j; SYNC=S.savedAt; if(!ACT) setPend(0); }
-  catch(e){ ACT=ACT||had; if(["invalid_argument","revoked","quota_exceeded","not_granted"].includes(e&&e.code)) cref=null; }
+  catch(e){ if(e&&e.code==="regress"){ cbusy=false; ACT=false; setPend(0); const c=e.cur; backup(S,"replaced by your account's better save"); BASE=0; SYNC=0; adoptCloud(Object.assign({},c,{dev:"_"})); toast("🔄 Loaded your account's save (this device had an older one)"); return; }
+    ACT=ACT||had; if(["invalid_argument","revoked","quota_exceeded","not_granted"].includes(e&&e.code)) cref=null; }
   cbusy=false; }
 let lastSave=0;
 function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catchUp(); build(); return; }
@@ -1534,7 +1550,9 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
         const wiped=(S.wipedAt||0)>(d.savedAt||0);
         // same account on this device: the newer save wins (by rev, then by time). A guest save being signed in: more progress wins.
         const mine=S.owner===u.uid, r=cloudRev(d), newer=r?(r>BASE||(r===BASE&&d.dev!==DEV&&(d.savedAt||0)>(S.savedAt||0))):(d.savedAt||0)>(S.savedAt||0);
-        const take=cs&&!wiped&&!ACT&&(mine?newer:progress(cs)>progress(S));
+        let take; if(!cs) take=false; else if(regress(S,cs)) take=true; else if(regress(cs,S)) take=false; else if(wiped) take=false; else take=mine?newer&&!ACT:progress(cs)>progress(S);
+        if(cs&&!take&&regress(cs,S)) pushMine=true;
+        if(take){ backup(S,"before loading your account's save"); ACT=false; setPend(0); }
         SYNC=d.savedAt||0; if(r) setBase(Math.max(BASE,r));
         if(take){ const vw=viewPrefs(); S=Object.assign(fresh(),cs); Object.assign(S,vw); clast=d.save; closeModal(); NOW=nowSec(); catchUp(); toast("Loaded your saved game"); }
         else if(!mine||wiped) pushMine=true; }
@@ -2205,9 +2223,10 @@ function sx(x){
   if(x==="mus"){ S.set=S.set||{}; S.set.mus=mus()?0:1; save(); if(mus()) musWake(); else musStop(); return setTimeout(openSettings,50); }
   if(x==="mskip"){ musSkip(); return setTimeout(musLbl,500); }
   if(x==="exp"){ const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); $("sbox").value=code; try{navigator.clipboard.writeText(code).then(()=>toast("Copied"));}catch(_){} return; }
-  if(x==="imp"){ try{ S=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); save(); closeModal(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return; }
+  if(x==="imp"){ try{ const nx=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); backup(S,"before loading a code"); S=nx; S.resetAt=Date.now(); save(); act(); closeModal(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return; }
   if(x==="replay"){ closeModal(); S.tut=0; return storyIntro(); }
-  if(x==="wipe") return modal("Wipe everything?","<p>No undo.</p>",[["Cancel","ghost"],["Wipe","sell",()=>{ S=fresh(); S.wipedAt=Date.now(); save(); build(); intro(); }]]); }
+  if(/^bak\d$/.test(x)){ const b=baks()[+x.slice(3)]; if(!b) return; return modal("Restore this backup?",`<p>Best net worth <b>${money(b.nw)}</b>, cash ${money(b.cash)}. Your current game is backed up first.</p>`,[["Cancel","ghost"],["Restore","gold",()=>{ try{ const nx=Object.assign(fresh(),JSON.parse(b.save)); backup(S,"before restoring a backup"); const own=S.owner; S=nx; S.owner=own||S.owner; S.resetAt=Date.now(); NOW=nowSec(); catchUp(); save(); act(); build(); hdr(); toast("✅ Backup restored","good"); }catch(_){ toast("Couldn't restore that backup"); } }]]); }
+  if(x==="wipe") return modal("Wipe everything?","<p>No undo.</p>",[["Cancel","ghost"],["Wipe","sell",()=>{ backup(S,"before wiping"); S=fresh(); S.wipedAt=S.resetAt=Date.now(); save(); act(); build(); intro(); }]]); }
 addEventListener("pagehide",save); addEventListener("resize",()=>tab==="trade"&&draw());
 // boot
 for(const id in S.profs){ const u=S.profs[id].up||{}; ["book","resup"].forEach(k=>{ if(u[k]){ A(k).own=1; delete u[k]; } }); }

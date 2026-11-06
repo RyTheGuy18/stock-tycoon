@@ -44,6 +44,8 @@ nav button.on{color:var(--text)} nav button.on span{opacity:1;color:var(--gold)}
 #chips::-webkit-scrollbar{display:none}
 .chip{flex:none;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:5px 8px;text-align:left}
 .chip b{display:block;font:700 12px "JetBrains Mono"} .chip small{font:11px "JetBrains Mono"}
+.d1{display:inline-flex;align-items:center;gap:2px;font-family:"JetBrains Mono",monospace} .d1 svg{display:block} #qc .d1{font-size:15px;gap:4px} #qc .d1 svg{width:11px;height:11px}
+.chip .cd1{display:block;font-size:10.5px;margin-top:1px}
 .chip.on{border-color:#3b82f6;background:#132036} .chip.lock{opacity:.4}
 .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:3px;vertical-align:2px}
 .q{display:flex;justify-content:space-between;align-items:center;padding:2px 12px}
@@ -1158,13 +1160,17 @@ function buildTrade(){
 function chips(){ const c=$("chips"); if(!c) return; const sl=c.scrollLeft;
   c.innerHTML=STOCKS.filter(d=>!d.gone).sort((a,b)=>a.un-b.un).map(d=>{ if(!unlocked(d)) return `<button class="chip lock" data-lk="${d.need}"><b>${d.s}</b><small>🔒${money(d.need)}</small></button>`;
     const p=S.pos[d.s], dot=p&&p.l?'<span class="dot" style="background:#16c784"></span>':p&&p.s?'<span class="dot" style="background:#ea3943"></span>':"";
-    return `<button class="chip ${S.sel===d.s?"on":""}" data-sym="${d.s}"><b>${d.s}${dot}</b><small id="c-${d.s}"></small></button>`; }).join(""); c.scrollLeft=sl; }
+    return `<button class="chip ${S.sel===d.s?"on":""}" data-sym="${d.s}"><b>${d.s}${dot}</b><small id="c-${d.s}"></small><small class="cd1" id="cd-${d.s}"></small></button>`; }).join(""); c.scrollLeft=sl; }
 function chg(sym){ const i=BYSYM[sym].i; return (sp(sym)/price(i,NOW-3600)-1)*100; }
+// 1-day change for the quote and the stock buttons: a plain up/down triangle and a whole-number %, refreshed once a minute
+const D1={};
+function day1(sym){ const m=Math.floor(NOW/60), c=D1[sym]; if(c&&c.m===m) return c.v; const d=BYSYM[sym], v=Math.round((sp(sym)/price(d.i,NOW-86400)-1)*100); D1[sym]={m,v}; return v; }
+const d1html=sym=>{ const v=day1(sym), up=v>=0; return `<span class="${up?"up":"dn"} d1"><svg viewBox="0 0 10 10" width="9" height="9"><path d="${up?"M5 1.5 9.2 8.5H.8Z":"M5 8.5 .8 1.5h8.4Z"}" fill="currentColor"/></svg>${Math.abs(v)}%</span>`; };
 function upd(){
   if(!$("qp")) return; const sym=S.sel, d=BYSYM[sym], p=P(sym), pr=sp(sym), c=chg(sym);
   $("qn").textContent=sym+" · "+d.n+(SECN[sym]?" · "+SECN[sym]:""); $("qp").textContent=px(pr);
-  const c24=(sp(sym)/price(d.i,NOW-86400)-1)*100; $("qc").innerHTML=`<span class="${c>=0?"up":"dn"}"> ${c>=0?"+":""}${c.toFixed(2)}% 1h</span> <span class="${c24>=0?"up":"dn"}">${c24>=0?"+":""}${c24.toFixed(2)}% 24h</span>`;
-  STOCKS.forEach(x=>{ const e=$("c-"+x.s); if(e){ e.textContent=px(sp(x.s)); e.className=chg(x.s)>=0?"up":"dn"; } });
+  { const q=$("qc"), hh=" "+d1html(sym); if(q.dataset.h!==hh){ q.dataset.h=hh; q.innerHTML=hh; } }
+  STOCKS.forEach(x=>{ const e=$("c-"+x.s); if(e){ e.textContent=px(sp(x.s)); e.className=day1(x.s)>=0?"up":"dn"; const f=$("cd-"+x.s), hh=d1html(x.s); if(f&&f.dataset.h!==hh){ f.dataset.h=hh; f.innerHTML=hh; } } });
   document.querySelectorAll(".tf button").forEach(b=>b.classList.toggle("on",+b.dataset.tf===S.tf));
   const nw=newsSince(NOW-7200,NOW).filter(x=>x.s==="*"||x.s===S.sel||(BYSYM[x.s]&&unlocked(BYSYM[x.s]))).sort((a,b)=>b.at-a.at); $("news").textContent=nw[0]?nw[0].t+" · "+dur(NOW-nw[0].at)+" ago":"No headlines in the last 2 hours.";
   let h="";
@@ -2565,7 +2571,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="95";
+const APPV="96";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

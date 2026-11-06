@@ -169,6 +169,22 @@ nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9p
 .chw{position:relative}
 #ctools{position:absolute;right:62px;top:6px;display:flex;gap:4px;z-index:2} #ctools button{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:4px 9px;font-size:11.5px;font-weight:700;color:var(--mut)} #ctools button.on{color:#05080b;background:var(--gold);border-color:var(--gold)}
 #zlive{position:absolute;left:8px;top:8px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--gold);z-index:2}
+/* ---------- phone market screen: the chart is the star; header, position and hustle stay compact ---------- */
+details.fold{margin-top:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+details.fold>summary{display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;list-style:none;font-size:13.5px;font-weight:600}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold .fs{flex:1;text-align:right;font:12px "JetBrains Mono",monospace;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+details.fold .fs b{color:var(--text)} details.fold .fs .dn,details.fold .fs b.dn{color:var(--dn)}
+details.fold .fa{color:var(--mut);font-size:11px;transition:transform .2s} details.fold[open] .fa{transform:rotate(180deg)}
+details.fold>.card{margin:0;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent}
+.sec2>h3:first-child{margin-top:14px}
+html.phone .hr{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} html.phone .hr>div:nth-child(2){display:none}
+html.phone #home{display:none} html.phone #cash{font-size:24px} html.phone .hv{font-size:18px}
+html.phone #chart{height:46vh;height:clamp(300px,calc(100svh - 470px),640px);min-height:0}
+html.phone #ldraw span{display:none} html.phone #ctools{right:60px} html.phone #ctools button{padding:4px 8px}
+html.phone #pos:empty{display:none}
+html.phone .sec2>h3{font-size:11px}
+html.phone #job{padding:10px 12px}
 /* ---------- desktop / laptop layout: wide screen + mouse. Phones and tablets keep the mobile layout ---------- */
 @media (min-width:1000px) and (pointer:fine){
   #app{max-width:none;display:grid;grid-template-columns:92px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"nav header" "nav main"}
@@ -745,7 +761,8 @@ const IC={sl:ICS('<path d="M8.5 3h7L21 8.5v7L15.5 21h-7L3 15.5v-7z"/><path d="M8
 let ARM=null; // which line the next chart tap places: "lsl","ltp","ssl","stp"
 function ordBtns(side){ const o=ORD(S.sel), k1=side+"sl", k2=side+"tp", b=(k,lab,ic,cls)=>{ const on=ARM===k, v=o[k];
     return `<button class="btn ${on?"gold":v?cls:"ghost"} sm" data-ord="${k}">${ic}${on?"Tap the chart…":v?`${lab} ${px(v)} ✕`:lab}</button>`; };
-  return `<div class="t" style="margin-top:4px">${ARM?"Tap the chart where you want it.":"Pick one, then tap the chart to place it. Drag the handle on the right to move it."}</div><div class="g2" style="margin:6px 0 4px">${b(k1,"Stop loss",IC.sl,"sell")}${b(k2,"Take profit",IC.tp,"buy")}</div>`; }
+  const tip=ARM?"Tap the chart where you want it.":PHONE()?"":"Pick one, then tap the chart to place it. Drag the handle on the right to move it.";
+  return `${tip?`<div class="t" style="margin-top:4px">${tip}</div>`:""}<div class="g2" style="margin:${tip?6:0}px 0 4px">${b(k1,"Stop loss",IC.sl,"sell")}${b(k2,"Take profit",IC.tp,"buy")}</div>`; }
 function sellLong(sym,q,why){ const p=P(sym); if(q<1) return; const b=fillSell(sym,q), pl=q*(b-p.lc), en=p.lc; S.cash+=q*b; const tx=salesTax(q*b); flowPush(sym,-1,q*b); p.l-=q; if(!p.l) p.lc=0;
   rec(sym,"L",q,en,b,pl); mark(sym,"S",sp(sym),pl); winFx(pl); tipCredit(sym,pl); toast(`${why||"Sold"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`); chips(); }
 // ---------- automations (lost if you go broke) ----------
@@ -919,6 +936,7 @@ function taxDay(){ const tx=TX(), w=taxWk(NOW); if(w===tx.w) return;
     `<div class="li"><b>Total</b><b class="m dn">-${money(b.total)}</b></div>`+
     (b.acct?`<p class="t">Your accountant saved you 15%.</p>`:"")+(inDebt()?`<p class="dn">You can't cover it all. Pay off the debt within 24 hours or you go broke.</p>`:""); }
 function taxCard(){ const el=$("taxc"); if(!el) return; const tx=TX(), w=tx.w, b=taxBill(tx,warYear(w)), left=taxDayAt(w)-NOW;
+  { const fs=$("fs-tax"); if(fs) fs.innerHTML=`in ${dur(left)} · <b class="dn">≈ -${money(b.total)}</b>`; }
   el.innerHTML=`<div class="row"><div class="g"><div class="b">🧾 Tax day in ${dur(left)}${warYear(w)?' <span class="pill bad">⚔️ War year</span>':''}</div>
    <div class="t">Earned this year: ${money(b.base)} · sales tax paid: ${money(tx.sales)}</div></div><b class="m dn">≈ -${money(b.total)}</b></div>
    <div class="t" style="margin-top:4px">Income tax ${money(b.it)}${b.pt?` · property ${money(b.pt)}`:""}${b.wt?` · war ${money(b.wt)}`:""} · ${(SALES_TAX*100).toFixed(1)}% sales tax on every stock buy and sell</div>`; }
@@ -959,19 +977,23 @@ function advance(to){ // process every second from lastT+1 to `to`
 let tab="trade", seg="job"; const main=$("main");
 function setTab(t){ tab=t; document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t)); main.scrollTop=0; build(); }
 function build(soft){ if(tab==="trade") soft&&$("chart")?upd():buildTrade(); else if(tab==="store") buildStore(); else if(tab==="auto"){ if(!soft) buildAuto(); } else if(tab==="friends"){ if(!soft) buildFriends(); else compTick(); } else if(!soft) buildMe(); hdr(); }
+// Taxes and the index fund fold into one-line summaries (closed by default on phones, open on desktop)
+const FOLD={};
+const fold=(id,t,body)=>`<details class="fold" id="fd-${id}" ${(FOLD[id]??!PHONE())?"open":""}><summary><span class="ft">${t}</span><span class="fs" id="fs-${id}"></span><span class="fa">▾</span></summary>${body}</details>`;
+document.addEventListener("toggle",e=>{ const d=e.target; if(d.classList&&d.classList.contains("fold")) FOLD[d.id.slice(3)]=d.open; },true);
 function buildTrade(){
   main.innerHTML=`<div class="mk"><div class="mk-l"><div id="chips"></div>
   <div class="q"><div><span class="t" id="qn"></span><div class="row"><span id="qp" class="m"></span><span id="qc" class="m" style="font-size:12.5px"></span></div></div>
   </div><div class="tf">${TFS.map(([s,l])=>`<button data-tf="${s}">${l}</button>`).join("")}</div>
-  <div class="chw"><canvas id="chart"></canvas><button id="zlive" style="display:none">↻ Live</button><div id="ctools"><button id="ldraw" title="Draw a line">✏️ Line</button><button id="lclear" title="Clear lines">🗑</button></div></div><div id="news"></div></div>
+  <div class="chw"><canvas id="chart"></canvas><button id="zlive" style="display:none">↻ Live</button><div id="ctools"><button id="ldraw" title="Draw a line">✏️<span> Line</span></button><button id="lclear" title="Clear lines">🗑</button></div></div><div id="news"></div></div>
   <div class="mk-r"><div class="pad"><div id="pos" class="card"></div>
   <div class="qty"><button data-q="-1">−</button><div class="mid"><b id="qv"></b><span id="qcst"></span></div><button data-q="1">+</button><button data-q="max">MAX</button></div>
     <div class="g4" id="acts" style="grid-template-columns:1fr 1fr 1.3fr"><button class="btn buy" data-a="buy">BUY</button><button class="btn short" data-a="short">SHORT</button><button class="btn ghost" data-a="close">CLOSE</button></div>
   <div id="tipw"></div>
   <div id="momw"><h3>Mom's practice round</h3><div id="momc" class="card"></div></div>
-  <h3>Hustle</h3><div id="job" class="card"></div>
-  <h3>Taxes</h3><div id="taxc" class="card"></div>
-  <h3>Index fund · TTI</h3><div id="fundc" class="card"></div></div></div></div>`;
+  <div class="sec2"><h3>Your hustle</h3><div id="job" class="card"></div>
+  ${fold("tax","🧾 Taxes",'<div id="taxc" class="card"></div>')}
+  ${fold("fund","🏦 Index fund",'<div id="fundc" class="card"></div>')}</div></div></div></div>`;
   chips(); upd(); fundCard(); taxCard(); tbarUpd(); }
 function chips(){ const c=$("chips"); if(!c) return; const sl=c.scrollLeft;
   c.innerHTML=STOCKS.filter(d=>!d.gone).sort((a,b)=>a.un-b.un).map(d=>{ if(!unlocked(d)) return `<button class="chip lock" data-lk="${d.un}"><b>${d.s}</b><small>🔒${money(d.un)}</small></button>`;
@@ -989,10 +1011,11 @@ function upd(){
   if(p.l){ const b=bid(sym), pl=p.l*(b-p.lc); h+=`<div class="row"><div class="g t">🟢 <b style="color:var(--text)">${p.l} sh</b> bought at ${px(p.lc)} · worth ${money(p.l*sp(sym))}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((b/p.lc-1)*100).toFixed(2)}%)</b></div>`+ordBtns("l"); }
   if(p.s){ const a=ask(sym), pl=Math.max(p.s*(p.se-a),-p.s*p.se); h+=`<div class="row"><div class="g t">🟣 <b style="color:var(--text)">${p.s} sh</b> shorted at ${px(p.se)} · margin call ${px(2*p.se)}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((1-a/p.se)*100).toFixed(2)}%)</b></div>`+ordBtns("s"); }
   if(h&&!P(sym).bot&&["rit","openb","pscalp","pflush","ppump","pswing"].some(aOn)) h+=`<div class="t" style="margin-top:6px">🤖 Your bots sit out while you have a trade open.</div>`; else if(h&&P(sym).bot) h+=`<div class="t" style="margin-top:6px">🤖 A bot opened this trade and will close it.</div>`;
-  $("pos").innerHTML=h||`<div class="t">No position in ${sym}. Small orders fill at the chart price; big ones move it a little.</div>`;
+  if(PHONE()&&(p.l||p.s)) h=ordBtns(p.l?"l":"s")+(P(sym).bot?`<div class="t" style="margin-top:4px">🤖 A bot opened this trade and will close it.</div>`:["rit","openb","pscalp","pflush","ppump","pswing"].some(aOn)?`<div class="t" style="margin-top:4px">🤖 Your bots sit out while you have a trade open.</div>`:"");
+  $("pos").innerHTML=h||(PHONE()?"":`<div class="t">No position in ${sym}. Small orders fill at the chart price; big ones move it a little.</div>`); $("pos").style.display=h||!PHONE()?"":"none";
   const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+" + "+money(S.qty*a*SALES_TAX)+" tax"+(sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
   const q=s=>main.querySelector(s);
-  const open=p.l>0||p.s>0; q("[data-a=buy]").disabled=open||inDebt()||S.qty*fillBuy(sym,S.qty)*(1+SALES_TAX)>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||S.qty*fillSell(sym,S.qty)*(1+SALES_TAX)>S.cash+1e-9;
+  const open=p.l>0||p.s>0; { const qr=q(".qty"); if(qr) qr.style.display=PHONE()&&open?"none":""; } q("[data-a=buy]").disabled=open||inDebt()||S.qty*fillBuy(sym,S.qty)*(1+SALES_TAX)>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||S.qty*fillSell(sym,S.qty)*(1+SALES_TAX)>S.cash+1e-9;
   const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; cb.className="btn "+(open?(cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?`CLOSE<small>${sg(cpl)}</small>`:"CLOSE";
   preCard(open); jobCard(); momCard(); tipCard(); compCard(); draw();
   if(NOW%5===0){ fundCard(); taxCard(); } }
@@ -1025,6 +1048,7 @@ function newsCard(){ const el=$("newsc"); if(!el) return; const g=regimeAt(Math.
     const fx=Object.entries(e.sc.fx).filter(([k])=>k!=="*"&&BYSYM[k]&&!BYSYM[k].gone).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,4).map(([k,w])=>{ const up=w*e.sc.dir>0; return `<span class="m ${up?"up":"dn"}" style="font-size:11.5px">${up?"▲":"▼"}${k}</span>`; }).join(" ");
     return `<div class="li" style="display:block"><div style="font-size:13px">${x.t.replace("BREAKING: ","")}</div><div class="t">${dur(NOW-x.at)} ago${live?` · <b style="color:var(--gold)">${e.sc.k==="f"?"moving now":"still unfolding"}</b>`:e.sc.k==="s"&&NOW-e.t0<e.T?" · unfolding over days":""} · ${fx}</div></div>`; }).join(""):`<div class="t" style="margin-top:4px">No big stories in the last 2 days. When one breaks, you'll get an alert.</div>`); }
 function fundCard(){ const el=$("fundc"); if(!el) return; const v=fundVal(), g=v-S.fbasis, ip=price(II,NOW), w=(ip/price(II,NOW-86400)-1)*100;
+  { const fs=$("fs-fund"); if(fs) fs.innerHTML=`<b>${money(v)}</b> · <span class="${w>=0?"up":"dn"}">${w>=0?"+":""}${w.toFixed(1)}% today</span>`; }
   el.innerHTML=`<div class="row"><div class="g"><div class="b m">${money(v)} <span class="m ${g>=0?"up":"dn"}" style="font-size:12px">${S.fu>0?sg(g)+" all-time":""}</span></div><div class="t">Tracks the whole market. Averages about +11% a week, with dips. Survives going broke. Index ${w>=0?"+":""}${w.toFixed(2)}% today</div></div></div>
   <canvas class="sp" id="spark"></canvas>
   <div class="row"><input id="famt" class="inp g" inputmode="decimal" placeholder="Amount $"><button class="btn buy sm" data-x="dep">Deposit</button><button class="btn ghost sm" data-x="wd">Withdraw</button></div>`;
@@ -1049,14 +1073,16 @@ function draw(){
   { const o=ORD(sym); if(p.l&&o.lsl) ln.push([o.lsl,"#ff5a66","STOP "+px(o.lsl),"lsl"]); if(p.l&&o.ltp) ln.push([o.ltp,"#22d3ee","TARGET "+px(o.ltp),"ltp"]); if(p.s&&o.ssl) ln.push([o.ssl,"#ff5a66","STOP "+px(o.ssl),"ssl"]); if(p.s&&o.stp) ln.push([o.stp,"#22d3ee","TARGET "+px(o.stp),"stp"]); }
   if(S.paper&&S.paper.sym===sym){ const e=S.paper.dir==="L"?S.paper.en/(1-hs):S.paper.en/(1+hs); ln.push([e,"#f5b301","PRACTICE "+px(e)]); }
   if(!ZOFF) ln.forEach(l=>{lo=Math.min(lo,l[0]);hi=Math.max(hi,l[0]);}); const pd=(hi-lo)*.1||hi*.002; lo=Math.max(0,lo-pd); hi+=pd;
+  if(YZ!==1){ const mid=(lo+hi)/2, cn=ZOFF?mid:mid+(sp(sym)-mid)*Math.min(1,Math.max(0,YZ-1)), half=(hi-lo)/2/YZ; lo=Math.max(0,cn-half); hi=cn+half; }
   if(DRAG){ lo=DRAG.lo; hi=DRAG.hi; }
-  const Y=v=>top+(hi-v)/(hi-lo)*(bot-top), X=i=>i*cw+cw/2, now=sp(sym);
-  MAP={lo,hi,top,bot,pw,first,cw,tf}; ORDL=ln.filter(l=>l[3]).map(l=>({k:l[3],y:Y(l[0])})); cv.style.touchAction=(p.l||p.s)?"none":"pan-y";
+  const ph=PHONE(), Y=v=>top+(hi-v)/(hi-lo)*(bot-top), X=i=>i*cw+cw/2, now=sp(sym);
+  MAP={lo,hi,top,bot,pw,first,cw,tf}; ORDL=ln.filter(l=>l[3]).map(l=>({k:l[3],y:Y(l[0])})); cv.style.touchAction=(ph||p.l||p.s)?"none":"pan-y"; // phones: the chart owns its gestures (pinch both ways); a one-finger vertical drag still scrolls the page
   c.font="10px JetBrains Mono"; c.textBaseline="middle"; c.textAlign="left";
   { const want=Math.max(5,Math.min(12,Math.floor((bot-top)/26))), raw=(hi-lo)/want, mg=Math.pow(10,Math.floor(Math.log10(raw))), st=[1,2,2.5,5,10].map(m=>m*mg).find(m=>m>=raw*.98)||10*mg;
     for(let v=Math.ceil(lo/st)*st;v<=hi;v+=st){ const y=Y(v); c.fillStyle=TH().grid; c.fillRect(0,y,pw,1); c.fillStyle=TH().lab; c.fillText(px(v).slice(1),pw+5,y); } }
-  if(p.l){ const y1=Y(beL),y2=Y(now); c.fillStyle=now>=beL?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
-  if(p.s){ const y1=Y(beS),y2=Y(now); c.fillStyle=now<=beS?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
+  const cl=y=>Math.max(0,Math.min(H-vh-4,y));
+  if(p.l){ const y1=cl(Y(beL)),y2=cl(Y(now)); c.fillStyle=now>=beL?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
+  if(p.s){ const y1=cl(Y(beS)),y2=cl(Y(now)); c.fillStyle=now<=beS?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
   ZCW=cw; drawCandles(c,data,X,Y,H,vh,vm);
   // dotted 1-hour high / low (live view, short timeframes)
   if(!ZOFF&&tf<=300){ const [h1,l1]=hourHL(d.i); for(const [v,lab] of [[h1,"1h high"],[l1,"1h low"]]){ if(v<lo||v>hi) continue; const y=Y(v);
@@ -1080,16 +1106,21 @@ function draw(){
     c.fillStyle="rgba(5,8,11,.9)"; c.font="bold 9px Inter,sans-serif"; const nm=f[3].split(" ")[0].slice(0,8), tw=c.measureText(nm).width+6; const xx=Math.min(Math.max(1,x-tw/2),pw-tw);
     c.fillRect(xx,yb-22,tw,12); c.fillStyle=col; c.textAlign="left"; c.fillText(nm,xx+3,yb-16); c.fillStyle=col+"55"; c.fillRect(x-.5,yb,1,vh); });
   c.setLineDash([5,4]); ln.forEach(l=>{ c.strokeStyle=l[1]; c.beginPath(); c.moveTo(0,Y(l[0])); c.lineTo(pw,Y(l[0])); c.stroke(); }); c.setLineDash([]);
-  ln.forEach(l=>{ const y=Y(l[0]); c.font="bold 10px JetBrains Mono"; const w=c.measureText(l[2]).width+8; c.fillStyle=l[1]; c.fillRect(3,y-8,w,16); c.fillStyle="#05080b"; c.fillText(l[2],7,y);
+  ln.forEach(l=>{ const y=Y(l[0]); c.font="bold 10px JetBrains Mono";
+    if(ph){ const nm=l[2].replace(/^YOUR /,"").split(" ")[0]; c.font="bold 9px JetBrains Mono"; c.fillStyle=l[1]; c.textAlign="right"; c.fillText(nm,pw-(l[3]?26:4),y-8); c.textAlign="left"; c.font="bold 10px JetBrains Mono";
+      if(!l[3]){ c.fillStyle=l[1]; c.fillRect(pw+1,y-9,aw-2,18); c.fillStyle="#05080b"; c.fillText(px(l[0]).slice(1),pw+4,y); } }
+    else { const w=c.measureText(l[2]).width+8; c.fillStyle=l[1]; c.fillRect(3,y-8,w,16); c.fillStyle="#05080b"; c.fillText(l[2],7,y); }
     if(l[3]){ c.fillStyle=l[1]; c.beginPath(); c.roundRect?c.roundRect(pw-22,y-11,22+aw-4,22,6):c.rect(pw-22,y-11,22+aw-4,22); c.fill(); c.fillStyle="#05080b"; for(const dy of [-4,0,4]) c.fillRect(pw-16,y+dy-.75,10,1.5); c.fillText(px(l[0]).slice(1),pw+2,y); } });
-  (S.mk[sym]||[]).forEach(m=>{ const i=Math.floor((m.t-first)/tf); if(i<0||i>=data.length) return; const x=X(i), y=Y(m.p), dn=m.k==="B"||m.k==="C";
+  const mks=S.mk[sym]||[], newest=mks.reduce((a,m)=>!a||m.t>a.t?m:a,null);
+  mks.forEach(m=>{ const i=Math.floor((m.t-first)/tf); if(i<0||i>=data.length) return; const x=X(i), y=Y(m.p), dn=m.k==="B"||m.k==="C";
     const col=m.k==="B"?"#16c784":m.k==="X"?"#a855f7":m.pl>=0?"#16c784":"#ea3943"; c.fillStyle=col; c.beginPath();
     if(dn){c.moveTo(x,y+3);c.lineTo(x-6,y+13);c.lineTo(x+6,y+13);}else{c.moveTo(x,y-3);c.lineTo(x-6,y-13);c.lineTo(x+6,y-13);} c.fill();
+    if(ph&&m!==newest) return;
     const tx=m.k==="B"?"BUY":m.k==="X"?"SHORT":(m.k==="S"?"SOLD ":"COVER ")+sg(m.pl); c.font="bold 9.5px JetBrains Mono"; const tw=c.measureText(tx).width+6, ty=dn?y+22:y-22, xx=Math.min(Math.max(2,x-tw/2),pw-tw);
     c.fillStyle="rgba(5,8,11,.85)"; c.fillRect(xx,ty-7,tw,14); c.fillStyle=col; c.fillText(tx,xx+3,ty); });
   if(loading){ c.fillStyle=TH().lab; c.font="11px JetBrains Mono"; c.fillText("Loading older candles…",6,top+6); if(!DRAW_T) DRAW_T=setTimeout(()=>{ DRAW_T=0; if(tab==="trade") draw(); },60); }
   c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; c.fillText(spanLbl(tf,data.length),6,bot+4);
-  { const zl=$("zlive"); if(zl) zl.style.display=(ZOFF||Math.abs(ZC-7)>.01)?"":"none"; }
+  { const zl=$("zlive"); if(zl) zl.style.display=(ZOFF||Math.abs(ZC-7)>.01||YZ!==1)?"":"none"; const lc=$("lclear"); if(lc) lc.style.display=myLines(sym).length?"":"none"; }
   if(ZOFF){ c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; return; }
   const y=Y(now), lk=data[data.length-1], col=lk[3]>=lk[0]?CPAL().up:CPAL().dn; c.fillStyle=col; c.fillRect(0,y,pw,1); c.fillRect(pw+1,y-9,aw-2,18);
   c.fillStyle="#04110b"; c.font="bold 10px JetBrains Mono"; c.fillText(px(now).slice(1),pw+4,y);
@@ -1097,7 +1128,7 @@ function draw(){
   let pl=null, lab="P/L ", gold=false;
   if(p.l||p.s){ pl=(p.l?p.l*(bid(sym)-p.lc):0)+(p.s?Math.max(p.s*(p.se-ask(sym)),-p.s*p.se):0); }
   else if(S.paper&&S.paper.sym===sym){ const c0=S.paper; pl=(c0.dir==="L"?bid(sym)-c0.en:c0.en-ask(sym))*PQ; lab="PRACTICE "; gold=true; }
-  if(pl!=null){ const tx=lab+sg(pl); c.font="bold 12px JetBrains Mono"; const tw=c.measureText(tx).width+12, bx=pw-tw-3;
+  if(pl!=null&&!ph){ const tx=lab+sg(pl); c.font="bold 12px JetBrains Mono"; const tw=c.measureText(tx).width+12, bx=pw-tw-3;
     c.fillStyle=pl>=0?"#16c784":"#ea3943"; c.fillRect(bx,y-11,tw,22); if(gold){ c.strokeStyle="#f5b301"; c.lineWidth=2; c.strokeRect(bx,y-11,tw,22); }
     c.fillStyle=pl>=0?"#03250f":"#fff"; c.fillText(tx,bx+6,y); } }
 
@@ -1286,26 +1317,33 @@ document.addEventListener("visibilitychange",()=>{ if(document.hidden){save(); i
 // ---------- set stop loss / take profit right on the chart ----------
 let MAP=null, ORDL=[], DRAG=null, PDOWN=null;
 // chart zoom/pan: ZC = candle width in px, ZOFF = how many candles back from live the right edge is
-let ZC=7, ZOFF=0; const ZMIN=2.5, ZMAX=30, ZOFFMAX=3000, PTS=new Map(); let PINCH=null, PAN=null;
+let ZC=7, ZOFF=0, YZ=1; const YZMIN=.3, YZMAX=8; // YZ: vertical zoom, >1 = taller candles
+const ZMIN=2.5, ZMAX=30, ZOFFMAX=3000, PTS=new Map(); let PINCH=null, PAN=null;
 const zoomAt=(x,f)=>{ if(!MAP) return; const from=(MAP.pw-x)/ZC+ZOFF; ZC=Math.min(ZMAX,Math.max(ZMIN,ZC*f)); ZOFF=Math.max(0,Math.min(ZOFFMAX,Math.round(from-(MAP.pw-x)/ZC))); draw(); };
-const zoomReset=()=>{ ZC=7; ZOFF=0; draw(); };
+const zoomReset=()=>{ ZC=7; ZOFF=0; YZ=1; draw(); };
+const yZoom=f=>{ YZ=Math.min(YZMAX,Math.max(YZMIN,YZ*f)); draw(); };
 const yToPrice=y=>MAP.hi-(y-MAP.top)/(MAP.bot-MAP.top)*(MAP.hi-MAP.lo);
 function okSide(key,v){ const now=sp(S.sel), up=(key==="ltp"||key==="ssl"); return up?v>now:v<now; }
 main.addEventListener("pointerdown",e=>{ if(e.target.id!=="chart"||!MAP) return; const r=e.target.getBoundingClientRect(), y=e.clientY-r.top, x=e.clientX-r.left;
   PTS.set(e.pointerId,[e.clientX,e.clientY]); try{ e.target.setPointerCapture(e.pointerId); }catch(_){}
-  if(PTS.size===2){ const [a,b]=[...PTS.values()]; PINCH={d:Math.hypot(a[0]-b[0],a[1]-b[1])||1,z:ZC,x:(a[0]+b[0])/2-r.left}; DRAG=null; PAN=null; if(PDOWN) PDOWN.moved=true; return; }
-  PAN={x:e.clientX,off:ZOFF,on:false};
+  if(PTS.size===2){ const [a,b]=[...PTS.values()]; PINCH={dx:Math.abs(a[0]-b[0]),dy:Math.abs(a[1]-b[1]),z:ZC,yz:YZ,x:(a[0]+b[0])/2-r.left}; DRAG=null; PAN=null; YDRAG=null; VSCR=null; if(PDOWN) PDOWN.moved=true; return; }
+  PAN={x:e.clientX,off:ZOFF,on:false}; VSCR={y:e.clientY,st:main.scrollTop,on:false};
   PDOWN={y,x,moved:false}; const hit=x>MAP.pw-24?ORDL.find(l=>Math.abs(l.y-y)<16):null;
-  if(hit){ DRAG={k:hit.k,lo:MAP.lo,hi:MAP.hi}; e.target.setPointerCapture(e.pointerId); } });
+  if(hit){ DRAG={k:hit.k,lo:MAP.lo,hi:MAP.hi}; e.target.setPointerCapture(e.pointerId); }
+  else if(x>MAP.pw){ YDRAG={y:e.clientY,yz:YZ}; PAN=null; VSCR=null; } });
 main.addEventListener("pointermove",e=>{ if(e.target.id!=="chart") return; if(PTS.has(e.pointerId)) PTS.set(e.pointerId,[e.clientX,e.clientY]);
-  if(PINCH&&PTS.size>=2){ const [a,b]=[...PTS.values()], d=Math.hypot(a[0]-b[0],a[1]-b[1])||1; const f=PINCH.z*d/PINCH.d/ZC; if(Math.abs(f-1)>.01) zoomAt(PINCH.x,f); return; }
+  if(PINCH&&PTS.size>=2){ const [a,b]=[...PTS.values()], fx=(Math.abs(a[0]-b[0])+30)/(PINCH.dx+30), fy=(Math.abs(a[1]-b[1])+30)/(PINCH.dy+30);
+    const nz=Math.min(YZMAX,Math.max(YZMIN,PINCH.yz*fy)); if(Math.abs(nz/YZ-1)>.01) YZ=nz;
+    const f=PINCH.z*fx/ZC; if(Math.abs(f-1)>.01) zoomAt(PINCH.x,f); else draw(); return; }
+  if(YDRAG){ YZ=Math.min(YZMAX,Math.max(YZMIN,YDRAG.yz*Math.exp((YDRAG.y-e.clientY)/140))); draw(); return; }
   if(!PDOWN) return; const r=e.target.getBoundingClientRect(), y=e.clientY-r.top, x=e.clientX-r.left;
   if(Math.abs(y-PDOWN.y)>5||Math.abs(x-PDOWN.x)>5) PDOWN.moved=true;
+  if(VSCR&&!DRAG&&!(PAN&&PAN.on)&&e.target.style.touchAction==="none"){ const dy=e.clientY-VSCR.y; if(!VSCR.on&&Math.abs(dy)>8&&Math.abs(dy)>Math.abs(x-PDOWN.x)) VSCR.on=true; if(VSCR.on){ main.scrollTop=VSCR.st-dy; return; } }
   if(PAN&&!DRAG){ const dx=e.clientX-PAN.x; if(!PAN.on&&Math.abs(dx)>6&&Math.abs(dx)>Math.abs(y-PDOWN.y)) PAN.on=true;
     if(PAN.on){ const o=Math.max(0,Math.min(ZOFFMAX,Math.round(PAN.off+dx/ZC))); if(o!==ZOFF){ ZOFF=o; draw(); } return; } }
   if(DRAG){ const v=yToPrice(y); if(okSide(DRAG.k,v)){ ORD(S.sel)[DRAG.k]=v; draw(); } } });
-let PUPX=0;
-main.addEventListener("pointerup",e=>{ if(e.target.id==="chart"){ const r=e.target.getBoundingClientRect(); PUPX=e.clientX-r.left; } PTS.delete(e.pointerId); if(PTS.size<2) PINCH=null; const panned=PAN&&PAN.on; PAN=null; if(!PDOWN) return; const was=DRAG, tap=!PDOWN.moved&&!panned, y=PDOWN.y; PDOWN=null; DRAG=null;
+let PUPX=0, YDRAG=null, VSCR=null;
+main.addEventListener("pointerup",e=>{ if(e.target.id==="chart"){ const r=e.target.getBoundingClientRect(); PUPX=e.clientX-r.left; } PTS.delete(e.pointerId); if(PTS.size<2) PINCH=null; if(YDRAG){ YDRAG=null; PDOWN=null; PAN=null; return; } const panned=(PAN&&PAN.on)||(VSCR&&VSCR.on); PAN=null; VSCR=null; if(!PDOWN) return; const was=DRAG, tap=!PDOWN.moved&&!panned, y=PDOWN.y; PDOWN=null; DRAG=null;
   if(was){ const v=ORD(S.sel)[was.k]; toast(`${was.k.endsWith("sl")?"Stop loss":"Take profit"} moved to ${px(v)}`); build(true); return; }
   if(!tap||e.target.id!=="chart"||!MAP) return;
   if(LINE){ const x=PUPX, cw=MAP.cw, tf=MAP.tf; const pt=[MAP.first+(x-cw/2)/cw*tf,yToPrice(y)];
@@ -1317,8 +1355,9 @@ main.addEventListener("pointerup",e=>{ if(e.target.id==="chart"){ const r=e.targ
   const k=ARM, lab=k.endsWith("sl")?"Stop loss":"Take profit";
   if(!okSide(k,v)) return toast(`A ${lab.toLowerCase()} on a ${k[0]==="l"?"buy":"short"} has to be ${(k==="ltp"||k==="ssl")?"above":"below"} ${px(now)}`);
   ORD(S.sel)[k]=v; ARM=null; $("pos").dataset.k=""; toast(`${lab} set at ${px(v)}. Drag its handle on the right to move it.`); build(true); });
-main.addEventListener("pointercancel",e=>{ PTS.delete(e.pointerId); PINCH=null; PAN=null; PDOWN=null; DRAG=null; });
+main.addEventListener("pointercancel",e=>{ PTS.delete(e.pointerId); PINCH=null; PAN=null; PDOWN=null; DRAG=null; YDRAG=null; VSCR=null; });
 main.addEventListener("wheel",e=>{ if(e.target.id!=="chart"||!MAP) return; e.preventDefault(); const r=e.target.getBoundingClientRect();
+  if(e.clientX-r.left>MAP.pw||e.altKey){ yZoom(e.deltaY<0?1.12:1/1.12); return; }
   if(Math.abs(e.deltaX)>Math.abs(e.deltaY)||e.shiftKey){ const d=e.deltaX||e.deltaY; ZOFF=Math.max(0,Math.min(ZOFFMAX,ZOFF+Math.round(d/ZC/2*-1))); draw(); }
   else zoomAt(e.clientX-r.left,e.deltaY<0?1.12:1/1.12); },{passive:false});
 main.addEventListener("dblclick",e=>{ if(e.target.id==="chart") zoomReset(); });
@@ -1580,7 +1619,7 @@ function storyIntro(k){ k=k||0; let el=$("intro"); if(!el){ el=document.createEl
     if(v==="skip"||v==="done"){ el.remove(); S.introSeen=1; save(); if(!S.prof) profPicker(true); else if(!S.tut) tutorial(); } else storyIntro(+v); }; }
 // ---------- quick tutorial ----------
 const TUT=[
- ["#chart","The market","Every candle is 10 seconds of a stock's life. Green went up, red went down. The bars underneath are <b>volume</b> (more on those next). Pinch or scroll to zoom, drag to look back in time.","trade"],
+ ["#chart","The market","Every candle is 10 seconds of a stock's life. Green went up, red went down. The bars underneath are <b>volume</b> (more on those next). Pinch sideways to zoom in on time, pinch up and down (or drag the prices on the right) to make the candles taller. Drag sideways to look back in time.","trade"],
  ["#chart","Volume bars","Each bar under the chart lines up with the candle above it. Its height is <b>how many shares traded</b> in those 10 seconds. <b>Tall bar</b> = lots of people trading. <b>Short bar</b> = barely anyone. Judge a bar against the ones around it, not on its own: \"normal\" is a typical bar from the last hour.","trade","vol"],
  ["#chart","What volume tells you","A candle shows <b>where</b> the price went. Volume shows <b>how many people pushed it there</b>.<br>• Big move + tall bars = a real move. It often keeps going.<br>• Big move + normal bars = a weak move. It can fizzle or turn around.<br>• One giant bar out of nowhere = something just happened. Check the news.","trade","vol"],
  ["#chart","Volume warns you first","Big moves often show up in the volume <b>before</b> the price. When the bars suddenly get much quieter or much busier than normal, something is usually building. Never trust a price move without checking the volume under it.<br>Which volume patterns come before which moves, and exactly when to trade them, is what the <b>lessons in the Store</b> teach.","trade","vol"],
@@ -1603,6 +1642,7 @@ function tutorial(k){ k=k||0; let el=$("tut"); if(!el){ el=document.createElemen
   if(k>=TUT.length){ el.remove(); S.tut=1; save(); TUTK=-1; clearInterval(tutIv); tutLock(false); return; }
   const [sel,title,txt,t]=TUT[k]; if(tab!==t) setTab(t);
   if(sel&&!document.querySelector(sel)) return tutorial(k+1);
+  { const dt=sel&&document.querySelector(sel).closest("details"); if(dt&&!dt.open) dt.open=true; }
   TUTK=k; tutLock(true);
   el.innerHTML=`<div class="ring"></div><div class="tip"><div class="t">${k+1} of ${TUT.length}</div><b>${title}</b><p>${txt}</p>
      <div class="row"><button class="t" data-tx="end" style="padding:6px">Skip</button><span class="g"></span><button class="nextb" data-tx="${k+1}">${k===TUT.length-1?"Let's go":"Next"} <span style="font-size:18px">→</span></button></div></div>`;
@@ -1867,6 +1907,9 @@ function lineAlerts(){ const sym=S.sel, ls=myLines(sym); if(!ls.length) return; 
     ln.side=side; }); }
 function drawCandles(c,data,X,Y,H,vh,vm){ const cp=CPAL(), st=cosGet('candle').id, bg=TH().bg, bw=Math.max(1,ZCW*.72), hb=bw/2;
   data.forEach((k,i)=>{ if(k[0]===null) return; const h=vm?k[4]/vm*vh:0; c.fillStyle=(k[3]>=k[0]?cp.up:cp.dn)+'4d'; c.fillRect(X(i)-hb,H-h,bw,h); });
+  // candles stay above the volume bars, even when zoomed in tall
+  c.save(); c.beginPath(); c.rect(0,0,1e5,H-vh-4); c.clip(); drawBodies(c,data,X,Y,st,cp,bw,hb); c.restore(); }
+function drawBodies(c,data,X,Y,st,cp,bw,hb){ const bg=TH().bg;
   if(st==='line'){ let s=false,f=null,l=null; c.beginPath(); data.forEach((k,i)=>{ if(k[0]===null) return; if(f===null) f=k[3]; l=k[3]; const y=Y(k[3]); if(s) c.lineTo(X(i),y); else { c.moveTo(X(i),y); s=true; } });
     c.strokeStyle=l>=f?cp.up:cp.dn; c.lineWidth=1.8; c.stroke(); c.lineWidth=1; return; }
   data.forEach((k,i)=>{ if(k[0]===null) return; const up=k[3]>=k[0], col=up?cp.up:cp.dn, x=X(i); c.fillStyle=col;
@@ -1956,6 +1999,7 @@ delistCheck(); if(S.prof) lunchMoney();
 if(!S.mt&&S.prof){ S.mt={}; TEXTS.forEach(([id,c])=>{ if(c()) S.mt[id]=1; }); }
 save(); build(); if($("modal").classList.contains("hide")) intro();
 setInterval(loop,250); setInterval(()=>{ if(Date.now()-lastTap<120000) csave(); },30000); setTimeout(cinit,0); setInterval(installHint,30000);
+document.documentElement.classList.toggle("phone",PHONE()); addEventListener("resize",()=>document.documentElement.classList.toggle("phone",PHONE()));
 if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
 { const h=location.hash.slice(1); if(TABS.includes(h)&&h!==tab){ history.replaceState(null,"",location.pathname+location.search); setTimeout(()=>{ if(!$("tut")) setTab(h); },600); } }
 // auto-update: when the app comes back to the screen (or every 5 min), check if index.html changed on the server; if so, save and reload

@@ -844,7 +844,11 @@ const P=sym=>S.pos[sym]||(S.pos[sym]={l:0,lc:0,s:0,se:0});
 function posVal(){ let v=0; if(S.vb) for(const id in S.vb) v+=vbVal(S.vb[id]); for(const k in S.pos){ const p=S.pos[k]; if(p.l) v+=p.l*bid(k); if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-ask(k))); } return v; }
 const fundVal=()=>S.fu*price(II,NOW);
 const liquid=()=>S.cash+posVal(), netWorth=()=>liquid()+fundVal();
-const inDebt=()=>S.cash<-.005, unlocked=d=>!d.gone&&S.bestNW>=d.un;
+// Net worth needed to unlock each stock (raised ~3× in v7.6). d.un (the old number) still sets liquidity and lesson prices.
+// Stocks you had already unlocked under the old numbers stay unlocked (S.unl).
+const NEED={BRGR:75,BREW:150,FLYR:1000,GAME:2500,MEDX:5000,OILX:12000,EVCO:20000,ORBT:35000,AIQ:50000,CHIP:75000};
+STOCKS.forEach(d=>{ d.need=NEED[d.s]!=null?NEED[d.s]:d.un; });
+const inDebt=()=>S.cash<-.005, unlocked=d=>!d.gone&&(S.bestNW>=d.need||!!(S.unl&&S.unl[d.s]));
 const prof=()=>S.prof?PB[S.prof]:null;
 function pst(id){ id=id||S.prof; return S.profs[id]||(S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:0,up:{}}); }
 function tier(id){ const s=pst(id); for(let t=s.own;t>=0;t--) if(!s.br[t]) return t; return -1; }
@@ -1120,7 +1124,7 @@ function buildTrade(){
   ${fold("fund","🏦 Index fund",'<div id="fundc" class="card"></div>')}</div></div></div></div>`;
   chips(); upd(); fundCard(); taxCard(); tbarUpd(); }
 function chips(){ const c=$("chips"); if(!c) return; const sl=c.scrollLeft;
-  c.innerHTML=STOCKS.filter(d=>!d.gone).sort((a,b)=>a.un-b.un).map(d=>{ if(!unlocked(d)) return `<button class="chip lock" data-lk="${d.un}"><b>${d.s}</b><small>🔒${money(d.un)}</small></button>`;
+  c.innerHTML=STOCKS.filter(d=>!d.gone).sort((a,b)=>a.un-b.un).map(d=>{ if(!unlocked(d)) return `<button class="chip lock" data-lk="${d.need}"><b>${d.s}</b><small>🔒${money(d.need)}</small></button>`;
     const p=S.pos[d.s], dot=p&&p.l?'<span class="dot" style="background:#16c784"></span>':p&&p.s?'<span class="dot" style="background:#ea3943"></span>':"";
     return `<button class="chip ${S.sel===d.s?"on":""}" data-sym="${d.s}"><b>${d.s}${dot}</b><small id="c-${d.s}"></small></button>`; }).join(""); c.scrollLeft=sl; }
 function chg(sym){ const i=BYSYM[sym].i; return (sp(sym)/price(i,NOW-3600)-1)*100; }
@@ -1407,6 +1411,7 @@ function lunchMoney(){ if(S.lunch) return; S.lunch=1; S.cash+=2; resetPeak&&rese
 function delistCheck(){ jobMig(); S.pre=null; if(S.know&&S.know.vol&&!S.volRef){ S.volRef=1; delete S.know.vol; S.cash+=10; setTimeout(()=>toast("📘 'Read the volume bars' is now the free tip at the end of the tutorial, so here's your $10 back","good"),2500); } STOCKS.forEach(d=>{ if(!d.gone) return; const p=S.pos[d.s], pr=price(d.i,NOW);
     if(p&&(p.l||p.s)){ let pl=0; if(p.l){ pl=p.l*(pr-p.lc); S.cash+=p.l*pr; } if(p.s){ pl=Math.max(p.s*(p.se-pr),-p.s*p.se); S.cash+=p.s*p.se+pl; } S.pos[d.s]={l:0,lc:0,s:0,se:0}; life(`📉 ${d.s} was delisted. Your trade closed at ${px(pr)} (${sg(pl)})`); }
     if(S.ord) delete S.ord[d.s]; const c=S.comp; if(c&&c.pos&&c.pos[d.s]){ const q=c.pos[d.s]; if(q.l) c.cash+=q.l*pr; if(q.s) c.cash+=q.s*q.se+Math.max(q.s*(q.se-pr),-q.s*q.se); delete c.pos[d.s]; } });
+  if(!S.unlMig){ S.unlMig=1; S.unl=S.unl||{}; STOCKS.forEach(d=>{ if(!d.gone&&d.un>0&&S.bestNW>=d.un) S.unl[d.s]=1; }); } // keep stocks unlocked under the old prices
   // refund lessons bought for stocks delisted in v7.6, once per batch
   for(const [flag,syms] of [["delRef76",["RAMX","ROBO","SKYD"]],["delRef76b",["SHOP","SOLR"]],["delRef76c",["BANK"]]]){ if(S[flag]) continue; S[flag]=1; let back=0;
     SK.forEach(k=>{ if(syms.includes(k.sym)&&S.know[k.id]){ back+=k.c; delete S.know[k.id]; } });
@@ -2437,7 +2442,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="85";
+const APPV="86";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

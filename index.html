@@ -69,6 +69,22 @@ nav button.on{color:var(--text)} nav button.on span{opacity:1;color:var(--gold)}
 .btn.taxw{background:#8a5a00;color:#fff} .taxw-t{font-size:11.5px;color:#ffb347;margin-top:3px} .taxw-t b{color:#ff6b74}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.icob{width:42px;height:42px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.utile2 .icob{width:36px;height:36px;border-radius:11px}
+.tiers{display:flex;gap:3px;margin-top:6px} .tiers i{flex:1;height:4px;border-radius:9px;background:var(--c2)}
+.spot2{border:1.5px solid #3b82f6!important;background:linear-gradient(180deg,#0f1d33,var(--card) 75%)!important}
+.spot2 .sl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#60a5fa;font-weight:700}
+.kvs2{display:grid;grid-template-columns:auto 1fr;gap:7px 12px;font-size:15px} .kvs2>span:nth-child(odd){color:var(--mut)} .kvs2>span:nth-child(even){text-align:right}
+.kvs2 .was{color:var(--mut)} .kvs2 .now,.utile2 .nxt b{color:#22c55e}
+.buybig{width:100%;margin-top:14px;padding:15px 0;font-size:17px;border-radius:12px;background:#3b82f6}
+.buyul{width:100%;margin-top:8px;background:#3b82f6;padding:9px 0}
+.utile2{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:0;padding:11px} .utile2.max{border-color:#22c55e55}
+.utile2 .t{font-size:11.5px} .nxt{margin-top:2px}
+.pips{display:flex;gap:4px;margin:6px 0 5px} .pips i{width:16px;height:5px;border-radius:9px;background:var(--c2)}
+.maxb{margin-top:8px;width:100%;text-align:center;font-weight:800;font-size:12px;letter-spacing:.1em;color:#22c55e;background:#22c55e1a;border-radius:9px;padding:9px 0}
+.buybig:not(:disabled),.buyul:not(:disabled){animation:canbuy 1.8s ease-in-out infinite}
+@keyframes canbuy{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,0)}50%{box-shadow:0 0 0 4px rgba(59,130,246,.28)}}
+.pop{animation:popin .55s cubic-bezier(.2,1.6,.4,1)} @keyframes popin{0%{transform:scale(.85)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
 .spot{border-color:var(--gold)!important;background:linear-gradient(180deg,#1d1a10,var(--card) 70%)}
 .kvs{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px} .kvs>span:nth-child(odd){color:var(--mut)} .kvs>span:nth-child(even){text-align:right}
 .utile{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:0;padding:10px} .utile.own{opacity:.6}
@@ -864,9 +880,9 @@ const NEED={BRGR:75,BREW:250,FLYR:800,GAME:2250,MEDX:5500,OILX:12000,EVCO:22500,
 STOCKS.forEach(d=>{ d.need=NEED[d.s]!=null?NEED[d.s]:d.un; });
 const inDebt=()=>S.cash<-.005, unlocked=d=>!d.gone&&(S.bestNW>=d.need||!!(S.unl&&S.unl[d.s]));
 const prof=()=>S.prof?PB[S.prof]:null;
-function pst(id){ id=id||S.prof; return S.profs[id]||(S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:0,up:{}}); }
+function pst(id){ id=id||S.prof; return S.profs[id]||(S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:0,up:{},ul:{},ulMig:1}); }
 function tier(id){ const s=pst(id); for(let t=s.own;t>=0;t--) if(!s.br[t]) return t; return -1; }
-function eff(k,id){ let m=1; MS.forEach(x=>{ if(S.ms[x.id]&&x.e[k]) m*=x.e[k]; }); if(id) UPS.forEach(u=>{ if(pst(id).up[u.id]&&u[k]) m*=u[k]; }); return m; }
+function eff(k,id){ let m=1; MS.forEach(x=>{ if(S.ms[x.id]&&x.e[k]) m*=x.e[k]; }); if(id){ const s=pst(id); ulMig(s); UL.forEach(u=>{ const l=ulv(s,u.id); if(l&&u.k===k) m*=u.v[l-1]; }); } return m; }
 function payMult(id){ return (1+.015*Math.min(pst(id).rep,200))*eff("pay",id); }
 const supP=p=>p.price*eff("sup",p.id);
 const durMult=(id,t)=>GSPD[t]*eff("spd",id);
@@ -1031,7 +1047,7 @@ function finishJob(){ const jb=S.job, p=PB[jb.p], j=p.jobs[jb.k], s=pst(jb.p); S
   S.cash+=jb.pay; txInc(jb.pay); S.st.jobs++; S.st.jobPay+=jb.pay; s.rep++;
   if(aOn("inv")){ const a=jb.pay*aV("inv")/100; S.cash-=a; S.fu+=a/price(II,NOW); S.fbasis+=a; resetPeak(); }
   let msg=`${p.i} ${j.n}: +${money(jb.pay)}`;
-  if(Math.random()<GBRK[jb.t]*eff("brk",jb.p)){ if(s.up.insure){ msg+=" · gear broke, insurance fixed it"; } else { const fc=Math.max(3,GCOST[jb.t]*.25); S.st.breaks++; if(aOn("fix")&&S.cash>=fc){ S.cash-=fc; resetPeak(); msg+=` · gear broke, auto-repaired (-${money(fc)})`; } else { s.br[jb.t]=true; if(jb.t===0) s.momFix=NOW+3600; msg+=` · your ${p.gear[jb.t]} broke!`; } } }
+  if(Math.random()<GBRK[jb.t]*eff("brk",jb.p)){ if(ulv(s,"ins")>=1){ msg+=" · gear broke, insurance fixed it"; } else { const fc=Math.max(3,GCOST[jb.t]*.25); S.st.breaks++; if(aOn("fix")&&S.cash>=fc){ S.cash-=fc; resetPeak(); msg+=` · gear broke, auto-repaired (-${money(fc)})`; } else { s.br[jb.t]=true; if(jb.t===0) s.momFix=NOW+3600; msg+=` · your ${p.gear[jb.t]} broke!`; } } }
   life(msg); toast(msg,"good"); sfx('pay');
   if(aOn("book")&&S.prof===jb.p){ const b=bestJob(); if(b>=0) startJob(b,true); } }
 
@@ -1085,7 +1101,7 @@ function taxCard(){ const el=$("taxc"); if(!el) return; const tx=TX(), w=tx.w, b
 function broke(why){
   for(const k in S.pos) S.pos[k]={l:0,lc:0,s:0,se:0};
   S.cash=0; S.job=null; S.debtDue=0; S.liqPeak=0; S.st.broke++; AF().bk=1;
-  for(const id in S.profs){ const s=S.profs[id]; S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:s.rep,sk:s.sk||0,up:{}}; }
+  for(const id in S.profs){ const s=S.profs[id]; S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:s.rep,sk:s.sk||0,up:{},ul:{},ulMig:1}; }
   S.auto={}; S.ord={}; S.vb={};
   life("💀 Went broke: "+why); sfx('broke');
   const body=`<div class="mom">"${pick(["Your old room's still down there.","I'm not mad. I'm just… disappointed.","Come on home, kiddo. Again."])}"</div><p>${why}. Creditors took your cash, investments, gear, business upgrades and automations.</p><p>You keep your <b>index fund (${money(fundVal())})</b>, your <b>knowledge</b>, your <b>job skills</b>, your <b>reputation</b> and your <b>life milestones</b>.</p>`;
@@ -1287,7 +1303,51 @@ function draw(){
 // Buy buttons are drawn already greyed out when you can't afford them (they used to be drawn bright and greyed a
 // moment later, which flashed every second), and the tab isn't redrawn at all when nothing on it changed.
 const costDis=h=>h.replace(/<button([^>]*?)data-cost="([\d.e+]+)"/g,(m,a,c)=>S.cash<+c?`<button${a}disabled data-cost="${c}"`:m);
-function setMain(h){ h=costDis(h); if(main.dataset.h===h) return; main.dataset.h=h; main.innerHTML=h; }
+let POP=null; // which store card just got bought, so it can bounce once after the redraw
+function setMain(h){ h=costDis(h); if(main.dataset.h===h) return; main.dataset.h=h; main.innerHTML=h;
+  if(POP){ const el=POP==="gear"?main.querySelector(".card .icob"):main.querySelector(`[data-ul="${POP.slice(3)}"]`); POP=null; if(el){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); } } }
+// ---------- line-art icons (24×24 stroke paths) ----------
+const LI={
+ lawn:'<path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>',
+ dog:'<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/>',
+ car:'<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+ deliv:'<circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+ photo:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+ handy:'<path d="m15 12-8.5 8.5a2.12 2.12 0 0 1-3-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"/>',
+ paint:'<path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/><path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/><path d="M14.5 17.5 4.5 15"/>',
+ pool:'<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>',
+ phone:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
+ move:'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+ mkt:'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+ brand:'<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>',
+ upk:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+ crew:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+ sup:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+ ins:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+ corp:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>',
+ exp:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'};
+const PCOL={lawn:"#22c55e",dog:"#f59e0b",car:"#3b82f6",deliv:"#f97316",photo:"#a855f7",handy:"#eab308",paint:"#ec4899",pool:"#06b6d4",phone:"#6366f1",move:"#d97706"};
+const ICO=(k,col,sz)=>`<svg viewBox="0 0 24 24" width="${sz||22}" height="${sz||22}" fill="none" stroke="${col}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${LI[k]||""}</svg>`;
+const ICOB=(k,col,sz)=>`<span class="icob" style="background:${col}22;box-shadow:inset 0 0 0 1px ${col}55">${ICO(k,col,sz)}</span>`;
+// ---------- business upgrades: 8 lines, 4 levels each ----------
+// v = the line's effect at levels 1-4 (not stacked within a line), c = cost of each level
+const UL=[
+ {id:"mkt",ic:"mkt",col:"#3b82f6",k:"pay",n:["Flyers around town","Online listing","Regional ad campaign","National TV ads"],v:[1.15,1.35,1.7,2.2],c:[30,400,40000,6e6],old:["fly","list","ads"]},
+ {id:"brand",ic:"brand",col:"#f59e0b",k:"pay",n:["Business cards","5-star reviews","Uniforms & truck wrap","Celebrity endorsement"],v:[1.05,1.2,1.45,1.8],c:[75,1500,6000,15e6],old:["cards","phone","reviews","uni","celeb"]},
+ {id:"upk",ic:"upk",col:"#94a3b8",k:"brk",n:["Gear maintenance kit","Spare parts stock","Repair workshop","Maintenance team"],v:[.6,.45,.33,.22],c:[600,20000,1e6,35e6],old:["maint","hq"]},
+ {id:"crew",ic:"crew",col:"#22c55e",k:"spd",n:["Scheduling app","Hire a helper","Second crew","Automated equipment"],v:[.9,.75,.6,.45],c:[8000,120000,2.5e6,80e6],old:["sched","help","crew","payroll","robots"]},
+ {id:"sup",ic:"sup",col:"#f97316",k:"sup",n:["Bulk supply deal","Fleet GPS tracking","Wholesale contract","Own the supplier"],v:[.6,.45,.35,.25],c:[3000,150000,3e6,60e6],old:["bulk","gps"]},
+ {id:"ins",ic:"ins",col:"#06b6d4",k:"brk",n:["Equipment insurance","Premium coverage","Risk team","Self-insured empire"],v:[1,.85,.7,.55],c:[25000,800000,25e6,250e6],old:["insure"]},
+ {id:"corp",ic:"corp",col:"#a855f7",k:"pay",n:["Register an LLC","Franchise license","Nationwide chain","Take the company public"],v:[1.4,2,3,4.5],c:[80000,1e6,180e6,1e9],old:["llc","fran","chain","acq","ipo"]},
+ {id:"exp",ic:"exp",col:"#ec4899",k:"pay",n:["Expand to a second city","Five cities","Every state","Go global"],v:[1.5,1.8,2.2,3],c:[6e6,30e6,120e6,400e6],old:["city2"]}];
+const ulv=(s,id)=>(s.ul&&s.ul[id])||0;
+function ulMig(s){ if(s.ulMig) return; s.ul=s.ul||{}; const up=s.up||{}; UL.forEach(u=>{ const n=u.old.filter(o=>up[o]).length; if(n) s.ul[u.id]=Math.min(4,Math.max(ulv(s,u.id),n)); }); s.ulMig=1; }
+const ulDesc=(u,l)=>{ if(!l) return "Not bought yet"; const v=u.v[l-1];
+  if(u.k==="pay") return v>=2?`×${v} job pay`:`+${Math.round((v-1)*100)}% job pay`;
+  if(u.k==="spd") return `Jobs ${Math.round((1-v)*100)}% faster`;
+  if(u.k==="sup") return `Supplies ${Math.round((1-v)*100)}% cheaper`;
+  if(u.id==="ins") return l===1?"Free instant repairs":`Free repairs · breaks ${Math.round((1-v)*100)}% less`;
+  return `Breaks ${Math.round((1-v)*100)}% less`; };
 const UPIC={phone:"📞",fly:"📄",list:"🌐",maint:"🧰",bulk:"📦",uni:"👕",help:"🧑‍🔧",insure:"🛡️",ads:"📣",llc:"🏢",crew:"👷",fran:"🏪",cards:"🪪",reviews:"⭐",sched:"📅",gps:"📍",payroll:"💳",city2:"🌆",celeb:"🎬",hq:"🏙️",robots:"🤖",chain:"🗺️",acq:"🤝",ipo:"🔔"};
 function buildStore(){
   let h=`<div class="pad"><div class="seg"><button data-seg="job" class="${seg==="job"?"on":""}">Profession</button><button data-seg="know" class="${seg==="know"?"on":""}">Knowledge</button><button data-seg="style" class="${seg==="style"?"on":""}">Style</button></div>`;
@@ -1311,26 +1371,29 @@ function buildStore(){
   // Profession store, "next upgrade spotlight": what you use now, one big card for the next gear showing exactly what it
   // improves, supplies, then business upgrades as a grid of tiles.
   const p=prof();
-  if(p){ const s=pst(), t=tier(), N=p.gear.length, nx=s.own+1, cur=Math.max(0,t), brk=s.br[s.own];
-    const pct=v=>(v<.02?(v*100).toFixed(1):Math.round(v*100))+"%", better=(a,b)=>`${a} → <b class="up">${b}</b>`;
-    h+=`<div class="card"><div class="row"><div style="font-size:28px">${p.i}</div><div class="g"><div class="b">${t>=0?p.gear[t]:"No working gear"}${brk?' <span class="pill bad">BROKEN</span>':""}</div>
-      <div class="t">Gear ${s.own+1} of ${N} · ★ ${s.rep} rep · pay ×${payMult(p.id).toFixed(2)}</div></div>
-      ${brk?`<button class="btn gold sm" data-rep="${s.own}" data-cost="${Math.max(3,GCOST[s.own]*.25)}">Fix ${money(Math.max(3,GCOST[s.own]*.25))}</button>`:""}</div></div>`;
+  if(p){ const s=pst(), t=tier(), N=p.gear.length, nx=s.own+1, cur=Math.max(0,t), brk=s.br[s.own], col=PCOL[p.id]||"#3b82f6"; ulMig(s);
+    const pct=v=>(v<.02?(v*100).toFixed(1):Math.round(v*100))+"%", better=(a,b)=>`<span class="was">${a}</span> → <b class="now">${b}</b>`;
+    h+=`<div class="card row" style="gap:12px">${ICOB(p.id,col,24)}<div class="g"><div class="b">${t>=0?p.gear[t]:"No working gear"}${brk?' <span class="pill bad">BROKEN</span>':""}</div>
+      <div class="t">${p.n} · gear ${s.own+1} of ${N} · ★ ${s.rep} rep · pay ×${payMult(p.id).toFixed(2)}</div><div class="tiers">${p.gear.map((_,i)=>`<i class="${i<=s.own?"on":""}" style="${i<=s.own?`background:${col}`:""}"></i>`).join("")}</div></div>
+      ${brk?`<button class="btn gold sm" data-rep="${s.own}" data-cost="${Math.max(3,GCOST[s.own]*.25)}">Fix ${money(Math.max(3,GCOST[s.own]*.25))}</button>`:""}</div>`;
     if(nx<N){ const nj=p.jobs.filter(j=>j.t===nx);
-      h+=`<div class="card spot"><div class="t">Next upgrade</div><div class="b" style="font-size:16px;margin:1px 0 8px">${p.gear[nx]}</div>
-        <div class="kvs"><span>Breaks</span><span>${better(pct(GBRK[cur]),pct(GBRK[nx]))}</span>
+      h+=`<div class="card spot2"><div class="sl">Next upgrade</div><div class="b" style="font-size:17px;margin:2px 0 10px">${p.gear[nx]}</div>
+        <div class="kvs2"><span>Breaks</span><span>${better(pct(GBRK[cur]),pct(GBRK[nx]))}</span>
         <span>Job time</span><span>${better(pct(GSPD[cur]),pct(GSPD[nx]))}</span>
-        ${FUSE[nx]?`<span>${p.sup} per job</span><span>${FUSE[cur]||0} → ${FUSE[nx]} ${p.unit}</span>`:""}
-        <span>New jobs</span><span><b class="up">+${nj.length}</b>${nj.length?` <span class="t">(${nj.map(j=>j.n).slice(0,2).join(", ")}${nj.length>2?"…":""})</span>`:""}</span></div>
-        <button class="btn gold" style="width:100%;margin-top:10px" data-gear="${nx}" data-cost="${GCOST[nx]}">Buy · ${money(GCOST[nx])}</button>
-        ${nx+1<N?`<div class="t" style="margin-top:6px;text-align:center">After that: ${p.gear[nx+1]} · ${money(GCOST[nx+1])}</div>`:""}</div>`; }
-    else h+=`<div class="card spot"><div class="b">🏆 Top gear</div><div class="t">You own the best ${p.n.toLowerCase()} gear there is.</div></div>`;
+        ${FUSE[nx]?`<span>${p.sup} per job</span><span><span class="was">${FUSE[cur]||0}</span> → <b>${FUSE[nx]} ${p.unit}</b></span>`:""}
+        <span>New jobs</span><span><b class="now">+${nj.length}</b></span></div>
+        ${nj.length?`<div class="t" style="margin-top:6px">Unlocks ${nj.map(j=>`<b style="color:var(--text)">${j.n}</b>`).join(" and ")}</div>`:""}
+        <button class="btn buybig" data-gear="${nx}" data-cost="${GCOST[nx]}">Buy · ${money(GCOST[nx])}</button></div>`; }
+    else h+=`<div class="card spot2"><div class="sl">Top gear</div><div class="b">You own the best ${p.n.toLowerCase()} gear there is.</div></div>`;
     if(FUSE[t]>0){ const cap=FUSE[t]*4, need=cap-s.fuel;
       h+=`<div class="card"><div class="row"><div class="g"><div class="b">${p.sup}</div><div class="t">${s.fuel.toFixed(1)} / ${cap} ${p.unit} · ${money(supP(p))} each</div></div><button class="btn gold sm" data-x="fill" ${need>.01&&S.cash>=supP(p)*.1?"":"disabled"}>Fill ${money(Math.min(need*supP(p),Math.max(0,S.cash)))}</button></div><div class="bar f"><i style="width:${s.fuel/cap*100}%"></i></div></div>`; }
-    const own=UPS.filter(u=>s.up[u.id]).length;
-    h+=`<h3>Business upgrades · ${own}/${UPS.length}</h3><div class="g2">`;
-    UPS.forEach(u=>{ const o=s.up[u.id]; h+=`<div class="card utile${o?" own":""}"><div style="font-size:22px">${UPIC[u.id]||"⭐"}</div><div class="b" style="font-size:12.5px">${u.n}</div><div class="t">${u.d}</div>
-      ${o?'<span class="pill ok" style="margin:6px 0 0">Owned</span>':`<button class="btn gold sm" style="width:100%;margin-top:6px" data-up="${u.id}" data-cost="${u.c}">${money(u.c)}</button>`}</div>`; });
+    const tot=UL.reduce((a,u)=>a+ulv(s,u.id),0);
+    h+=`<div class="row" style="margin:16px 3px 6px"><h3 style="margin:0;flex:1">Business</h3><span class="t">${tot}/${UL.length*4} levels</span></div><div class="bar" style="margin:0 3px 10px"><i style="width:${tot/(UL.length*4)*100}%;background:linear-gradient(90deg,#3b82f6,#22c55e)"></i></div><div class="g2">`;
+    UL.forEach(u=>{ const l=ulv(s,u.id), mx=l>=4;
+      h+=`<div class="card utile2${mx?" max":""}" data-ul="${u.id}">${ICOB(u.ic,u.col,20)}<div class="b" style="font-size:13px;margin-top:8px">${u.n[Math.max(0,l-1)]}</div>
+        <div class="pips">${[0,1,2,3].map(i=>`<i style="${i<l?`background:${u.col}`:""}"></i>`).join("")}</div>
+        <div class="t">${ulDesc(u,l)}</div>${mx?"":`<div class="t nxt">Next: <b>${ulDesc(u,l+1)}</b></div>`}
+        ${mx?`<div class="maxb">MAX</div>`:`<button class="btn buyul" data-up="${u.id}" data-cost="${u.c[l]}">${l?"Upgrade":"Buy"} · ${money(u.c[l])}</button>`}</div>`; });
     h+=`</div>`; }
   setMain(h+"</div>"); }
 // Settings → Change your profession
@@ -1470,9 +1533,9 @@ main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||
   if(d.seg){ seg=d.seg; buildStore(); return; }
   const s=S.prof?pst():null, p=prof();
   if(d.kn){ const k=ALLK.find(x=>x.id===d.kn); if(S.cash>=k.c){ S.cash-=k.c; S.know[k.id]=1; sfx('buyItem'); resetPeak(); modal("📘 "+k.n,`${lessonPic(k.id)}<p>${kd(k)}</p>`,[["Got it","gold"]]); } }
-  if(d.gear){ const i=+d.gear; if(S.cash>=GCOST[i]){ S.cash-=GCOST[i]; s.own=i; s.br[i]=false; resetPeak(); toast(p.i+" Bought "+p.gear[i],"good"); sfx('buyItem'); } }
+  if(d.gear){ const i=+d.gear; if(S.cash>=GCOST[i]){ S.cash-=GCOST[i]; s.own=i; s.br[i]=false; resetPeak(); toast(p.i+" Bought "+p.gear[i],"good"); sfx('gearup'); burst(GCOST[i]); POP="gear"; } }
   if(d.rep){ const i=+d.rep, c=Math.max(3,GCOST[i]*.25); if(S.cash>=c){ S.cash-=c; s.br[i]=false; if(!i) s.momFix=0; resetPeak(); } }
-  if(d.up){ const u=UPS.find(x=>x.id===d.up); if(S.cash>=u.c){ S.cash-=u.c; s.up[u.id]=1; resetPeak(); toast("✅ "+u.n,"good"); sfx('buyItem'); } }
+  if(d.up){ const u=UL.find(x=>x.id===d.up); ulMig(s); const l=ulv(s,u.id); if(l<4&&S.cash>=u.c[l]){ S.cash-=u.c[l]; s.ul[u.id]=l+1; resetPeak(); toast(`${l?"⬆️ Level "+(l+1)+": ":"✅ "}${u.n[l]} · ${ulDesc(u,l+1)}`,"good"); sfx(l+1>=4?'levelmax':'bubble'); POP="ul:"+u.id; } }
   if(d.ord){ const o=ORD(sym); if(ARM===d.ord){ ARM=null; } else if(o[d.ord]){ delete o[d.ord]; toast(d.ord.endsWith("sl")?"Stop loss removed":"Take profit removed"); } else { ARM=d.ord; toast("Now tap the chart where you want your "+(d.ord.endsWith("sl")?"stop loss":"take profit")); } $("pos").dataset.k=""; return build(true); }
   if(d.abuy){ const x=AUTOS.find(y=>y.id===d.abuy); if(S.cash>=x.c){ S.cash-=x.c; A(x.id).own=1; A(x.id).on=1; resetPeak(); toast("🤖 "+x.n+" is on","good"); sfx('buyItem'); } return buildAuto(), hdr(); }
   if(d.aexp){ AEXP.has(d.aexp)?AEXP.delete(d.aexp):AEXP.add(d.aexp); const y=main.scrollTop; buildAuto(); main.scrollTop=y; return; }
@@ -2378,6 +2441,10 @@ const SFX={tap:()=>tone(1100,0,.04,'sine',.05),
  unlock:()=>{ [784,988,1175,1568].forEach((f,i)=>tone(f,i*.09,.32,'triangle',.1)); },
  achieve:()=>{ [523,659,784].forEach((f,i)=>tone(f,i*.08,.14,'square',.045)); [1047,1319,1568].forEach(f=>tone(f,.26,.6,'triangle',.07)); noise(.26,.5,.04,7000,.7,'highpass'); },
  buyItem:()=>{ tone(523,0,.1,'triangle',.12); tone(784,.08,.18,'triangle',.12); noise(0,.06,.05,3000,2); },
+ // bubbly: quick rising "bloops" (sine glides) and a little sparkle
+ bubble:()=>{ tone(420,0,.09,'sine',.16,820); tone(640,.07,.1,'sine',.14,1250); tone(980,.14,.13,'sine',.12,1900); noise(.16,.12,.035,7000,1,'highpass'); },
+ levelmax:()=>{ [523,659,784,1047,1319].forEach((f,i)=>tone(f*.9,i*.06,.12,'sine',.13,f*1.25)); tone(1568,.32,.45,'triangle',.08); noise(.3,.4,.05,7500,.8,'highpass'); },
+ gearup:()=>{ tone(330,0,.12,'sine',.18,660); tone(500,.09,.12,'sine',.16,1000); tone(760,.18,.14,'sine',.14,1500); [784,988,1175,1568].forEach((f,i)=>tone(f,.3+i*.07,.3,'triangle',.09)); noise(.3,.5,.05,7000,.8,'highpass'); },
  whoosh:()=>noise(0,.22,.07,500,1.2,'bandpass',2400),
  err:()=>{ tone(180,0,.09,'square',.05); tone(150,.1,.14,'square',.05); },
  tax:()=>{ noise(0,.04,.08,2500,3); tone(1046,.05,.1,'square',.04); tone(784,.16,.25,'sawtooth',.05,520); },
@@ -2471,7 +2538,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="90";
+const APPV="91";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

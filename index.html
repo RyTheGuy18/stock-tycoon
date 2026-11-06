@@ -1100,9 +1100,9 @@ function spark(cv,pts){ const dpr=devicePixelRatio||1,W=cv.clientWidth,H=cv.clie
 let DRAW_T=0;
 function spanLbl(tf,n){ const s=tf*n; return "≈ "+(s<3600?Math.round(s/60)+" min":s<172800?Math.round(s/3600)+" hours":Math.round(s/86400)+" days")+" shown"; }
 function draw(){
-  const cv=$("chart"); if(!cv) return; const dpr=devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight; if(!W) return;
-  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); }
-  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,H);
+  const cv=$("chart"); if(!cv) return; const dpr=devicePixelRatio||1, W=cv.clientWidth, HF=cv.clientHeight, AX=15, H=HF-AX; if(!W) return;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(HF*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(HF*dpr); }
+  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,HF);
   const sym=S.sel, d=BYSYM[sym], p=P(sym), tf=S.tf, aw=56, pw=W-aw, vh=H*.15, top=12, bot=H-vh-12, cw=ZC, n=Math.max(5,Math.floor(pw/cw)), endT=ZOFF?NOW-ZOFF*tf:NOW;
   BUDGET=performance.now()+35; const data=candles(d.i,tf,n,endT), first=data[0][5], loading=data.some(k=>k[0]===null); BUDGET=Infinity;
   let lo=Infinity,hi=-Infinity,vm=0; data.forEach(k=>{ if(k[0]===null) return; lo=Math.min(lo,k[2]);hi=Math.max(hi,k[1]);vm=Math.max(vm,k[4]);});
@@ -1124,6 +1124,15 @@ function draw(){
   if(p.l){ const y1=cl(Y(beL)),y2=cl(Y(now)); c.fillStyle=now>=beL?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
   if(p.s){ const y1=cl(Y(beS)),y2=cl(Y(now)); c.fillStyle=now<=beS?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
   ZCW=cw; drawCandles(c,data,X,Y,H,vh,vm);
+  // time along the bottom: a few evenly spaced labels on round local times, no grid lines
+  { const span=tf*data.length, want=Math.max(3,Math.floor(pw/68)), tz=-new Date().getTimezoneOffset()*60;
+    const STEPS=[10,30,60,120,300,600,900,1800,3600,7200,10800,21600,43200,86400,172800,604800,1209600,2592000];
+    const st=STEPS.find(v=>v%tf===0&&v>=span/want)||STEPS[STEPS.length-1], day=st>=86400;
+    const fmt=t=>{ const d=new Date(t*1000); return day||(st>=3600&&(t+tz)%86400===0)?d.toLocaleDateString([],{month:"short",day:"numeric"}):st<60?d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit",second:"2-digit"}):d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}); };
+    c.font="9.5px JetBrains Mono"; c.fillStyle=TH().lab; c.textAlign="center"; let lastR=-1e9;
+    data.forEach((k,j)=>{ const t=k[5]; if(((t+tz)%st+st)%st>=tf) return; const tx=fmt(t), w=c.measureText(tx).width, x=Math.min(Math.max(X(j),w/2+2),pw-w/2-2);
+      if(x-w/2<lastR+8) return; c.fillText(tx,x,HF-AX/2); lastR=x+w/2; });
+    c.textAlign="left"; }
   // dotted 1-hour high / low (live view, short timeframes)
   if(!ZOFF&&tf<=300){ const [h1,l1]=hourHL(d.i); for(const [v,lab] of [[h1,"1h high"],[l1,"1h low"]]){ if(v<lo||v>hi) continue; const y=Y(v);
     c.setLineDash([2,4]); c.strokeStyle="rgba(245,179,1,.55)"; c.beginPath(); c.moveTo(0,y); c.lineTo(pw,y); c.stroke(); c.setLineDash([]);
@@ -1335,27 +1344,44 @@ let cref=null,cbusy=false,clast="";
 // ---------- live sync between your devices ----------
 // chart choices (timeframe, selected stock, share count) stay on each device
 const viewPrefs=()=>({tf:S.tf,sel:S.sel,qty:S.qty,cq:S.cq,csel:S.csel});
-// Each device has an id. A device pushes ~2 s after you tap something (and when it goes to the background),
-// and listens for pushes from your other devices; a newer save from another device replaces this one.
+// Each device has an id. Every cloud save carries a revision number (rev) that goes up by one per push.
+// A device only pushes after you actually DO something (tap a button, move a stop/target line): just looking,
+// scrolling or leaving the app open never pushes, because everything else (prices, jobs, bots, bills) is worked out
+// from the clock and comes out the same on every device. A device adopts any newer rev from another device,
+// unless it has an action of its own waiting to go up, in which case its push wins. This is what stops a second
+// device that's just sitting there from overwriting a trade you opened on the first one.
 const DEV=(()=>{ try{ let d=localStorage.getItem("st.dev"); if(!d){ d=Math.random().toString(36).slice(2,10); localStorage.setItem("st.dev",d); } return d; }catch(_){ return "x"+Math.random().toString(36).slice(2,8); } })();
-let SYNC=0, lastTap=0, tapT=null, unwatch=null;
-document.addEventListener("pointerdown",()=>{ lastTap=Date.now(); clearTimeout(tapT); tapT=setTimeout(csave,2000); },true);
-function adoptCloud(d){ if(!d||typeof d.save!=="string"||d.dev===DEV||(d.savedAt||0)<=SYNC) return false;
+let SYNC=0, lastTap=0, tapT=null, unwatch=null, ACT=false;
+let BASE=(()=>{ try{ return +localStorage.getItem("st.rev")||0; }catch(_){ return 0; } })();
+const setBase=r=>{ BASE=r; try{ localStorage.setItem("st.rev",String(r)); }catch(_){} };
+function act(){ ACT=true; lastTap=Date.now(); clearTimeout(tapT); tapT=setTimeout(csave,1000); }
+document.addEventListener("pointerdown",e=>{ if(e.target.closest&&e.target.closest("button,input,select,textarea,label,[data-x],[data-kn],[data-pre]")) act(); },true);
+document.addEventListener("keydown",e=>{ if(e.key==="Enter") act(); },true);
+const cloudRev=d=>d?(d.rev||0):0;
+function adoptCloud(d){ if(!d||typeof d.save!=="string"||d.dev===DEV) return false;
+  const r=cloudRev(d); if(r?r<=BASE:(d.savedAt||0)<=SYNC) return false;
+  if(ACT){ csave(); return false; } // we have a fresh action of our own: push it instead of throwing it away
   let cs; try{ cs=JSON.parse(d.save); }catch(_){ return false; }
-  const own=S.owner, vw=viewPrefs(); S=Object.assign(fresh(),cs); S.owner=own; Object.assign(S,vw); SYNC=d.savedAt||0; clast=d.save;
+  const own=S.owner, vw=viewPrefs(); S=Object.assign(fresh(),cs); S.owner=own; Object.assign(S,vw); SYNC=d.savedAt||0; clast=d.save; if(r) setBase(r);
   NOW=nowSec(); catchUp(); delistCheck(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} build(); hdr&&hdr(); return true; }
 function watchSave(ref){ if(unwatch) unwatch(); unwatch=ref.watch?ref.watch(d=>{ if(adoptCloud(d)) toast("🔄 Synced from your other device"); }):null; }
 async function cpull(){ if(!cref) return; try{ const sn=await cref.get(); if(sn.exists&&adoptCloud(sn.data())) toast("🔄 Synced from your other device"); }catch(_){} }
-async function csave(){ if(!cref||cbusy) return; save(); const j=JSON.stringify(S); if(j===clast) return; cbusy=true;
-  try{ await cref.set({save:j,savedAt:S.savedAt,dev:DEV}); clast=j; SYNC=S.savedAt; }catch(e){ if(["invalid_argument","revoked","quota_exceeded","not_granted"].includes(e&&e.code)) cref=null; } cbusy=false; }
+// force: push even without a tap (used once at sign-in when this device's save is the one to keep)
+async function csave(force){ if(!cref) return; if(!ACT&&!force) return; if(cbusy){ clearTimeout(tapT); tapT=setTimeout(csave,800); return; }
+  save(); const j=JSON.stringify(S), had=ACT; cbusy=true; ACT=false;
+  try{ const doc={save:j,savedAt:S.savedAt,dev:DEV};
+    const r=cref.tx?await cref.tx(cur=>Math.max(cloudRev(cur),BASE)+1,doc):(await cref.set(Object.assign(doc,{rev:BASE+1})),BASE+1);
+    setBase(r); clast=j; SYNC=S.savedAt; }
+  catch(e){ ACT=ACT||had; if(["invalid_argument","revoked","quota_exceeded","not_granted"].includes(e&&e.code)) cref=null; }
+  cbusy=false; }
 let lastSave=0;
 function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catchUp(); build(); return; }
   advance(t); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); achCheck(); } compPub(); if(t%600===0) compSettle();
-  if(t-lastSave>5){ save(); lastSave=t; }
+  if(t-lastSave>5){ save(); lastSave=t; if(ACT&&!cbusy) csave(); }
   const nw=newsSince(S.lastNews,t); S.lastNews=t;
   nw.forEach(x=>{ const p=S.pos[x.s]; if(x.s==="*"||x.s===S.sel||(p&&(p.l||p.s))){ toast(x.t); sfx(x.big?'unlock':'ping'); if(x.big&&tab==="trade") newsCard(); } }); }
 function intro(){ if(!S.prof){ if(!S.introSeen) storyIntro(); else profPicker(true); } }
-document.addEventListener("visibilitychange",()=>{ if(document.hidden){save(); if(lastTap>SYNC-5000) csave();} else { loop(); cpull(); } });
+document.addEventListener("visibilitychange",()=>{ if(document.hidden){ save(); if(ACT) csave(); } else { loop(); cpull(); } });
 // ---------- set stop loss / take profit right on the chart ----------
 let MAP=null, ORDL=[], DRAG=null, PDOWN=null;
 // chart zoom/pan: ZC = candle width in px, ZOFF = how many candles back from live the right edge is
@@ -1386,7 +1412,7 @@ main.addEventListener("pointermove",e=>{ if(e.target.id!=="chart") return; if(PT
   if(DRAG){ const v=yToPrice(y); if(okSide(DRAG.k,v)){ ORD(S.sel)[DRAG.k]=v; draw(); } } });
 let PUPX=0, YDRAG=null, VSCR=null;
 main.addEventListener("pointerup",e=>{ if(e.target.id==="chart"){ const r=e.target.getBoundingClientRect(); PUPX=e.clientX-r.left; } PTS.delete(e.pointerId); if(PTS.size<2) PINCH=null; if(YDRAG){ YDRAG=null; PDOWN=null; PAN=null; return; } const panned=(PAN&&PAN.on)||(VSCR&&VSCR.on); PAN=null; VSCR=null; if(!PDOWN) return; const was=DRAG, tap=!PDOWN.moved&&!panned, y=PDOWN.y; PDOWN=null; DRAG=null;
-  if(was){ const v=ORD(S.sel)[was.k]; toast(`${was.k.endsWith("sl")?"Stop loss":"Take profit"} moved to ${px(v)}`); build(true); return; }
+  if(was){ act(); const v=ORD(S.sel)[was.k]; toast(`${was.k.endsWith("sl")?"Stop loss":"Take profit"} moved to ${px(v)}`); build(true); return; }
   if(!tap||e.target.id!=="chart"||!MAP) return;
   if(LINE){ const x=PUPX, cw=MAP.cw, tf=MAP.tf; const pt=[MAP.first+(x-cw/2)/cw*tf,yToPrice(y)];
     if(!LINE.a){ LINE.a=pt; draw(); return; }
@@ -1466,17 +1492,23 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
   N.onUser(async u=>{
     if(!u){ DB=null; UID=null; UNAME=""; cref=null; if(unwatch){unwatch();unwatch=null;} socialStop(); cloudSt="Not signed in: saved on this device only"; if(!S.authSkip) showAuth(); if(tab==="friends") buildFriends(); return; }
     hideAuth(); UNAME=u.username; N.claimName&&N.claimName(u.username,u.uid);
-    try{ const ref=N.db.doc("saves/"+u.uid), sn=await ref.get(), other=S.owner&&S.owner!==u.uid;
+    try{ const ref=N.db.doc("saves/"+u.uid), sn=await ref.get(), other=S.owner&&S.owner!==u.uid; let pushMine=false;
       if(sn.exists){ const d=sn.data(); let cs=null; try{ cs=d&&typeof d.save==="string"?JSON.parse(d.save):null; }catch(_){}
         // keep whichever save has more progress (unless you wiped this one on purpose after the cloud save)
         const wiped=(S.wipedAt||0)>(d.savedAt||0);
-        SYNC=d.savedAt||0; if(cs&&!wiped&&progress(cs)>progress(S)){ const vw=viewPrefs(); S=Object.assign(fresh(),JSON.parse(d.save)); Object.assign(S,vw); closeModal(); catchUp(); toast("Loaded your saved game"); } }
+        // same account on this device: the newer save wins (by rev, then by time). A guest save being signed in: more progress wins.
+        const mine=S.owner===u.uid, r=cloudRev(d), newer=r?(r>BASE||(r===BASE&&d.dev!==DEV&&(d.savedAt||0)>(S.savedAt||0))):(d.savedAt||0)>(S.savedAt||0);
+        const take=cs&&!wiped&&!ACT&&(mine?newer:progress(cs)>progress(S));
+        SYNC=d.savedAt||0; if(r) setBase(Math.max(BASE,r));
+        if(take){ const vw=viewPrefs(); S=Object.assign(fresh(),cs); Object.assign(S,vw); clast=d.save; closeModal(); NOW=nowSec(); catchUp(); toast("Loaded your saved game"); }
+        else if(!mine||wiped) pushMine=true; }
+      else pushMine=true;
       
       const was=S.owner; S.owner=u.uid; delistCheck(); const m=myCard(); if(/^Trader\d+$/.test(m.name||"")||(was&&was!==u.uid)) m.name=u.username;
       save(); DB=N.db; UID=u.uid; cref=ref; clast="";
       cloudSt="Signed in as @"+u.username+" · progress saves to your account";
       if(!NETON){ NETON=true; setInterval(pubProfile,300000); setInterval(flowSync,15000); setInterval(tipSync,15000); }
-      pubProfile(); flowSync(); tipSync(); csave(); watchSave(ref); socialStart(N,u.uid); compSettle(); build(); pushSave();
+      pubProfile(); flowSync(); tipSync(); csave(pushMine); watchSave(ref); socialStart(N,u.uid); compSettle(); build(); pushSave();
       if(!S.prof&&$("modal").classList.contains("hide")&&!$("intro")) intro();
     }catch(e){ console.warn(e); toast("Couldn't reach the server. Playing offline."); } }); }
 function showAuth(){ if($('auth')||!window.NET) return; const el=document.createElement('div'); el.id='auth'; document.body.appendChild(el); let mode='in', un='';
@@ -1692,9 +1724,9 @@ function tutorial(k){ k=k||0; let el=$("tut"); if(!el){ el=document.createElemen
   // lay out now, again after the tab finishes drawing, then keep the ring glued to the target
   placeTut(true); requestAnimationFrame(()=>placeTut(true)); setTimeout(()=>placeTut(true),250);
   clearInterval(tutIv); tutIv=setInterval(()=>placeTut(false),200); }
-// A step can ring just part of its target: "vol" = the volume bars at the bottom of the chart (see draw(): vh = 15% of the height, price axis 56px on the right).
+// A step can ring just part of its target: "vol" = the volume bars at the bottom of the chart (see draw(): a 15px time axis at the very bottom, vh = 15% of the rest, price axis 56px on the right).
 function tutRect(tg){ const r=tg.getBoundingClientRect(), z=TUTK>=0&&TUT[TUTK][4]; if(z!=="vol") return r;
-  const top=r.bottom-r.height*.15-4, right=r.right-56; return {top,bottom:r.bottom,left:r.left,right,width:right-r.left,height:r.bottom-top}; }
+  const bt=r.bottom-15, top=bt-(r.height-15)*.15-4, right=r.right-56; return {top,bottom:bt,left:r.left,right,width:right-r.left,height:bt-top}; }
 // Puts the tip card on one side of the screen and scrolls the target fully into the other side.
 const WIDE=matchMedia("(min-width:1000px) and (pointer:fine)");
 function placeTut(scroll){ const el=$("tut"); if(!el||TUTK<0) return; const sel=TUT[TUTK][0];
@@ -1935,7 +1967,16 @@ function applyCos(){ const t=cosGet('theme'); if(t.id===COSK) return; COSK=t.id;
   ['bg','panel','card','c2','line','text','mut'].forEach(k=>r.setProperty('--'+k,v[k])); document.body.classList.toggle('mono',!!t.mono); const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content=v.panel; }
 let ZCW=7, HOV=null, LINE=null;
 const HLC=new Map();
-function hourHL(i){ const k=i+":"+NOW; let r=HLC.get(k); if(r) return r; let h=-Infinity,l=Infinity; for(let t=NOW-3600;t<=NOW;t+=2){ const p=price(i,t); if(p>h) h=p; if(p<l) l=p; }
+// 1h high/low: every second of the last hour, using the same prices the candles use (pxi), so the line
+// only moves when a real new high/low prints or an old one leaves the window. Past minutes are cached.
+const HLB=new Map();
+function minHL(i,m,to){ const k=i+":"+m+":"+FLOWEV.length, full=m*60+59<=to; if(full){ const r=HLB.get(k); if(r) return r; }
+  let h=-Infinity,l=Infinity; for(let t=m*60,e=Math.min(m*60+59,to);t<=e;t++){ const p=pxi(i,t); if(p>h) h=p; if(p<l) l=p; }
+  const r=[h,l]; if(full){ HLB.set(k,r); if(HLB.size>5000) HLB.delete(HLB.keys().next().value); } return r; }
+function hourHL(i){ const k=i+":"+NOW+":"+FLOWEV.length; let r=HLC.get(k); if(r) return r; const t0=NOW-3600; let h=-Infinity,l=Infinity;
+  const m0=Math.ceil(t0/60), m1=Math.floor(NOW/60);
+  for(let t=t0;t<Math.min(m0*60,NOW+1);t++){ const p=pxi(i,t); if(p>h) h=p; if(p<l) l=p; } // partial first minute, second by second
+  for(let m=m0;m<=m1;m++){ const [a,b]=minHL(i,m,NOW); if(a>h) h=a; if(b<l) l=b; }
   r=[h,l]; HLC.clear(); HLC.set(k,r); return r; }
 // drawn lines live only on this device (not synced): {sym:[{a:[t,price],b:[t,price],side}]}
 let LINES=(()=>{ try{ return JSON.parse(localStorage.getItem("st.lines")||"{}"); }catch(_){ return {}; } })();

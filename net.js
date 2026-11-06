@@ -33,6 +33,11 @@ if (!firebaseConfig || !firebaseConfig.apiKey) {
         get: async () => wrap(await F.getDoc(F.doc(fs, p))),
         set: (o) => F.setDoc(F.doc(fs, p), o),
         del: () => F.deleteDoc(F.doc(fs, p)),
+        // read-modify-write in one go: rev(current data or null) -> new rev; writes {...o, rev} and returns rev
+        tx: (rev, o) => F.runTransaction(fs, async (t) => {
+          const r = F.doc(fs, p), s = await t.get(r), n = rev(s.exists() ? s.data() : null);
+          t.set(r, Object.assign({}, o, { rev: n })); return n;
+        }),
         watch: (cb) => F.onSnapshot(F.doc(fs, p), (x) => cb(x.exists() ? x.data() : null), () => {}),
       }),
       collection: (p) => {

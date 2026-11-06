@@ -69,6 +69,9 @@ nav button.on{color:var(--text)} nav button.on span{opacity:1;color:var(--gold)}
 .btn.taxw{background:#8a5a00;color:#fff} .taxw-t{font-size:11.5px;color:#ffb347;margin-top:3px} .taxw-t b{color:#ff6b74}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.spot{border-color:var(--gold)!important;background:linear-gradient(180deg,#1d1a10,var(--card) 70%)}
+.kvs{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px} .kvs>span:nth-child(odd){color:var(--mut)} .kvs>span:nth-child(even){text-align:right}
+.utile{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:0;padding:10px} .utile.own{opacity:.6}
 .qty{display:flex;gap:5px;margin-bottom:6px}
 .qty button{background:var(--c2);border-radius:8px;padding:7px 12px;font-weight:700}
 .qty .mid{flex:1;text-align:center;background:var(--c2);border-radius:8px;padding:5px;font-size:12px;color:var(--mut)}
@@ -1274,6 +1277,7 @@ function draw(){
 // moment later, which flashed every second), and the tab isn't redrawn at all when nothing on it changed.
 const costDis=h=>h.replace(/<button([^>]*?)data-cost="([\d.e+]+)"/g,(m,a,c)=>S.cash<+c?`<button${a}disabled data-cost="${c}"`:m);
 function setMain(h){ h=costDis(h); if(main.dataset.h===h) return; main.dataset.h=h; main.innerHTML=h; }
+const UPIC={phone:"📞",fly:"📄",list:"🌐",maint:"🧰",bulk:"📦",uni:"👕",help:"🧑‍🔧",insure:"🛡️",ads:"📣",llc:"🏢",crew:"👷",fran:"🏪"};
 function buildStore(){
   let h=`<div class="pad"><div class="seg"><button data-seg="job" class="${seg==="job"?"on":""}">Profession</button><button data-seg="know" class="${seg==="know"?"on":""}">Knowledge</button><button data-seg="style" class="${seg==="style"?"on":""}">Style</button></div>`;
   if(seg==="style"){ setMain(h+styleHTML()+"</div>"); return; }
@@ -1293,16 +1297,30 @@ function buildStore(){
       h+=`</div>`; });
     const lk=STOCKS.filter(d=>!unlocked(d)&&!d.gone); if(lk.length) h+=`<div class="t" style="margin:8px 3px">🔒 ${SK.filter(k=>lk.some(d=>d.s===k.sym)).length} more lessons unlock as you unlock ${lk.map(d=>d.s).join(", ")}.</div>`;
     setMain(h+"</div>"); return; }
+  // Profession store, "next upgrade spotlight": what you use now, one big card for the next gear showing exactly what it
+  // improves, supplies, then business upgrades as a grid of tiles.
   const p=prof();
-  if(p){ const s=pst(), t=tier();
-    h+=`<div class="card"><div class="row"><div style="font-size:26px">${p.i}</div><div class="g"><div class="b">${p.n} <span class="pill">★ ${s.rep} rep · +${Math.round(Math.min(s.rep,200)*1.5)}% pay</span></div><div class="t">Pay multiplier ×${payMult(p.id).toFixed(2)} · every job you finish adds reputation</div></div></div></div><h3>Gear</h3>`;
-    p.gear.forEach((g,i)=>{ if(i>s.own+2) return; const own=i<=s.own, br=own&&s.br[i];
-      const r=br?`<button class="btn gold sm" data-rep="${i}" data-cost="${Math.max(3,GCOST[i]*.25)}">Fix ${money(Math.max(3,GCOST[i]*.25))}</button>`:own?`<span class="pill ${i===t?"ok":""}">${i===t?"In use":"Owned"}</span>`:i===s.own+1?`<button class="btn gold sm" data-gear="${i}" data-cost="${GCOST[i]}">${money(GCOST[i])}</button>`:`<span class="pill">🔒 ${money(GCOST[i])}</span>`;
-      h+=`<div class="card"><div class="row"><div class="g"><div class="b">${g}${br?' <span class="pill bad">BROKEN</span>':""}</div><div class="t">${Math.round(GBRK[i]*100)}% break · ${Math.round(GSPD[i]*100)}% time${FUSE[i]?` · ${FUSE[i]} ${p.unit}/job`:""} · unlocks ${p.jobs.filter(j=>j.t===i).map(j=>j.n).join(", ")}</div></div>${r}</div></div>`; });
+  if(p){ const s=pst(), t=tier(), N=p.gear.length, nx=s.own+1, cur=Math.max(0,t), brk=s.br[s.own];
+    const pct=v=>Math.round(v*100)+"%", better=(a,b)=>`${a} → <b class="up">${b}</b>`;
+    h+=`<div class="card"><div class="row"><div style="font-size:28px">${p.i}</div><div class="g"><div class="b">${t>=0?p.gear[t]:"No working gear"}${brk?' <span class="pill bad">BROKEN</span>':""}</div>
+      <div class="t">Gear ${s.own+1} of ${N} · ★ ${s.rep} rep · pay ×${payMult(p.id).toFixed(2)}</div></div>
+      ${brk?`<button class="btn gold sm" data-rep="${s.own}" data-cost="${Math.max(3,GCOST[s.own]*.25)}">Fix ${money(Math.max(3,GCOST[s.own]*.25))}</button>`:""}</div></div>`;
+    if(nx<N){ const nj=p.jobs.filter(j=>j.t===nx);
+      h+=`<div class="card spot"><div class="t">Next upgrade</div><div class="b" style="font-size:16px;margin:1px 0 8px">${p.gear[nx]}</div>
+        <div class="kvs"><span>Breaks</span><span>${better(pct(GBRK[cur]),pct(GBRK[nx]))}</span>
+        <span>Job time</span><span>${better(pct(GSPD[cur]),pct(GSPD[nx]))}</span>
+        ${FUSE[nx]?`<span>${p.sup} per job</span><span>${FUSE[cur]||0} → ${FUSE[nx]} ${p.unit}</span>`:""}
+        <span>New jobs</span><span><b class="up">+${nj.length}</b>${nj.length?` <span class="t">(${nj.map(j=>j.n).slice(0,2).join(", ")}${nj.length>2?"…":""})</span>`:""}</span></div>
+        <button class="btn gold" style="width:100%;margin-top:10px" data-gear="${nx}" data-cost="${GCOST[nx]}">Buy · ${money(GCOST[nx])}</button>
+        ${nx+1<N?`<div class="t" style="margin-top:6px;text-align:center">After that: ${p.gear[nx+1]} · ${money(GCOST[nx+1])}</div>`:""}</div>`; }
+    else h+=`<div class="card spot"><div class="b">🏆 Top gear</div><div class="t">You own the best ${p.n.toLowerCase()} gear there is.</div></div>`;
     if(FUSE[t]>0){ const cap=FUSE[t]*4, need=cap-s.fuel;
-      h+=`<h3>Supplies</h3><div class="card"><div class="t">${p.sup}: ${s.fuel.toFixed(1)} / ${cap} ${p.unit} · ${money(supP(p))} each</div><div class="bar f"><i style="width:${s.fuel/cap*100}%"></i></div><button class="btn gold sm" data-x="fill" ${need>.01&&S.cash>=supP(p)*.1?"":"disabled"}>Fill up (${money(Math.min(need*supP(p),Math.max(0,S.cash)))})</button></div>`; }
-    h+=`<h3>Business upgrades</h3>`;
-    UPS.forEach(u=>{ h+=`<div class="card row"><div class="g"><div class="b">${u.n}</div><div class="t">${u.d}</div></div>${s.up[u.id]?'<span class="pill ok">Owned</span>':`<button class="btn gold sm" data-up="${u.id}" data-cost="${u.c}">${money(u.c)}</button>`}</div>`; }); }
+      h+=`<div class="card"><div class="row"><div class="g"><div class="b">${p.sup}</div><div class="t">${s.fuel.toFixed(1)} / ${cap} ${p.unit} · ${money(supP(p))} each</div></div><button class="btn gold sm" data-x="fill" ${need>.01&&S.cash>=supP(p)*.1?"":"disabled"}>Fill ${money(Math.min(need*supP(p),Math.max(0,S.cash)))}</button></div><div class="bar f"><i style="width:${s.fuel/cap*100}%"></i></div></div>`; }
+    const own=UPS.filter(u=>s.up[u.id]).length;
+    h+=`<h3>Business upgrades · ${own}/${UPS.length}</h3><div class="g2">`;
+    UPS.forEach(u=>{ const o=s.up[u.id]; h+=`<div class="card utile${o?" own":""}"><div style="font-size:22px">${UPIC[u.id]||"⭐"}</div><div class="b" style="font-size:12.5px">${u.n}</div><div class="t">${u.d}</div>
+      ${o?'<span class="pill ok" style="margin:6px 0 0">Owned</span>':`<button class="btn gold sm" style="width:100%;margin-top:6px" data-up="${u.id}" data-cost="${u.c}">${money(u.c)}</button>`}</div>`; });
+    h+=`</div>`; }
   setMain(h+"</div>"); }
 // Settings → Change your profession
 function profSwitch(){ modal("Change your profession",`<div class="t" style="margin-bottom:6px">Ones you've done before keep your gear, reputation and job skills. New ones start with borrowed gear.${S.job?" <b>Finish your current job first.</b>":""}</div>`+
@@ -2442,7 +2460,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="88";
+const APPV="89";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

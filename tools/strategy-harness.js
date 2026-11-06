@@ -3,6 +3,8 @@ window.WHISP=function(days){ const T0=H2*3600+600, T1=T0+days*86400, R={}; const
   for(const x of news){ if(x.tell!=='whisper'||x.at>T1) continue; const m=x.t.match(/(buying|dumping) ([A-Z, ]+)\./); const s=m[2].split(', ')[0], up=m[1]==='buying', e=news.find(y=>y.ev&&y.at>x.at&&y.at-x.at<=600); if(!e) continue; const i=BYSYM[s].i, P=t=>price(i,t), k=e.ev.sc.k;
     for(const [lab,ex] of [['headline',e.at],['+30m',e.at+1800],['+1h',e.at+3600],['+6h',e.at+21600],['+24h',e.at+86400]]){ const r=(P(ex)/P(x.at+5)-1)*(up?1:-1); (R[k+' exit '+lab]=R[k+' exit '+lab]||[]).push(r); } }
   const out={}; for(const k in R){ const a=R[k]; out[k]={n:a.length,win:+(a.filter(x=>x>0).length/a.length*100).toFixed(1),avg:+(a.reduce((x,y)=>x+y,0)/a.length*100).toFixed(2),worst:+(Math.min(...a)*100).toFixed(1)}; } return out; };
+// CK: capitulation tell volume window (x normal) and how long to hold the short. From H4: 3-4.5x, 50 s (before H4 it was 2.2-3.2x, 80 s)
+window.CK=[3,4.5,50,1,1.8];
 window.HARN=function(days, opts){ opts=opts||{}; const T0=H2*3600+600, T1=T0+days*86400, R={};
   const add=(k,ret,lab)=>{ (R[k]=R[k]||[]).push(ret); if(lab){ const kk=k+' <'+lab+'>'; (R[kk]=R[kk]||[]).push(ret); } };
   const what=(i,t)=>{ const h=Math.floor(t/3600); for(const hh of [h,h-1]) for(const e of sched(i,hh).eps){ const s0=hh*3600+e.st; if(t>=s0-30&&t<=s0+epLen(e)+30) return e.ty; } return 'none'; };
@@ -23,8 +25,8 @@ window.HARN=function(days, opts){ opts=opts||{}; const T0=H2*3600+600, T1=T0+day
       // R2 coil: 6 quiet candles (<=0.5x normal volume)
       if(te>cdC){ let q=true; for(let m=0;m<6;m++) if(!(c[j-m].v<=.5*N)) q=false; if(q&&Math.abs(k.c-c[j-5].o)/k.c>2*B) q=false; if(q){ add("4 coil (buy at 6th quiet candle, +4m)",P(te+240)/P(te)-1,what(i,te)); cdC=te+400; } }
       // R6 capitulation tell: steady stock, 4 red candles each >=2x volume, small bodies, no headline, not flush time
-      if(STEADY.includes(sym)&&te>cdK&&!flushT(te)){ let q=true, red=0; for(let m=0;m<4;m++){ const x=c[j-m]; if(x.c<x.o) red++; if(!(x.v>=2.2*N&&x.v<3.2*N&&Math.abs(x.c-x.o)/x.o<=1.5*B&&(x.hi-x.lo)/x.o<=2.5*B)) q=false; } if(red<3||!(k.c<c[j-3].o)) q=false;
-        if(q&&!hasNews(sym,te-300,te)){ add("5a capitulation tell (short, cover +80s)",1-P(te+80)/P(te)); add("5b ...then buy at +80s, sell +4m",P(te+320)/P(te+80)-1,what(i,te)); cdK=te+400; } }
+      if(STEADY.includes(sym)&&te>cdK&&!flushT(te)){ let q=true, red=0; for(let m=0;m<4;m++){ const x=c[j-m]; if(x.c<x.o) red++; if(!(x.v>=CK[0]*N&&x.v<CK[1]*N&&Math.abs(x.c-x.o)/x.o<=CK[3]*B&&(x.hi-x.lo)/x.o<=CK[4]*B)) q=false; } if(red<3||!(k.c<c[j-3].o)) q=false;
+        if(q&&!hasNews(sym,te-300,te)){ add("5a capitulation tell (short, cover +"+CK[2]+"s)",1-P(te+CK[2])/P(te),what(i,te)); add("5b ...then buy at +"+CK[2]+"s, sell +4m",P(te+CK[2]+240)/P(te+CK[2])-1,what(i,te)); cdK=te+400; } }
     }
   }
   // headline rules

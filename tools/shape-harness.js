@@ -1,3 +1,5 @@
+// TV: triangle 3rd-touch volume (x normal). From H4: 1.8 (it was 1.4)
+window.TV=1.8;
 window.SHP=function(days){ const T0=H3*3600+3600, T1=T0+days*86400, R={}; const add=(k,v,real)=>{ (R[k]=R[k]||[]).push(v); if(real!=null){ (R[k+(real?' [REAL]':' [false alarm]')]=R[k+(real?' [REAL]':' [false alarm]')]||[]).push(v); } };
   const isReal=(i,t,tys)=>{ const h=Math.floor(t/3600); for(const hh of [h,h-1]){ const e=sched(i,hh).eps.find(x=>x.shape&&tys.includes(x.ty)); if(e){ const s0=hh*3600+e.st; if(t>=s0&&t<=s0+epLen(e)) return true; } } return false; };
   const live=SER.filter(d=>!d.idx&&!d.gone); let truth={};
@@ -17,10 +19,10 @@ window.SHP=function(days){ const T0=H3*3600+3600, T1=T0+days*86400, R={}; const 
       if(!(cd.db>te)&&Math.abs(k.lo-L2_)<=tol&&dn>=.7*u&&dn>=2.5*body){ const prev=touchesL(j-36,j-9,L2_); if(prev.length){ const a=prev[prev.length-1]; const mx=Math.max(...c.slice(a,j).map(x=>x.hi));
         if(mx-L2_>=1.8*u&&touchesL(j-60,j-1,L2_).length<=4){ add("double bottom (buy, +4m)",P(te+240)/P(te)-1,isReal(i,te,["dbot"])); cd.db=te+400; } } }
       // ascending triangle: 3rd touch of the 1h high in ~6 min, each dip between touches shallower
-      if(!(cd.at>te)&&Math.abs(k.hi-H2_)<=.25*u&&up<.5*u&&k.v>=1.4*N){ const ts=touchesH(j-40,j,H2_).filter(m=>Math.abs(c[m].hi-H2_)<=.25*u); const grp=[]; ts.forEach(m=>{ if(!grp.length||m-grp[grp.length-1]>3) grp.push(m); });
+      if(!(cd.at>te)&&Math.abs(k.hi-H2_)<=.25*u&&up<.5*u&&k.v>=TV*N){ const ts=touchesH(j-40,j,H2_).filter(m=>Math.abs(c[m].hi-H2_)<=.25*u); const grp=[]; ts.forEach(m=>{ if(!grp.length||m-grp[grp.length-1]>3) grp.push(m); });
         if(grp.length>=3){ const g=grp.slice(-3); const d1=Math.min(...c.slice(g[0],g[1]).map(x=>x.lo)), d2=Math.min(...c.slice(g[1],g[2]).map(x=>x.lo));
           if(j-g[0]>=20&&H2_-d1>=1.5*u&&H2_-d2>=.7*u&&d2>d1+.5*u){ add("ascending triangle (buy at 3rd touch, +4m)",P(te+240)/P(te)-1,isReal(i,te,["atri"])); cd.at=te+400; } } }
-      if(!(cd.dtr>te)&&Math.abs(k.lo-L2_)<=.25*u&&dn<.5*u&&k.v>=1.4*N){ const ts=touchesL(j-40,j,L2_).filter(m=>Math.abs(c[m].lo-L2_)<=.25*u); const grp=[]; ts.forEach(m=>{ if(!grp.length||m-grp[grp.length-1]>3) grp.push(m); });
+      if(!(cd.dtr>te)&&Math.abs(k.lo-L2_)<=.25*u&&dn<.5*u&&k.v>=TV*N){ const ts=touchesL(j-40,j,L2_).filter(m=>Math.abs(c[m].lo-L2_)<=.25*u); const grp=[]; ts.forEach(m=>{ if(!grp.length||m-grp[grp.length-1]>3) grp.push(m); });
         if(grp.length>=3){ const g=grp.slice(-3); const u1=Math.max(...c.slice(g[0],g[1]).map(x=>x.hi)), u2=Math.max(...c.slice(g[1],g[2]).map(x=>x.hi));
           if(j-g[0]>=20&&u1-L2_>=1.5*u&&u2-L2_>=.7*u&&u2<u1-.5*u){ add("descending triangle (short at 3rd touch, +4m)",1-P(te+240)/P(te),isReal(i,te,["dtri"])); cd.dtr=te+400; } } }
       // flags: a pole (6+ candles, 3u+ move on 2x volume) then 12+ quiet candles drifting back (low volume, small), buy/short now

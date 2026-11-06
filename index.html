@@ -1353,7 +1353,7 @@ function openSettings(v){ if(v) SETV=v; const p=prof();
     +sgrp("App",[UPD.pub&&!UPD.ready?srow("⏳","A new update is on its way","GitHub is putting it online right now. It usually takes 1–2 minutes, then it downloads here.",`<span class="t">Publishing…</span>`):"",UPD.ready?`<div class="srow" id="updrow"><span class="ic">⬆️</span><div class="g"><div class="tt">Update ready${UPD.ver?`: version ${UPD.ver}`:""}</div><div class="st">You're on version ${APPV}. Your game is saved first.</div></div><button class="btn gold sm" data-sx="updgo">Update now</button></div>`:srow("ℹ️",`Version ${APPV}`,"Updates only install when you choose to",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
   else if(SETV==="save") h+=SAVEHTML();
   else h+=stats_html();
-  modal("✕|⚙︎ Settings",h,[]); $("modal").querySelector(".box").style.height="min(86dvh,760px)"; /* same size on every tab */ musLbl(); if(SETV==="gen"&&!PUBT_ON){ PUBT_ON=true; pubWatch(); setTimeout(()=>PUBT_ON=false,1000); }
+  modal("✕|⚙︎ Settings",h,[]); fixBox(); /* same size on every tab */ musLbl(); if(SETV==="gen"&&!PUBT_ON){ PUBT_ON=true; pubWatch(); setTimeout(()=>PUBT_ON=false,1000); }
   $("modal").querySelectorAll("[data-setv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openSettings(b.dataset.setv); });
   const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
@@ -2024,7 +2024,7 @@ function openNews(view){ const f=newsFeed(NOW-86400*2,NOW).slice(0,60), seen=S.n
     if(x.ev){ const e=x.ev, live=NOW-e.t0<e.T; sub+=(live?`<b style="color:var(--gold)">${e.sc.k==="f"?"Moving now":"Still unfolding"}</b> · `:"")+Object.entries(e.sc.fx).filter(([k])=>k!=="*"&&BYSYM[k]&&!BYSYM[k].gone).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,4).map(([k,w])=>{ const up=w*e.sc.dir>0; return `<span class="m ${up?"up":"dn"}">${up?"▲":"▼"}${k}</span>`; }).join(" "); }
     const tv=x.s&&x.s!=="*"&&BYSYM[x.s]&&unlocked(BYSYM[x.s]);
     return nrow({t:x.t.replace("BREAKING: ",""),meta:sub+(tv?(sub?" · ":"")+"Tap to view "+x.s:""),tm:ago(NOW-x.at),nw:x.at>seen,attr:tv?`data-nview="${x.s}"`:""}); };
-  modal("✕|🔔 Notifications",segH+`<div class="mood"><span>Market mood</span>${mood}</div>`+(f.length?f.map(row).join(""):`<div class="t" style="padding:14px 4px">Quiet couple of days. Big stories, crashes and huge spikes show up here.</div>`),[]);
+  modal("✕|🔔 Notifications",segH+`<div class="mood"><span>Market mood</span>${mood}</div>`+(f.length?f.map(row).join(""):`<div class="t" style="padding:14px 4px">Quiet couple of days. Big stories, crashes and huge spikes show up here.</div>`),[]); fixBox();
   $("modal").querySelectorAll("[data-nview]").forEach(b=>b.onclick=()=>{ S.sel=b.dataset.nview; ZOFF=0; closeModal(); setTab("trade"); }); nvWire(); }
 function nvWire(){ $("modal").querySelectorAll("[data-nv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openNews(b.dataset.nv); }); }
 function openAct(segH){ const seen=S.actSeen||0; S.actSeen=nowSec(); bellUpd(true); const uid=UID, nm=f=>esc((FS.prof[f.other]||{}).name||"A player");
@@ -2035,11 +2035,13 @@ function openAct(segH){ const seen=S.actSeen||0; S.actSeen=nowSec(); bellUpd(tru
     +unr.map(f=>nrow({ic:"💬",t:`<b>${nm(f)}</b>: ${String(f.last.text||"").replace(/</g,"").slice(0,70)}`,meta:"Tap to reply",tm:ago(nowSec()-Math.floor(f.last.at/1000)),nw:1,attr:`data-ago="chat:${f.id}"`})).join("");
   const L=(S.alog||[]).filter(x=>nowSec()-x.at<86400*7&&!(x.go&&x.go.startsWith("chat:")&&unr.some(f=>"chat:"+f.id===x.go)));
   h+=`<div class="nsec">Recent</div>`+(L.length?L.map(x=>nrow({ic:x.ic,t:x.t,tm:ago(nowSec()-x.at),nw:x.at>seen,attr:x.go?`data-ago="${x.go}"`:""})).join(""):`<div class="t" style="padding:10px 4px">Nothing yet. Friend requests, messages, tips and competition results show up here.</div>`);
-  modal("✕|🔔 Notifications",h,[]); nvWire();
+  modal("✕|🔔 Notifications",h,[]); fixBox(); nvWire();
   $("modal").querySelectorAll("[data-ago]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const g=b.dataset.ago; closeModal(); setTab("friends"); if(g.startsWith("chat:")) setTimeout(()=>openChat(g.slice(5)),50); }); }
 // one clean row for every notification: icon tile, text, a small detail line, short time on the right
 const ago=sec=>{ sec=Math.max(0,sec); return sec<60?"now":sec<3600?Math.floor(sec/60)+"m":sec<86400?Math.floor(sec/3600)+"h":Math.floor(sec/86400)+"d"; };
 const EMO=/^(\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)\s*/u;
+// Settings and Notifications keep one fixed size whichever tab you're on
+const fixBox=()=>{ const b=$("modal").querySelector(".box"); if(b) b.style.height="min(86dvh,760px)"; };
 function nrow(o){ let ic=o.ic, t=o.t; if(!ic){ const m=t.match(EMO); if(m){ ic=m[1]; t=t.slice(m[0].length); } else ic="📰"; }
   return `<button class="ntf${o.nw?" new":""}" ${o.attr||""}><span class="ic">${ic}</span><span class="tx">${t}${o.meta?`<div class="mt">${o.meta}</div>`:""}</span><span class="tm">${o.tm}</span></button>`; }
 $("bell").onclick=()=>openNews();
@@ -2388,7 +2390,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="74";
+const APPV="75";
 let UPD={ready:false,ver:null,told:false,pub:false,pubAt:0};
 // Is GitHub publishing a new version right now? (GitHub Pages "pages build and deployment" run queued or running.)
 // Only asked while Settings is open, at most every 20 s (GitHub allows 60 of these an hour without signing in).

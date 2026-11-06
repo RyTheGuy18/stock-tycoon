@@ -1408,13 +1408,18 @@ function storyIntro(k){ k=k||0; let el=$("intro"); if(!el){ el=document.createEl
     if(v==="skip"||v==="done"){ el.remove(); S.introSeen=1; save(); if(!S.prof) profPicker(true); else if(!S.tut) tutorial(); } else storyIntro(+v); }; }
 // ---------- quick tutorial ----------
 const TUT=[
- ["#chart","The market","Every candle is 10 seconds of a stock's life. Green went up, red went down. The bars underneath are volume: how many people traded.","trade"],
+ ["#chart","The market","Every candle is 10 seconds of a stock's life. Green went up, red went down. The bars underneath are volume: how many people traded. Pinch or scroll to zoom, drag to look back in time.","trade"],
  ["#acts","Buy, short, close","<b>Buy</b> if you think it'll go up. <b>Short</b> if you think it'll drop. <b>Close</b> cashes out your trade. You only make money when you close.","trade"],
- ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed.","trade"],
+ ["#chart","Stop loss and take profit","Once you're in a trade, tap <b>Stop loss</b> or <b>Take profit</b> on your position card, then <b>tap the chart</b> where you want it. Drag the handle on the right edge to move it. When the price gets there, your trade closes by itself, even while you're away.","trade"],
+ ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed. Learn better jobs in the job list as you build reputation.","trade"],
  ["#momw","Practice with Mom","No money yet? Practice on Mom's dime. Close a practice trade in profit and she pays you for it, until you've got $15.","trade"],
+ ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which adds a 2% war tax on your net worth. Can't pay? It turns into debt, and you have 24 hours.","trade"],
+ ["#bell","News","The bell gets a red dot when there's big news: breaking stories, market crashes, collapses and huge spikes. Many big moves have a warning headline first, so check it often.","trade"],
  ['[data-tab="store"]',"The Store","Better gear for your job, and lessons that teach you the patterns the market repeats. That's where the real money is.","trade"],
  ['[data-tab="auto"]',"Automations","Later on, you can buy bots and tools that keep working while you're away.","trade"],
- ['[data-tab="me"]',"Your story","Everything you're working toward: a car, your own place, and one day, paying Mom back. Good luck.","trade"]];
+ ['[data-tab="friends"]',"Friends","Add friends by username, chat, and send them tips on a stock. Their trades show up on your chart. Join the <b>weekly competition</b> with $1,000 of competition money. Your real cash is never touched.","trade"],
+ ['[data-tab="me"]',"Your story","Everything you're working toward: a car, your own place, and one day, paying Mom back.","trade"],
+ ["","One free tip","Dad's notebook had this on the first page: <b>volume moves before price.</b> Before a stock makes a big jump, it often goes quiet first: tiny candles, short volume bars. Then the volume bars start getting taller while the candles stay small. That's buyers loading up <b>before</b> the move. Quiet, then rising volume with a flat price, means the jump is close. Good luck.","trade"]];
 let TUTK=-1, tutIv=null;
 const tutNoScroll=e=>{ if($("tut")) e.preventDefault(); };
 function tutLock(on){ const m=$("main"); if(m) m.style.overflowY=on?"hidden":"";
@@ -1422,7 +1427,7 @@ function tutLock(on){ const m=$("main"); if(m) m.style.overflowY=on?"hidden":"";
 function tutorial(k){ k=k||0; let el=$("tut"); if(!el){ el=document.createElement("div"); el.id="tut"; document.body.appendChild(el); }
   if(k>=TUT.length){ el.remove(); S.tut=1; save(); TUTK=-1; clearInterval(tutIv); tutLock(false); return; }
   const [sel,title,txt,t]=TUT[k]; if(tab!==t) setTab(t);
-  if(!document.querySelector(sel)) return tutorial(k+1);
+  if(sel&&!document.querySelector(sel)) return tutorial(k+1);
   TUTK=k; tutLock(true);
   el.innerHTML=`<div class="ring"></div><div class="tip"><div class="t">${k+1} of ${TUT.length}</div><b>${title}</b><p>${txt}</p>
      <div class="row"><button class="t" data-tx="end" style="padding:6px">Skip</button><span class="g"></span><button class="nextb" data-tx="${k+1}">${k===TUT.length-1?"Let's go":"Next"} <span style="font-size:18px">→</span></button></div></div>`;
@@ -1432,13 +1437,16 @@ function tutorial(k){ k=k||0; let el=$("tut"); if(!el){ el=document.createElemen
   clearInterval(tutIv); tutIv=setInterval(()=>placeTut(false),200); }
 // Puts the tip card on one side of the screen and scrolls the target fully into the other side.
 const WIDE=matchMedia("(min-width:1000px) and (pointer:fine)");
-function placeTut(scroll){ const el=$("tut"); if(!el||TUTK<0) return; const tg=document.querySelector(TUT[TUTK][0]); if(!tg) return;
+function placeTut(scroll){ const el=$("tut"); if(!el||TUTK<0) return; const sel=TUT[TUTK][0];
+  if(!sel){ const tip=el.querySelector(".tip"), ring=el.querySelector(".ring"); Object.assign(ring.style,{top:innerHeight/2+"px",left:innerWidth/2+"px",width:"0px",height:"0px",border:"0"});
+    tip.style.bottom="auto"; tip.style.top=Math.max(12,(innerHeight-tip.offsetHeight)/2)+"px"; return; }
+  const tg=document.querySelector(sel); if(!tg) return;
   if(WIDE.matches) return placeTutWide(el,tg,scroll);
   const tip=el.querySelector(".tip"), ring=el.querySelector(".ring"), m=$("main"), GAP=14, P=6;
   const H=innerHeight, th=tip.offsetHeight, nav=$("nav").getBoundingClientRect(), hdr=document.querySelector("header").getBoundingClientRect();
   let r=tg.getBoundingClientRect(), lo, hi;
   if(!m.contains(tg)){                                  // nav buttons: tip floats just above the button
-    tip.style.bottom="auto"; tip.style.top=(r.top-GAP-th)+"px"; lo=4; hi=nav.bottom;
+    tip.style.bottom="auto"; tip.style.top=(r.top<H/3?r.bottom+GAP:r.top-GAP-th)+"px"; lo=4; hi=nav.bottom;
   } else {
     const mTop=m.getBoundingClientRect().top, top0=hdr.top+10;
     const L={top:{lo:top0+th+GAP, hi:nav.top-P-2},       // tip over the header, target below it

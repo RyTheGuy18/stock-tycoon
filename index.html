@@ -126,6 +126,7 @@ canvas.sp{width:100%;height:46px;display:block;margin:6px 0}
 .tn:not(.done):not(.cur){opacity:.55}
 .perk{display:inline-block;font-size:11px;color:#c8a24a;background:#1d1a10;border-radius:6px;padding:1px 6px;margin-top:3px}
 #hbtns{position:absolute;right:8px;top:calc(env(safe-area-inset-top) + 6px);display:flex;align-items:center;gap:4px}
+#gear.upd{position:relative} #gear.upd:after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px var(--panel)}
 #gear{background:none;color:var(--mut);line-height:1;padding:4px;display:flex;align-items:center} #gear svg{width:20px;height:20px;display:block}
 header{position:relative}
 #bell{position:relative;color:var(--mut);padding:4px;display:flex;align-items:center}
@@ -1342,16 +1343,17 @@ document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.datase
   if(k==="sv"&&SFXB) SFXB.gain.setTargetAtTime(sfxGain(),AC.currentTime,.02);
   if(k==="mv"&&MUSB&&MUS.cur>=0&&MUS.on) MUSB.gain.setTargetAtTime(musV()*SONGS[MUS.cur].g,AC.currentTime,.05); });
 document.addEventListener("change",e=>{ const k=e.target.dataset&&e.target.dataset.vol; if(!k) return; save(); act(); if(k==="sv") sfx('ping'); });
-let SETV="gen";
+let SETV="gen", PUBT_ON=false;
 function openSettings(v){ if(v) SETV=v; const p=prof();
-  let h=`<div class="seg"><button data-setv="gen" class="${SETV==="gen"?"on":""}">⚙️ General</button><button data-setv="save" class="${SETV==="save"?"on":""}">💾 Save</button></div>`;
+  let h=`<div class="seg"><button data-setv="gen" class="${SETV==="gen"?"on":""}">⚙️ General</button><button data-setv="save" class="${SETV==="save"?"on":""}">💾 Save</button><button data-setv="stats" class="${SETV==="stats"?"on":""}">📊 Stats</button></div>`;
   if(SETV==="gen") h+=acctHTML()+notifHTML()
     +sgrp("Sound",[srow("🔊","Sound effects","On iPhone, also check the volume and silent switch",tgl(snd(),"snd")),volRow("sv",svol()),
       srow("🎵","Music",`<span id="muslbl"></span>`,(mus()&&MUS.on?`<button class='btn ghost sm' data-sx='mskip'>Skip ⏭</button>`:"")+tgl(mus(),"mus")),volRow("mv",mvol())])
     +sgrp("Work",[`<button class="srow" id="chprof"><span class="ic">${p?p.i:"💼"}</span><div class="g"><div class="tt">Profession</div><div class="st">${p?p.n:"None yet"}</div></div><span class="t">Change</span><span class="chev">›</span></button>`])
-    +sgrp("App",[srow("ℹ️",`Version ${APPV}`,"Updates install automatically when you open the app",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
-  else h+=SAVEHTML();
-  modal("✕|⚙︎ Settings",h,[]); musLbl();
+    +sgrp("App",[UPD.pub&&!UPD.ready?srow("⏳","A new update is on its way","GitHub is putting it online right now. It usually takes 1–2 minutes, then it downloads here.",`<span class="t">Publishing…</span>`):"",UPD.ready?`<div class="srow" id="updrow"><span class="ic">⬆️</span><div class="g"><div class="tt">Update ready${UPD.ver?`: version ${UPD.ver}`:""}</div><div class="st">You're on version ${APPV}. Your game is saved first.</div></div><button class="btn gold sm" data-sx="updgo">Update now</button></div>`:srow("ℹ️",`Version ${APPV}`,"Updates only install when you choose to",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
+  else if(SETV==="save") h+=SAVEHTML();
+  else h+=stats_html();
+  modal("✕|⚙︎ Settings",h,[]); musLbl(); if(SETV==="gen"&&!PUBT_ON){ PUBT_ON=true; pubWatch(); setTimeout(()=>PUBT_ON=false,1000); }
   $("modal").querySelectorAll("[data-setv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openSettings(b.dataset.setv); });
   const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
@@ -2351,13 +2353,14 @@ main.addEventListener("click",e=>{ const t=e.target, m=myCard();
   const av=t.closest("[data-pav]"); if(av){ keep(); m.av=av.dataset.pav; delete m.img; save(); pubProfile(); return buildMe(); }
   const pc=t.closest("[data-pcol]"); if(pc){ keep(); m.col=+pc.dataset.pcol; return buildMe(); }
   if(t.closest("[data-psave]")){ keep(); save(); toast("Profile saved","good"); pubProfile(); FR.list=null; return buildMe(); } });
-$("gear").onclick=openSettings;
+$("gear").onclick=()=>openSettings("gen"); // always opens on General
 function sx(x){
   if(x==="login"){ closeModal(); S.authSkip=0; return showAuth(); }
   if(x==="logout"){ closeModal(); S.authSkip=0; csave().finally(()=>window.NET&&window.NET.signOut()); return; }
   if(x==="pw"){ const v=($("newpw")||{}).value||""; if(v.length<6) return toast("Password needs at least 6 characters"); window.NET.changePassword(v).then(()=>{ toast("Password changed","good"); closeModal(); },e=>toast(e.message)); return; }
   if(x==="pushon") return pushOn();
   if(x==="upd"){ toast("Checking for updates…"); return checkUpdate(true); }
+  if(x==="updgo") return applyUpdate();
   if(x==="pushtest"){ if(!DEVS.includes(UNAME)) return; pushSave(null,true).then(ok=>toast(ok?"🧪 Test requested. Lock your phone to see it arrive.":"Couldn't request a test push")); return; }
   if(x==="pushoff") return pushOff();
   if(x==="p_news"||x==="p_friends") return pushToggle(x.slice(2));
@@ -2379,19 +2382,46 @@ if(!S.mt&&S.prof){ S.mt={}; TEXTS.forEach(([id,c])=>{ if(c()) S.mt[id]=1; }); }
 save(); build(); if($("modal").classList.contains("hide")) intro();
 setInterval(loop,250); setInterval(()=>{ if(Date.now()-lastTap<120000) csave(); },30000); setTimeout(cinit,0); setInterval(installHint,30000);
 document.documentElement.classList.toggle("phone",PHONE()); addEventListener("resize",()=>{ document.documentElement.classList.toggle("phone",PHONE()); if(typeof tbarUpd==="function") tbarUpd(); if(tab==="trade") draw(); });
-if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")) navigator.serviceWorker.register("sw.js").catch(()=>{});
 { const h=location.hash.slice(1); if(TABS.includes(h)&&h!==tab){ history.replaceState(null,"",location.pathname+location.search); setTimeout(()=>{ if(!$("tut")) setTab(h); },600); } }
-// ---------- updates ----------
-// APPV is bumped with every release (same number as the service worker cache). The app downloads the live index.html,
-// reads its APPV, and if it's different saves your game and reloads into the new version. Runs on its own when the app
-// comes back to the screen and every 5 minutes, and on demand from Settings → Check for updates.
-const APPV="72";
+// ---------- updates (manual) ----------
+// APPV goes up with every release (same number as the service worker cache). New versions download in the background
+// (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
+// The gear gets a dot and you get one heads-up when an update is ready.
+const APPV="73";
+let UPD={ready:false,ver:null,told:false,pub:false,pubAt:0};
+// Is GitHub publishing a new version right now? (GitHub Pages "pages build and deployment" run queued or running.)
+// Only asked while Settings is open, at most every 20 s (GitHub allows 60 of these an hour without signing in).
+async function ghPublishing(){ if(Date.now()-UPD.pubAt<20000) return UPD.pub; UPD.pubAt=Date.now();
+  try{ const r=await fetch("https://api.github.com/repos/RyTheGuy18/stock-tycoon/actions/runs?per_page=5",{cache:"no-store"}); if(!r.ok) return UPD.pub;
+    const j=await r.json(); UPD.pub=(j.workflow_runs||[]).some(x=>/pages build/i.test(x.name||"")&&x.status!=="completed"); }catch(_){} return UPD.pub; }
+let PUBT=null;
+function pubWatch(){ clearTimeout(PUBT); const was=UPD.pub; ghPublishing().then(p=>{ const open=!$("modal").classList.contains("hide")&&$("muslbl");
+  if(!open) return; if(p!==was) openSettings(); if(!p&&was) checkUpdate(); PUBT=setTimeout(pubWatch,20000); }); }
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }
-async function checkUpdate(manual){ if(location.protocol!=="https:"&&!manual) return; const v=await liveVer();
-  if(!v){ if(manual) toast("Couldn't check for updates. Are you online?"); return; }
-  if(v!==APPV){ save(); if(ACT) csave(); toast(`Updating to version ${v}…`); try{ const r=await navigator.serviceWorker.getRegistration(); if(r) await r.update(); }catch(_){} setTimeout(()=>location.reload(),900); }
-  else if(manual) toast(`✅ You're on the newest version (${APPV})`,"good"); }
-checkUpdate(); setInterval(()=>checkUpdate(),300000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
+const swReg=async()=>{ try{ return "serviceWorker" in navigator?await navigator.serviceWorker.getRegistration():null; }catch(_){ return null; } };
+// ask the service worker which version you accepted and which one it has downloaded
+function swAsk(msg){ return new Promise(res=>{ const ctl=navigator.serviceWorker&&navigator.serviceWorker.controller; if(!ctl) return res(null);
+  const ch=new MessageChannel(); ch.port1.onmessage=e=>res(e.data); ctl.postMessage(msg,[ch.port2]); setTimeout(()=>res(null),3000); }); }
+const verOf=c=>c&&c.replace(/^tt-v/,"");
+function updMark(){ const g=$("gear"); if(g) g.classList.toggle("upd",UPD.ready);
+  if(UPD.ready&&!UPD.told){ UPD.told=true; toast(`⬆️ Version ${UPD.ver} is ready. Install it from Settings → Update now`); }
+  if(!$("modal").classList.contains("hide")&&$("updrow")===null&&UPD.ready&&$("muslbl")) openSettings(); }
+async function swState(){ const st=await swAsk({type:"state"}); if(!st||!st.accepted) return; const ready=st.latest!==st.accepted&&verOf(st.latest)!==APPV;
+  if(ready!==UPD.ready){ UPD.ready=ready; UPD.ver=verOf(st.latest); updMark(); } }
+// look for a new version (it downloads in the background if there is one); manual = from the Check button
+async function checkUpdate(manual){ const r=await swReg();
+  if(manual&&UPD.ready) return toast(`Version ${UPD.ver} is ready. Tap Update now`);
+  const v=await liveVer(); if(r){ try{ await r.update(); }catch(_){} }
+  setTimeout(swState,1500);
+  if(!manual) return;
+  if(!v) return toast("Couldn't check for updates. Are you online?");
+  if(v===APPV) return toast(`✅ You're on the newest version (${APPV})`,"good");
+  toast(`⬆️ Version ${v} found. Downloading…`);
+  const t0=Date.now(); const wait=async()=>{ await swState(); if(UPD.ready) return; if(Date.now()-t0<25000) setTimeout(wait,1500); else toast("Still downloading. Check again in a minute"); }; setTimeout(wait,1500); }
+async function applyUpdate(){ save(); if(ACT) await csave(); toast("Updating…"); await swAsk({type:"accept"}); setTimeout(()=>location.reload(),300); }
+if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("controllerchange",()=>setTimeout(swState,500));
+swState(); setInterval(()=>checkUpdate(),600000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
 </script><script>(function(){ const de=document.documentElement;
   if(!(navigator.standalone===true||matchMedia('(display-mode: standalone)').matches)) return; de.classList.add('pwa');
   // iOS still drawing us under a see-through status bar? keep header text below its blur band

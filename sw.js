@@ -1,24 +1,43 @@
 // Stock Tycoon service worker: the game loads and runs offline; online features need a connection.
-const C = "tt-v72";
+const C = "tt-v73";
 const SHELL = ["./", "index.html", "net.js", "config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
+// Updates are MANUAL. Each version keeps its files in its own cache (tt-vNN). A small "meta" cache remembers which
+// version you accepted, and the game is always served from THAT cache, even after a newer service worker takes over
+// or the app is fully closed and reopened. "Update now" in Settings sends {type:"accept"}: the newest version becomes
+// the accepted one and old caches are cleared. The very first install is accepted automatically.
+const META = "tt-meta";
+const accepted = async () => { const r = await (await caches.open(META)).match("/__ver"); return r ? r.text() : null; };
+const setAccepted = async (v) => (await caches.open(META)).put("/__ver", new Response(v));
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(C).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(C).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then((k) => Promise.all(k.filter((x) => x !== C).map((x) => caches.delete(x)))).then(() => self.clients.claim()));
+  e.waitUntil((async () => {
+    let cur = await accepted(); if (!cur || !(await caches.has(cur))) { cur = C; await setAccepted(C); }
+    for (const k of await caches.keys()) if (k !== cur && k !== C && k !== META) await caches.delete(k);
+    await self.clients.claim();
+  })());
+});
+self.addEventListener("message", (e) => {
+  const d = e.data || {}, reply = (x) => e.ports[0] && e.ports[0].postMessage(x);
+  if (d.type === "state") e.waitUntil(accepted().then((a) => reply({ accepted: a, latest: C })));
+  if (d.type === "accept") e.waitUntil((async () => { await setAccepted(C); for (const k of await caches.keys()) if (k !== C && k !== META) await caches.delete(k); reply({ ok: true }); })());
 });
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   const u = new URL(e.request.url);
-  // Game files: always check the server first (skipping the 10-minute browser cache) so updates show up right away, fall back to the saved copy offline.
   // Music streams straight from the server (the browser fetches it in pieces, which a cached copy would break on iPhone).
   if (u.origin === location.origin && u.pathname.includes("/music/")) return;
+  // The version check (index.html?v=...) always asks the server.
+  if (u.origin === location.origin && u.searchParams.has("v")) return;
   if (u.origin === location.origin) {
-    e.respondWith(
-      fetch(e.request, { cache: "no-cache" }).then((r) => { const cp = r.clone(); caches.open(C).then((c) => c.put(e.request, cp)); return r; })
-        .catch(() => caches.match(e.request, { ignoreSearch: true }).then((r) => r || caches.match("index.html")))
-    );
+    e.respondWith((async () => {
+      const c = await caches.open((await accepted()) || C);
+      const hit = (await c.match(e.request, { ignoreSearch: true })) || (e.request.mode === "navigate" ? await c.match("index.html") : null);
+      if (hit) return hit;
+      const r = await fetch(e.request); if (r.ok) c.put(e.request, r.clone()); return r;
+    })());
     return;
   }
   // Fonts and the Firebase library never change at a given URL, so keep a copy.

@@ -846,7 +846,7 @@ const fundVal=()=>S.fu*price(II,NOW);
 const liquid=()=>S.cash+posVal(), netWorth=()=>liquid()+fundVal();
 // Net worth needed to unlock each stock (raised ~3× in v7.6). d.un (the old number) still sets liquidity and lesson prices.
 // Stocks you had already unlocked under the old numbers stay unlocked (S.unl).
-const NEED={BRGR:75,BREW:150,FLYR:325,GAME:700,MEDX:1500,OILX:3250,EVCO:7000,ORBT:15000,AIQ:32500,CHIP:70000}; // from BREW on each step is about ×2.2
+const NEED={BRGR:75,BREW:250,FLYR:800,GAME:2250,MEDX:5500,OILX:12000,EVCO:22500,ORBT:40000,AIQ:65000,CHIP:100000}; // big early jumps (~×3) easing to ~×1.5 at the top
 STOCKS.forEach(d=>{ d.need=NEED[d.s]!=null?NEED[d.s]:d.un; });
 const inDebt=()=>S.cash<-.005, unlocked=d=>!d.gone&&(S.bestNW>=d.need||!!(S.unl&&S.unl[d.s]));
 const prof=()=>S.prof?PB[S.prof]:null;
@@ -2442,7 +2442,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="87";
+const APPV="88";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

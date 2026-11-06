@@ -2280,8 +2280,8 @@ function wake(e){ try{ if(e&&e.isTrusted&&AC&&(STALE||AC.state!=='running')&&Dat
 // iPhone only lets audio start from certain touch events, and which ones changed between iOS versions, so listen to all of them
 ['pointerdown','touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,wake,true));
 // coming back to the app: try to restart audio straight away (works on some iPhones); if it can't, the first tap will
-document.addEventListener('visibilitychange',()=>{ if(document.hidden){ HID_AT=Date.now(); musPause(); } else { if(HID_AT&&Date.now()-HID_AT>1500) STALE=true; if(AC) wake(); } });
-window.addEventListener('pagehide',()=>{ HID_AT=Date.now(); musPause(); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ HID_AT=Date.now(); audioOff(); } else { if(HID_AT&&Date.now()-HID_AT>1500) STALE=true; if(AC) wake(); } });
+window.addEventListener('pagehide',()=>{ HID_AT=Date.now(); audioOff(); });
 window.addEventListener('pageshow',e=>{ if(e.persisted||(HID_AT&&Date.now()-HID_AT>1500)) STALE=true; if(AC) wake(); });
 window.addEventListener('focus',()=>{ if(AC) wake(); });
 document.addEventListener('click',e=>{ const b=e.target.closest('button,label'); if(!b) return;
@@ -2343,7 +2343,12 @@ function musWake(){ if(!mus()||!snd()||document.hidden){ return; } MUS.on=true;
 // lock screen. The song and spot are remembered and pick up again when you come back.
 function musUnload(){ if(!MUS.el) return; try{ MUS.el.pause(); MUS.el.removeAttribute('src'); MUS.el.load(); }catch(_){} if(MUSB) MUSB.gain.value=0;
   try{ if(navigator.mediaSession){ navigator.mediaSession.metadata=null; navigator.mediaSession.playbackState='none'; } }catch(_){} }
-function musPause(){ if(!MUS.el) return; if(MUS.cur>=0&&MUS.el.getAttribute('src')) MUS.resume={i:MUS.cur,at:MUS.el.currentTime||0}; musUnload(); }
+function musPause(){ if(MUS.el){ if(MUS.cur>=0&&MUS.el.getAttribute('src')) MUS.resume={i:MUS.cur,at:MUS.el.currentTime||0}; musUnload(); } }
+// Leaving the app: shut ALL audio down (music player and the sound engine). As long as either exists, iPhone keeps an
+// empty "Stock Tycoon" player on the lock screen. The first tap back builds fresh audio and the song carries on.
+function audioOff(){ musPause(); MUS.el=null; MUS.src=null; MUS.cur=-1;
+  try{ if(AC) AC.close(); }catch(_){} AC=null; SFXB=null; MUSB=null; SNDU=false; STALE=false;
+  try{ if(navigator.mediaSession){ for(const a of ["play","pause","seekbackward","seekforward","previoustrack","nexttrack"]) navigator.mediaSession.setActionHandler(a,null); } }catch(_){} }
 function musStop(){ MUS.on=false; if(!MUS.el) return; musFade(0,.6); setTimeout(()=>{ if(!MUS.on&&MUS.el){ MUS.resume=MUS.cur>=0?{i:MUS.cur,at:MUS.el.currentTime||0}:null; musUnload(); } },650); }
 function musSkip(){ if(!MUS.el||MUS.cur<0) return musWake(); musFade(0,.4); setTimeout(()=>musPlay(musNext()),420); }
 function musLbl(){ const el=$("muslbl"); if(el) el.textContent=MUS.cur>=0&&MUS.on?`Now playing: ${SONGS[MUS.cur].n} · ${SONGS[MUS.cur].a}`:"Shuffles through 6 chill tracks while you play."; }
@@ -2395,7 +2400,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="77";
+const APPV="78";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

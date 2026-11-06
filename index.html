@@ -89,6 +89,8 @@ h3{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.07
 .mom{background:var(--c2);border-left:3px solid var(--gold);border-radius:10px;padding:9px 11px;font-size:14px;line-height:1.45;margin:6px 0}
 #modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:14px;z-index:9}
 #modal.hide{display:none}
+#modal .mh{display:flex;align-items:center;gap:8px;position:sticky;top:-16px;margin:-16px -16px 8px;padding:12px 16px 8px;background:var(--card);z-index:2} #modal .mh h2{margin:0;flex:1}
+#modal .mx{width:32px;height:32px;flex:none;border-radius:50%;background:var(--c2);color:var(--mut);display:flex;align-items:center;justify-content:center} #modal .mx svg{width:16px;height:16px}
 #modal .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;max-width:400px;width:100%;max-height:86dvh;overflow-y:auto}
 #modal h2{margin:0 0 6px;font-size:19px}
 #modal p{color:var(--mut);font-size:14px;line-height:1.5;margin:6px 0} #modal p b{color:var(--text)}
@@ -1285,7 +1287,7 @@ document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.datase
   if(k==="mv"&&MUSB&&MUS.cur>=0&&MUS.on) MUSB.gain.setTargetAtTime(musV()*SONGS[MUS.cur].g,AC.currentTime,.05); });
 document.addEventListener("change",e=>{ const k=e.target.dataset&&e.target.dataset.vol; if(!k) return; save(); act(); if(k==="sv") sfx('ping'); });
 function openSettings(){ const s=S.st;
-  modal("⚙︎ Settings",acctHTML()+notifHTML()+`<h3>Work</h3><button class="btn ghost" style="width:100%" id="chprof">${prof()?prof().i+" ":""}Change your profession</button><h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div>${volRow("sv",svol())}<div class="card row"><div class="g"><div class="b">Music</div><div class="t" id="muslbl"></div></div>${mus()&&MUS.on?`<button class="btn ghost sm" data-sx="mskip">Skip ⏭</button>`:""}<button class="btn ${mus()?"buy":"ghost"} sm" data-sx="mus">${mus()?"ON":"OFF"}</button></div>${volRow("mv",mvol())}<h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); musLbl(); const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
+  modal("✕|⚙︎ Settings",acctHTML()+notifHTML()+`<h3>Work</h3><button class="btn ghost" style="width:100%" id="chprof">${prof()?prof().i+" ":""}Change your profession</button><h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div>${volRow("sv",svol())}<div class="card row"><div class="g"><div class="b">Music</div><div class="t" id="muslbl"></div></div>${mus()&&MUS.on?`<button class="btn ghost sm" data-sx="mskip">Skip ⏭</button>`:""}<button class="btn ${mus()?"buy":"ghost"} sm" data-sx="mus">${mus()?"ON":"OFF"}</button></div>${volRow("mv",mvol())}<h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); musLbl(); const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
 function fitHdr(){ for(const id of ["cash","fund","nw"]){ const e=$(id); if(!e) continue; e.style.fontSize="";
   const w=e.parentElement.clientWidth, base=parseFloat(getComputedStyle(e).fontSize); let f=base;
@@ -1298,8 +1300,10 @@ function hdr(){ applyCos(); const c=$("cash"); c.textContent=money(S.cash); c.cl
   main.querySelectorAll("[data-cost]").forEach(x=>x.disabled=S.cash<+x.dataset.cost); }
 
 // ---------- modals ----------
-function modal(t,body,btns,cb){ const m=$("modal"); m.innerHTML=`<div class="box"><h2>${t}</h2>${body}${btns&&btns.length?`<div class="row" style="margin-top:12px">${btns.map((b,i)=>`<button class="btn g ${b[1]||""}" data-i="${i}">${b[0]}</button>`).join("")}</div>`:""}</div>`;
-  m.classList.remove("hide"); m.onclick=e=>{ const sxb=e.target.closest("[data-sx]"); if(sxb) return sx(sxb.dataset.sx); const jl=e.target.closest("[data-jl]"); if(jl&&!jl.disabled) return learnJob(+jl.dataset.jl); const o=e.target.closest("[data-pp],[data-jb],[data-op]"); if(o&&!o.disabled){ o.dataset.op?setOrder(o.dataset.op):o.dataset.pp?chooseProf(o.dataset.pp):startJob(+o.dataset.jb); return; }
+const XSVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+// a title starting with "✕|" gets a close button at the top left
+function modal(t,body,btns,cb){ const m=$("modal"), xb=t.startsWith("✕|"); if(xb) t=t.slice(2); m.innerHTML=`<div class="box">${xb?`<div class="mh"><button class="mx" data-mx aria-label="Close">${XSVG}</button><h2>${t}</h2></div>`:`<h2>${t}</h2>`}${body}${btns&&btns.length?`<div class="row" style="margin-top:12px">${btns.map((b,i)=>`<button class="btn g ${b[1]||""}" data-i="${i}">${b[0]}</button>`).join("")}</div>`:""}</div>`;
+  m.classList.remove("hide"); m.onclick=e=>{ if(e.target.closest("[data-mx]")) return closeModal(); const sxb=e.target.closest("[data-sx]"); if(sxb) return sx(sxb.dataset.sx); const jl=e.target.closest("[data-jl]"); if(jl&&!jl.disabled) return learnJob(+jl.dataset.jl); const o=e.target.closest("[data-pp],[data-jb],[data-op]"); if(o&&!o.disabled){ o.dataset.op?setOrder(o.dataset.op):o.dataset.pp?chooseProf(o.dataset.pp):startJob(+o.dataset.jb); return; }
     const b=e.target.closest("[data-i]"); if(!b&&(e.target!==m||m.dataset.lock)) return; closeModal(); if(b&&btns[+b.dataset.i][2]) btns[+b.dataset.i][2](); }; }
 function closeModal(){ const m=$("modal"); m.classList.add("hide"); delete m.dataset.lock; }
 let tt; const ERRT=/^(Enter |Not enough|Can't|Couldn't|Bad code|You need|You can't|Need |That's your own|Codes are|No cash|Message didn't|Password needs|Wrong )/;
@@ -1617,9 +1621,9 @@ function socialStart(N,uid){ socialStop(); FS.first=true;
   FS.unsub=N.watchFriendships(uid,async list=>{
     for(const f of list){ f.other=f.members.find(x=>x!==uid)||f.members[0]; if(!FS.prof[f.other]){ try{ FS.prof[f.other]=await N.getProfile(f.other)||{name:'Player'}; }catch(_){ FS.prof[f.other]={name:'Player'}; } } }
     if(!FS.first) list.forEach(f=>{ const old=FS.list.find(x=>x.id===f.id), p=FS.prof[f.other]||{};
-      if(!old&&f.status==='pending'&&f.from!==uid){ sfx('ping'); toast(`👥 ${esc(p.name)} sent you a friend request`); }
-      if(old&&old.status==='pending'&&f.status==='accepted'&&f.from===uid){ sfx('unlock'); toast(`👥 ${esc(p.name)} accepted your friend request`,'good'); }
-      if(f.last&&f.last.from!==uid&&(!old||!old.last||old.last.at!==f.last.at)&&FS.chat!==f.id){ sfx('text'); toast(`💬 ${esc(p.name)}: ${String(f.last.text||'').replace(/</g,'').slice(0,60)}`); } });
+      if(!old&&f.status==='pending'&&f.from!==uid){ sfx('ping'); toast(`👥 ${esc(p.name)} sent you a friend request`); alog('👥',`<b>${esc(p.name)}</b> sent you a friend request`,'friends'); }
+      if(old&&old.status==='pending'&&f.status==='accepted'&&f.from===uid){ sfx('unlock'); toast(`👥 ${esc(p.name)} accepted your friend request`,'good'); alog('🤝',`<b>${esc(p.name)}</b> accepted your friend request`,'chat:'+f.id); }
+      if(f.last&&f.last.from!==uid&&(!old||!old.last||old.last.at!==f.last.at)&&FS.chat!==f.id){ sfx('text'); toast(`💬 ${esc(p.name)}: ${String(f.last.text||'').replace(/</g,'').slice(0,60)}`); alog('💬',`<b>${esc(p.name)}</b>: ${String(f.last.text||'').replace(/</g,'').slice(0,70)}`,'chat:'+f.id); } });
     FS.first=false; FS.list=list;
     const acc=list.filter(f=>f.status==='accepted'); FRUIDS=new Set(acc.map(f=>f.other)); S.friends=acc.map(f=>(FS.prof[f.other]||{}).code).filter(Boolean);
     navDot(); if(tab==='friends'&&!FS.chat) buildFriends(); }); }
@@ -1689,7 +1693,7 @@ async function compPub(force){ const c=compCur(); if(!DB||!UID||!c) return; if(!
 async function compSettle(){ const c=S.comp; if(!DB||!UID||!c||c.done||c.w>=wkIdx(nowSec())) return;
   try{ const q=await DB.collection('comps/'+c.w+'/entries').orderBy('value','desc').limit(200).get(), rows=q.docs.map(d=>Object.assign({id:d.id},d.data())), r=rows.findIndex(x=>x.id===UID);
     c.done=1; const tro=S.st.tro=S.st.tro||{g:0,s:0,b:0}, md=rows.length>=2?['g','s','b'][r]:null, fv=r>=0?+rows[r].value:compVal(c);
-    if(md) tro[md]++; save(); pubProfile(); sfx(md?'unlock':'ping');
+    if(md) tro[md]++; alog('🏆',`Weekly competition: you finished <b>#${r>=0?r+1:'?'}</b> of ${rows.length}${md?' '+{g:'🥇',s:'🥈',b:'🥉'}[md]:''}`,'friends'); save(); pubProfile(); sfx(md?'unlock':'ping');
     modal("🏆 Last week's competition",`<p>You finished <b>#${r>=0?r+1:'?'}</b> of ${rows.length} with <b>${money(fv)}</b> (${((fv/COMP_START-1)*100).toFixed(1)}%).</p>${md?`<p style='font-size:44px;text-align:center;margin:8px 0'>${{g:'🥇',s:'🥈',b:'🥉'}[md]}</p><p>You won a trophy! It shows on your profile and the leaderboard.</p>`:`<p>No trophy this time${rows.length<2?' (trophies need at least 2 players)':''}. This week's competition is open now.</p>`}`,[['Nice','gold']]);
   }catch(_){} }
 async function loadComp(){ if(!DB||CB.busy) return; CB.busy=true; const w=wkIdx(nowSec());
@@ -1857,18 +1861,37 @@ function newsFeed(t0,t1){ const out=[];
       else if(e.ty==="pump"){ at=h*HN+e.st; t=`🎈 ${d.n} is spiking on huge volume`; }
       if(at&&at>t0&&at<=t1) out.push({at,s:d.s,k:"move",t:t+" ("+d.s+")"}); }); });
   return out.sort((a,b)=>b.at-a.at); }
-let NEWSCHK=0;
+// ---------- activity: friend requests, messages, tips, competition results (second tab of the bell) ----------
+// go: "friends" opens the Friends tab, "chat:<pairId>" opens that chat
+function alog(ic,t,go){ S.alog=S.alog||[]; if(go&&go.startsWith("chat:")) S.alog=S.alog.filter(x=>x.go!==go); S.alog.unshift({at:nowSec(),ic,t,go:go||""}); if(S.alog.length>50) S.alog.length=50; if(typeof bellUpd==="function") bellUpd(true); }
+const actNew=()=>(S.alog||[]).filter(x=>x.at>(S.actSeen||0)).length+(FS.list||[]).filter(f=>f.status==='pending'&&f.from!==UID&&(f.at||0)/1000>(S.actSeen||0)).length;
+let NEWSCHK=0, NV=null;
 function bellUpd(force){ if(!force&&NOW-NEWSCHK<20) return; NEWSCHK=NOW; const b=$("bell"); if(!b) return;
-  if(!S.newsSeen) S.newsSeen=NOW-3600; const f=newsFeed(Math.max(S.newsSeen,NOW-86400),NOW); b.classList.toggle("new",f.length>0); }
-function openNews(){ const f=newsFeed(NOW-86400*2,NOW).slice(0,60), seen=S.newsSeen||0; S.newsSeen=NOW; $("bell").classList.remove("new");
+  if(!S.newsSeen) S.newsSeen=NOW-3600; const f=newsFeed(Math.max(S.newsSeen,NOW-86400),NOW); b.classList.toggle("new",f.length>0||actNew()>0); }
+function openNews(view){ const f=newsFeed(NOW-86400*2,NOW).slice(0,60), seen=S.newsSeen||0, an=actNew(), nn=f.filter(x=>x.at>seen).length;
+  view=view||NV||(an&&!nn?"act":"news"); NV=view;
+  const segH=`<div class="seg"><button data-nv="news" class="${view==="news"?"on":""}">📰 News${nn?` · ${nn}`:""}</button><button data-nv="act" class="${view==="act"?"on":""}">👥 Activity${an?` · ${an}`:""}</button></div>`;
+  if(view==="act") return openAct(segH);
+  S.newsSeen=NOW; $("bell").classList.toggle("new",an>0);
   const g=regimeAt(Math.floor(NOW/3600)), day=Math.floor((NOW/3600-6)/24);
   const mood=!g||!g.type?`<span class="pill">😐 Calm market</span>`:`<span class="pill ${g.type>0?"ok":"bad"}">${g.type>0?"📈 Bull run":"📉 Bear market"} · day ${day-g.d0+1} of ${g.d1-g.d0}</span>`;
   const row=x=>{ let sub=dur(NOW-x.at)+" ago";
     if(x.ev){ const e=x.ev, live=NOW-e.t0<e.T; sub+=(live?` · <b style="color:var(--gold)">${e.sc.k==="f"?"moving now":"still unfolding"}</b>`:"")+" · "+Object.entries(e.sc.fx).filter(([k])=>k!=="*"&&BYSYM[k]&&!BYSYM[k].gone).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,4).map(([k,w])=>{ const up=w*e.sc.dir>0; return `<span class="m ${up?"up":"dn"}">${up?"▲":"▼"}${k}</span>`; }).join(" "); }
     const tv=x.s&&x.s!=="*"&&BYSYM[x.s]&&unlocked(BYSYM[x.s]);
     return `<button class="nw ${x.at>seen?"unseen":""}" ${tv?`data-nview="${x.s}"`:""}><div style="font-size:13.5px">${x.t.replace("BREAKING: ","")}</div><div class="t">${sub}${tv?" · tap to view":""}</div></button>`; };
-  modal("🔔 News",`<div class="row" style="margin-bottom:6px"><div class="g t">Market mood</div>${mood}</div>`+(f.length?f.map(row).join(""):`<div class="t">Quiet couple of days. Big stories, crashes and huge spikes show up here.</div>`),[["Close","ghost"]]);
-  $("modal").querySelectorAll("[data-nview]").forEach(b=>b.onclick=()=>{ S.sel=b.dataset.nview; ZOFF=0; closeModal(); setTab("trade"); }); }
+  modal("✕|🔔 Notifications",segH+`<div class="row" style="margin-bottom:6px"><div class="g t">Market mood</div>${mood}</div>`+(f.length?f.map(row).join(""):`<div class="t">Quiet couple of days. Big stories, crashes and huge spikes show up here.</div>`),[["Close","ghost"]]);
+  $("modal").querySelectorAll("[data-nview]").forEach(b=>b.onclick=()=>{ S.sel=b.dataset.nview; ZOFF=0; closeModal(); setTab("trade"); }); nvWire(); }
+function nvWire(){ $("modal").querySelectorAll("[data-nv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openNews(b.dataset.nv); }); }
+function openAct(segH){ const seen=S.actSeen||0; S.actSeen=nowSec(); bellUpd(true); const uid=UID, nm=f=>esc((FS.prof[f.other]||{}).name||"A player");
+  const inc=(FS.list||[]).filter(f=>f.status==='pending'&&f.from!==uid), unr=(FS.list||[]).filter(f=>unread(f));
+  let h=segH;
+  if(!DB) h+=`<div class="t" style="margin-bottom:8px">Sign in to get friend requests, messages and tips here.</div>`;
+  if(inc.length||unr.length) h+=`<h3 style="margin-top:4px">Waiting on you</h3>`+inc.map(f=>`<button class="nw unseen" data-ago="friends"><div style="font-size:13.5px">👥 <b>${nm(f)}</b> sent you a friend request</div><div class="t">tap to accept or decline</div></button>`).join("")
+    +unr.map(f=>`<button class="nw unseen" data-ago="chat:${f.id}"><div style="font-size:13.5px">💬 <b>${nm(f)}</b>: ${String(f.last.text||"").replace(/</g,"").slice(0,70)}</div><div class="t">${dur(Math.max(0,nowSec()-Math.floor(f.last.at/1000)))} ago · tap to reply</div></button>`).join("");
+  const L=(S.alog||[]).filter(x=>nowSec()-x.at<86400*7);
+  h+=`<h3 style="margin-top:4px">Recent</h3>`+(L.length?L.map(x=>`<button class="nw ${x.at>seen?"unseen":""}" ${x.go?`data-ago="${x.go}"`:""}><div style="font-size:13.5px">${x.ic} ${x.t}</div><div class="t">${dur(Math.max(0,nowSec()-x.at))} ago${x.go?" · tap to open":""}</div></button>`).join(""):`<div class="t">Nothing yet. Friend requests, messages, tips and competition results show up here.</div>`);
+  modal("✕|🔔 Notifications",h,[["Close","ghost"]]); nvWire();
+  $("modal").querySelectorAll("[data-ago]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const g=b.dataset.ago; closeModal(); setTab("friends"); if(g.startsWith("chat:")) setTimeout(()=>openChat(g.slice(5)),50); }); }
 $("bell").onclick=()=>openNews();
 // ---------- texts from Mom (pop up, then gone) ----------
 const TEXTS=[
@@ -1954,10 +1977,10 @@ async function tipSync(){ if(!DB||!UID||tipBusy) return; tipBusy=true; const now
       if(Array.isArray(x.to)&&x.to.includes(me)&&Array.isArray(x.tips)) x.tips.forEach(r=>{ if(!Array.isArray(r)) return; const id=String(r[0]).slice(0,12), t=Math.floor(+r[1]), i=+r[2], dir=+r[3];
         if(!(now-t<300&&t<=now+60)||!Number.isInteger(i)||i<0||i>=STOCKS.length||STOCKS[i].gone||(dir!==1&&dir!==-1)||S.tipIn.some(y=>y.id===id)) return;
         S.tipIn.push({id,code,name:nm,i,dir,t}); if(S.tipIn.length>20) S.tipIn.shift();
-        sfx('ping'); toast(`💡 ${nm} tips ${STOCKS[i].s} ${dir>0?'▲ up':'▼ down'}${unlocked(STOCKS[i])?'':' (locked for you)'}`); });
+        sfx('ping'); toast(`💡 ${nm} tips ${STOCKS[i].s} ${dir>0?'▲ up':'▼ down'}${unlocked(STOCKS[i])?'':' (locked for you)'}`); alog('💡',`<b>${nm}</b> tipped ${STOCKS[i].s} ${dir>0?'<span class=up>▲ up</span>':'<span class=dn>▼ down</span>'}`); });
       if(Array.isArray(x.cr)) x.cr.forEach(c=>{ if(!Array.isArray(c)||String(c[1])!==me) return; const id=String(c[0]), pl=Math.min(1e8,+c[2]||0), key=doc.id+':'+id;
         if(!mine.has(id)||S.tipPaid[key]||!(pl>0)) return; S.tipPaid[key]=now; const b=Math.round(pl*10)/100; S.cash+=b; S.st.tipPay=(S.st.tipPay||0)+b; S.st.tipWins=(S.st.tipWins||0)+1; resetPeak();
-        life(`💡 ${nm} won on your tip: +${money(b)} bonus`); sfx('win'); toast(`💡 ${nm} won on your tip! +${money(b)} bonus`,'good'); }); });
+        life(`💡 ${nm} won on your tip: +${money(b)} bonus`); sfx('win'); toast(`💡 ${nm} won on your tip! +${money(b)} bonus`,'good'); alog('💰',`<b>${nm}</b> won on your tip: <span class=up>+${money(b)}</span> bonus`); }); });
     for(const k in S.tipPaid) if(now-S.tipPaid[k]>259200) delete S.tipPaid[k];
     if(S.tipUsed) for(const k in S.tipUsed) if(now-S.tipUsed[k]>86400) delete S.tipUsed[k];
   }catch(_){} tipBusy=false; }

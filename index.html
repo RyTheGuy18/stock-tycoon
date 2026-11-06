@@ -1353,7 +1353,7 @@ function openSettings(v){ if(v) SETV=v; const p=prof();
     +sgrp("App",[UPD.pub&&!UPD.ready?srow("⏳","A new update is on its way","GitHub is putting it online right now. It usually takes 1–2 minutes, then it downloads here.",`<span class="t">Publishing…</span>`):"",UPD.ready?`<div class="srow" id="updrow"><span class="ic">⬆️</span><div class="g"><div class="tt">Update ready${UPD.ver?`: version ${UPD.ver}`:""}</div><div class="st">You're on version ${APPV}. Your game is saved first.</div></div><button class="btn gold sm" data-sx="updgo">Update now</button></div>`:srow("ℹ️",`Version ${APPV}`,"Updates only install when you choose to",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
   else if(SETV==="save") h+=SAVEHTML();
   else h+=stats_html();
-  modal("✕|⚙︎ Settings",h,[]); musLbl(); if(SETV==="gen"&&!PUBT_ON){ PUBT_ON=true; pubWatch(); setTimeout(()=>PUBT_ON=false,1000); }
+  modal("✕|⚙︎ Settings",h,[]); $("modal").querySelector(".box").style.height="min(86dvh,760px)"; /* same size on every tab */ musLbl(); if(SETV==="gen"&&!PUBT_ON){ PUBT_ON=true; pubWatch(); setTimeout(()=>PUBT_ON=false,1000); }
   $("modal").querySelectorAll("[data-setv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openSettings(b.dataset.setv); });
   const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
@@ -2388,7 +2388,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="73";
+const APPV="74";
 let UPD={ready:false,ver:null,told:false,pub:false,pubAt:0};
 // Is GitHub publishing a new version right now? (GitHub Pages "pages build and deployment" run queued or running.)
 // Only asked while Settings is open, at most every 20 s (GitHub allows 60 of these an hour without signing in).

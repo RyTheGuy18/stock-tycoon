@@ -1452,9 +1452,9 @@ function storyIntro(k){ k=k||0; let el=$("intro"); if(!el){ el=document.createEl
 // ---------- quick tutorial ----------
 const TUT=[
  ["#chart","The market","Every candle is 10 seconds of a stock's life. Green went up, red went down. The bars underneath are <b>volume</b> (more on those next). Pinch or scroll to zoom, drag to look back in time.","trade"],
- ["#chart","Volume bars","Each bar under the chart lines up with the candle above it. Its height is <b>how many shares traded</b> in those 10 seconds. <b>Tall bar</b> = lots of people trading. <b>Short bar</b> = barely anyone. Judge a bar against the ones around it, not on its own: \"normal\" is a typical bar from the last hour.","trade"],
- ["#chart","What volume tells you","A candle shows <b>where</b> the price went. Volume shows <b>how many people pushed it there</b>.<br>• Big move + tall bars = a real move. It often keeps going.<br>• Big move + normal bars = a weak move. It can fizzle or turn around.<br>• One giant bar out of nowhere = something just happened. Check the news.","trade"],
- ["#chart","Volume warns you first","Big moves usually show up in the volume <b>before</b> the price.<br>• Tiny candles on very short bars = the calm before a breakout.<br>• Bars getting taller three candles in a row = a surge is loading.<br>• Small red candles on tall bars, no news = a drop is coming.<br>Never trust a price move without checking the volume under it. The lessons in the Store teach the exact rules.","trade"],
+ ["#chart","Volume bars","Each bar under the chart lines up with the candle above it. Its height is <b>how many shares traded</b> in those 10 seconds. <b>Tall bar</b> = lots of people trading. <b>Short bar</b> = barely anyone. Judge a bar against the ones around it, not on its own: \"normal\" is a typical bar from the last hour.","trade","vol"],
+ ["#chart","What volume tells you","A candle shows <b>where</b> the price went. Volume shows <b>how many people pushed it there</b>.<br>• Big move + tall bars = a real move. It often keeps going.<br>• Big move + normal bars = a weak move. It can fizzle or turn around.<br>• One giant bar out of nowhere = something just happened. Check the news.","trade","vol"],
+ ["#chart","Volume warns you first","Big moves usually show up in the volume <b>before</b> the price.<br>• Tiny candles on very short bars = the calm before a breakout.<br>• Bars getting taller three candles in a row = a surge is loading.<br>• Small red candles on tall bars, no news = a drop is coming.<br>Never trust a price move without checking the volume under it. The lessons in the Store teach the exact rules.","trade","vol"],
  ["#acts","Buy, short, close","<b>Buy</b> if you think it'll go up. <b>Short</b> if you think it'll drop. <b>Close</b> cashes out your trade. You only make money when you close.","trade"],
  ["#chart","Stop loss and take profit","Once you're in a trade, tap <b>Stop loss</b> or <b>Take profit</b> on your position card, then <b>tap the chart</b> where you want it. Drag the handle on the right edge to move it. When the price gets there, your trade closes by itself, even while you're away.","trade"],
  ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed. Learn better jobs in the job list as you build reputation.","trade"],
@@ -1481,6 +1481,9 @@ function tutorial(k){ k=k||0; let el=$("tut"); if(!el){ el=document.createElemen
   // lay out now, again after the tab finishes drawing, then keep the ring glued to the target
   placeTut(true); requestAnimationFrame(()=>placeTut(true)); setTimeout(()=>placeTut(true),250);
   clearInterval(tutIv); tutIv=setInterval(()=>placeTut(false),200); }
+// A step can ring just part of its target: "vol" = the volume bars at the bottom of the chart (see draw(): vh = 15% of the height, price axis 56px on the right).
+function tutRect(tg){ const r=tg.getBoundingClientRect(), z=TUTK>=0&&TUT[TUTK][4]; if(z!=="vol") return r;
+  const top=r.bottom-r.height*.15-4, right=r.right-56; return {top,bottom:r.bottom,left:r.left,right,width:right-r.left,height:r.bottom-top}; }
 // Puts the tip card on one side of the screen and scrolls the target fully into the other side.
 const WIDE=matchMedia("(min-width:1000px) and (pointer:fine)");
 function placeTut(scroll){ const el=$("tut"); if(!el||TUTK<0) return; const sel=TUT[TUTK][0];
@@ -1490,7 +1493,7 @@ function placeTut(scroll){ const el=$("tut"); if(!el||TUTK<0) return; const sel=
   if(WIDE.matches) return placeTutWide(el,tg,scroll);
   const tip=el.querySelector(".tip"), ring=el.querySelector(".ring"), m=$("main"), GAP=14, P=6;
   const H=innerHeight, th=tip.offsetHeight, nav=$("nav").getBoundingClientRect(), hdr=document.querySelector("header").getBoundingClientRect();
-  let r=tg.getBoundingClientRect(), lo, hi;
+  let r=tutRect(tg), lo, hi;
   if(!m.contains(tg)){                                  // nav buttons: tip floats just above the button
     tip.style.bottom="auto"; tip.style.top=(r.top<H/3?r.bottom+GAP:r.top-GAP-th)+"px"; lo=4; hi=nav.bottom;
   } else {
@@ -1504,7 +1507,7 @@ function placeTut(scroll){ const el=$("tut"); if(!el||TUTK<0) return; const sel=
         const top=r.top-(st-m.scrollTop), shown=Math.min(hi,top+r.height)-Math.max(lo,top);
         const score=shown/Math.max(1,r.height)*1000 - Math.abs(st-m.scrollTop)*.05;
         if(!best||score>best.score) best={side,st,score}; }
-      el.dataset.side=best.side; if(scroll){ m.scrollTop=best.st; r=tg.getBoundingClientRect(); } }
+      el.dataset.side=best.side; if(scroll){ m.scrollTop=best.st; r=tutRect(tg); } }
     const side=el.dataset.side;
     if(side==="top"){ tip.style.top=top0+"px"; tip.style.bottom="auto"; }
     else { tip.style.bottom="auto"; tip.style.top=(nav.top-10-th)+"px"; }
@@ -1516,8 +1519,8 @@ function placeTut(scroll){ const el=$("tut"); if(!el||TUTK<0) return; const sel=
 function placeTutWide(el,tg,scroll){ const tip=el.querySelector(".tip"), ring=el.querySelector(".ring"), G=14, P=6, W=innerWidth, H=innerHeight;
   let sc=tg.parentElement; while(sc&&sc!==document.body){ const o=getComputedStyle(sc).overflowY; if((o==="auto"||o==="scroll")&&sc.scrollHeight>sc.clientHeight) break; sc=sc.parentElement; }
   if(sc===document.body) sc=null;
-  let r=tg.getBoundingClientRect();
-  if(scroll&&sc){ const b=sc.getBoundingClientRect(); if(r.top<b.top+P||r.bottom>b.bottom-P){ sc.scrollTop+=r.top-(b.top+Math.max(P,(b.height-r.height)/2)); r=tg.getBoundingClientRect(); } }
+  let r=tutRect(tg);
+  if(scroll&&sc){ const b=sc.getBoundingClientRect(); if(r.top<b.top+P||r.bottom>b.bottom-P){ sc.scrollTop+=r.top-(b.top+Math.max(P,(b.height-r.height)/2)); r=tutRect(tg); } }
   const tw=Math.min(520,W-24); tip.style.width=tw+"px"; tip.style.right="auto"; tip.style.margin="0"; tip.style.bottom="auto";
   const th=tip.offsetHeight, cx=Math.max(12,Math.min(W-tw-12,r.left+r.width/2-tw/2));
   let x=cx, y;

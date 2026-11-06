@@ -385,6 +385,21 @@ function pnDay(n){ // {S: log level at midnight (after the crash), g: the day's 
     PND.push({S,g,f,t}); }
   return PND[n-PN0]; }
 function pnLevel(h){ if(h<H4) return dayLevel(h); const n=pnnyDay(h), D=pnDay(n); return D.S+D.g*(h-6-24*n)/24; }
+// Small news (from H5 = 3am Central Nov 6): about 1.6 minor headlines per stock per hour, so the stock you watch gets one every ~30 min.
+// Each nudges the price its way over 20 s on ~2x volume (about 1.5-3.5 typical minutes of movement) and fades over the hour.
+// Never during the 3-hour flush, the morning open, PNNY's midnight crash, a daily routine or another pattern. Separate seeds, so nothing else in the market changes.
+const H5=Math.floor(Date.UTC(2026,10,6,9)/3600000);
+const MNG=["📰 {n} lands a new partnership","📰 Analyst upgrades {n}","📰 {n} expands into new cities","📰 Customers love {n}'s new product line","📰 {n} hires a big-name executive","📰 {n} raises its dividend","📰 {n} beats a sales target early","📰 {n} wins an industry award"],
+  MNB=["📰 Analyst downgrades {n}","📰 {n} delays a product launch","📰 {n} loses a big customer","📰 {n} hit with a small lawsuit","📰 {n} executive steps down","📰 Supply costs rise for {n}","📰 {n} misses a sales target","📰 Complaints pile up about {n}"];
+const MNC=new Map();
+function minorNews(i,h){ const key=i+":"+h; let l=MNC.get(key); if(l) return l; l=[]; const d=SER[i];
+  if(h>=H5&&!d.idx&&!d.gone){ const r=RNG("mnews"+d.sid+":"+h), dh=((h%24)+24)%24;
+    for(let k=0;k<4;k++){ const on=r()<.4, at=k*900+30+Math.floor(r()*840), dir=r()<.5?1:-1, sz=1.5+2*r(), tp=Math.floor(r()*8); if(!on) continue;
+      if(h%3===0&&at<360) continue; if(d.od&&dh===OPEN_H&&at<700) continue; if(d.lv&&dh===5&&at>3200) continue;
+      if(d.rit&&d.rit.some(R=>R.h===dh&&at>R.m-40&&at<R.m+2*R.L+30)) continue; // not during a daily routine
+      if(sched(i,h).eps.some(e=>at>e.st-90&&at<e.st+epLen(e)+30)) continue; // or a pattern/news episode
+      l.push({at,dir,a:dir*sz*d.vol*Math.sqrt(60),t:(dir>0?MNG:MNB)[tp]}); } }
+  MNC.set(key,l); if(MNC.size>5000) MNC.delete(MNC.keys().next().value); return l; }
 const MP=new Map();
 function mpath(h){ let m=MP.get(h); if(m) return m; const r=RNG("mn:"+h); m=new Float64Array(HN+1); let v=9e-8;
   for(let t=1;t<=HN;t++){ const e=Math.sqrt(v)*G(r)*(r()<.02?2.6:1); v=.02*9e-8+.06*e*e+.92*v; m[t]=m[t-1]+e; }
@@ -400,6 +415,7 @@ function chunk(i,h){ const key=i+":"+h; let c=CH.get(key); if(c) return c;
   if(d.rit) for(const R of d.rit) if(R.h===dh){ const a=R.dir*R.D/R.L; for(let k=1;k<=R.L;k++){ mu[R.m+k]+=a; mu[R.m+R.L+k]-=a; vm[R.m+k]*=1.6; vm[R.m+R.L+k]*=1.6; if(h>=H4){ sm[R.m+k]*=SQ; sm[R.m+R.L+k]*=SQ; } } }
   if(d.od&&dh===OPEN_H){ const a=openSign(i,h)*d.oD/600; for(let t=1;t<=600;t++){ mu[t]+=a; vm[t]*=3; if(h>=H4) sm[t]*=SQ; } }
   if(d.lv&&h>=H4&&dh===5){ const a=Math.log(1-pnDay(pnnyDay(h)).f)/300; for(let t=HN-299;t<=HN;t++){ mu[t]+=a; vm[t]*=4; } } // PNNY midnight crash (11:55pm-midnight Central)
+  for(const m of minorNews(i,h)) for(let k=1;k<=20;k++){ mu[m.at+k]+=m.a/20; vm[m.at+k]*=2.2; }
   if(s.cr!=null) for(let k=0;k<90;k++){ mu[s.cr+k]+=Math.log(.82)/90*d.beta; vm[s.cr+k]*=4; }
   if(s.cr!=null&&h>=H2) for(let k=1;k<=120;k++){ mu[s.cr-k]+=Math.log(.995)/120*d.beta; vm[s.cr-k]*=1.8; }
   const r=RNG("n"+d.sid+":"+h), M=d.idx?null:mpath(h), X=new Float64Array(HN+1), E=new Float64Array(HN+1), V=new Float32Array(HN+1), tv=d.vol*d.vol; let v=tv;
@@ -502,6 +518,7 @@ function candles(i,tf,n,now){ const out=[], ofs=tf>=86400?dayOfs():0, last=Math.
 function newsSince(t0,t1){ const out=[]; for(let h=Math.floor(t0/HN);h<=Math.floor(t1/HN);h++) SER.forEach((d,i)=>{ if(d.gone) return; const s=sched(i,h);
   s.eps.forEach(e=>{ const at=h*HN+e.st+(e.nwo||0), pa=h*HN+e.st; if(e.nw&&at>t0&&at<=t1) out.push({at,s:d.s,t:e.nw.replace("{n}",d.n)+" ("+d.s+")"});
     if(e.pnw&&pa>t0&&pa<=t1) out.push({at:pa,s:d.s,tell:e.ty,t:e.pnw.replace("{n}",d.n)+" ("+d.s+")"}); });
+  for(const m of minorNews(i,h)){ const at=h*HN+m.at; if(at>t0&&at<=t1) out.push({at,s:d.s,minor:1,t:m.t.replace("{n}",d.n)+" ("+d.s+")"}); }
   if(i===0&&s.cr!=null){ const at=h*HN+s.cr; if(at>t0&&at<=t1) out.push({at,s:"*",t:"📉 Market crash: panic selling everywhere"});
     if(h>=H2&&at-120>t0&&at-120<=t1) out.push({at:at-120,s:"*",tell:"crash",t:"⚠️ Futures sliding overnight, traders getting nervous"}); } });
   for(let sl=Math.floor(t0/EVSLOT);sl<=Math.floor(t1/EVSLOT)+1;sl++){ const e=bigEv(sl); if(e&&e.t0>t0&&e.t0<=t1) out.push({at:e.t0,s:"*",big:1,ev:e,t:(e.sc.dir>0?"🚀":"🚨")+" BREAKING: "+e.sc.t});
@@ -1029,7 +1046,7 @@ function upd(){
   const c24=(sp(sym)/price(d.i,NOW-86400)-1)*100; $("qc").innerHTML=`<span class="${c>=0?"up":"dn"}"> ${c>=0?"+":""}${c.toFixed(2)}% 1h</span> <span class="${c24>=0?"up":"dn"}">${c24>=0?"+":""}${c24.toFixed(2)}% 24h</span>`;
   STOCKS.forEach(x=>{ const e=$("c-"+x.s); if(e){ e.textContent=px(sp(x.s)); e.className=chg(x.s)>=0?"up":"dn"; } });
   document.querySelectorAll(".tf button").forEach(b=>b.classList.toggle("on",+b.dataset.tf===S.tf));
-  const nw=newsSince(NOW-7200,NOW); $("news").textContent=nw[0]?nw[0].t+" · "+dur(NOW-nw[0].at)+" ago":"No headlines in the last 2 hours.";
+  const nw=newsSince(NOW-7200,NOW).filter(x=>x.s==="*"||x.s===S.sel||(BYSYM[x.s]&&unlocked(BYSYM[x.s]))).sort((a,b)=>b.at-a.at); $("news").textContent=nw[0]?nw[0].t+" · "+dur(NOW-nw[0].at)+" ago":"No headlines in the last 2 hours.";
   let h="";
   if(p.l){ const b=bid(sym), pl=p.l*(b-p.lc); h+=`<div class="row"><div class="g t">🟢 <b style="color:var(--text)">${p.l} sh</b> bought at ${px(p.lc)} · worth ${money(p.l*sp(sym))}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((b/p.lc-1)*100).toFixed(2)}%)</b></div>`+ordBtns("l"); }
   if(p.s){ const a=ask(sym), pl=Math.max(p.s*(p.se-a),-p.s*p.se); h+=`<div class="row"><div class="g t">🟣 <b style="color:var(--text)">${p.s} sh</b> shorted at ${px(p.se)} · margin call ${px(2*p.se)}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((1-a/p.se)*100).toFixed(2)}%)</b></div>`+ordBtns("s"); }

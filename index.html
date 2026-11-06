@@ -987,10 +987,12 @@ function buildStore(){
       h+=`<h3>Supplies</h3><div class="card"><div class="t">${p.sup}: ${s.fuel.toFixed(1)} / ${cap} ${p.unit} · ${money(supP(p))} each</div><div class="bar f"><i style="width:${s.fuel/cap*100}%"></i></div><button class="btn gold sm" data-x="fill" ${need>.01&&S.cash>=supP(p)*.1?"":"disabled"}>Fill up (${money(Math.min(need*supP(p),Math.max(0,S.cash)))})</button></div>`; }
     h+=`<h3>Business upgrades</h3>`;
     UPS.forEach(u=>{ h+=`<div class="card row"><div class="g"><div class="b">${u.n}</div><div class="t">${u.d}</div></div>${s.up[u.id]?'<span class="pill ok">Owned</span>':`<button class="btn gold sm" data-up="${u.id}" data-cost="${u.c}">${money(u.c)}</button>`}</div>`; }); }
-  h+=`<h3>Change profession</h3><div class="t" style="margin:0 3px 6px">Ones you've done before keep your gear. New ones start with borrowed gear.${S.job?" Finish your current job first.":""}</div>`;
-  PROFS.forEach(x=>{ const k=S.profs[x.id], cur=S.prof===x.id;
-    h+=`<button class="opt" data-pf="${x.id}" ${cur||S.job?"disabled":""}><b>${x.i} ${x.n}</b> ${cur?'<span class="pill ok">Current</span>':k?'<span class="pill">Resume</span>':""}<div class="t">${k?x.gear[k.own]+" · ★"+k.rep:"Borrow: "+x.gear[0]}</div></button>`; });
   main.innerHTML=h+"</div>"; }
+// Settings → Change your profession
+function profSwitch(){ modal("Change your profession",`<div class="t" style="margin-bottom:6px">Ones you've done before keep your gear, reputation and job skills. New ones start with borrowed gear.${S.job?" <b>Finish your current job first.</b>":""}</div>`+
+  PROFS.map(x=>{ const k=S.profs[x.id], cur=S.prof===x.id; return `<button class="opt" data-pfs="${x.id}" ${cur||S.job?"disabled":""}><b>${x.i} ${x.n}</b> ${cur?'<span class="pill ok">Current</span>':k?'<span class="pill">Resume</span>':""}<div class="t">${k?x.gear[k.own]+" · ★"+k.rep:"Borrow: "+x.gear[0]}</div></button>`; }).join(""),[["Close","ghost"]]);
+  $("modal").querySelectorAll("[data-pfs]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); if(b.disabled) return; const id=b.dataset.pfs;
+    modal("Switch to "+PB[id].n+"?",`<p>${S.profs[id]?"You'll pick up with your old gear and reputation.":"You've never done this. You start with borrowed gear."}</p>`,[["Cancel","ghost"],["Switch","gold",()=>chooseProf(id)]]); }); }
 
 let cloudSt="Saved on this device";
 const CHAP=[{at:0,n:"Chapter 1 · The Basement",d:"Broke, 19, and living under Mom's stairs. Every dollar counts. Get a little cash together and get some wheels."},
@@ -1038,7 +1040,7 @@ function stats_html(){ const s=S.st; return `<div class="card kv">
 function SAVEHTML(){ return `<h3>Save</h3><div class="card"><div class="t">☁️ ${cloudSt}</div><div class="g2" style="margin-top:8px"><button class="btn ghost sm" data-sx="exp">Copy save code</button><button class="btn ghost sm" data-sx="imp">Load code</button></div>
   <input id="sbox" class="inp" style="margin-top:6px" placeholder="Paste save code"><button class="btn sell sm" style="width:100%;margin-top:6px" data-sx="wipe">Wipe save</button><button class="btn ghost sm" style="width:100%;margin-top:6px" data-sx="replay">Replay intro & tutorial</button></div>`; }
 function openSettings(){ const s=S.st;
-  modal("⚙︎ Settings",acctHTML()+`<h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div><h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); }
+  modal("⚙︎ Settings",acctHTML()+`<h3>Work</h3><button class="btn ghost" style="width:100%" id="chprof">${prof()?prof().i+" ":""}Change your profession</button><h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div><h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
 function fitHdr(){ for(const id of ["cash","fund","nw"]){ const e=$(id); if(!e) continue; e.style.fontSize="";
   const w=e.parentElement.clientWidth, base=parseFloat(getComputedStyle(e).fontSize); let f=base;

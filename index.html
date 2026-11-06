@@ -520,6 +520,48 @@ const KNOW=[
  {id:"squeeze",n:"Red flag: squeezes",c:15000,t:"The headline that comes 1½ to 2½ minutes before a stock rockets.",d:"<b>“🩳 Short interest in … hits a record high”</b> means a squeeze of +80% to +170% starts <b>1½ to 2½ minutes later</b>. Cover any shorts, <b>buy right away</b>, and <b>sell about 3½ minutes after the headline</b>, right after the spike. Won <b>100%</b>, averaging +111%."},
  {id:"crash",n:"Market crashes",c:30000,t:"The warning 2 minutes before everything falls.",d:"<b>“⚠️ Futures sliding overnight, traders getting nervous”</b> comes <b>2 minutes before a market crash</b>, while prices slip a little on heavier volume. <b>Short a jumpy stock</b> (ORBT, ROBO, SOLR, CHIP) <b>right away</b> and <b>cover about 3½ minutes after the warning</b>. Won <b>100%</b>, averaging +26%. Don't sell your index fund: it recovers over the next day."},
  {id:"whisper",n:"Smart money moves first",c:60000,t:"Big news leaks before it breaks.",d:"Before breaking news hits, big money starts moving. <b>“👀 Big money is quietly buying (or dumping) …, traders expect news any minute”</b> comes <b>5 to 10 minutes before</b> a BREAKING headline, while those stocks lean that way on heavier volume. <b>Trade the first stock it names in that direction</b> (buy for buying, short for dumping) and <b>close 1 hour after the BREAKING headline</b>. Won <b>95%</b>, averaging +40%.<br><br>If it says news <b>“this week”</b>, it's a slow story that plays out over days. Those only win about 64% in the first hour, so skip them or hold a full day."}];
+// ---------- lesson pictures: small candlestick charts drawn in the game's chart style ----------
+// segs: [candles, total move, volume ×, noise, opts]. opts.sh: "star" (long upper wick) / "ham" (long lower wick).
+// marks: [seg, text, "up"|"dn"|"top", color] at the last candle of that segment. lines: [kind "hi"|"lo", fromSeg, toSeg, label]. spans: [fromSeg, toSeg, label].
+const LPG="#16c784", LPR="#ea3943", LPY="#f5b301";
+const LPIC={
+ dbot:{segs:[[8,-4,1,.5],[1,-.3,1.4,.1,{sh:"ham"}],[5,2.2,1,.4],[4,-2.1,.9,.3],[1,.1,1.3,.1,{sh:"ham"}],[9,6,2.4,.55]],lines:[["lo",0,4,"1h low"]],marks:[[1,"hammer 1","dn"],[4,"hammer 2 · BUY","dn",LPG],[5,"SELL","up",LPY]]},
+ dtop:{segs:[[8,4,1,.5],[1,.3,1.4,.1,{sh:"star"}],[5,-2.2,1,.4],[4,2.1,.9,.3],[1,-.1,1.3,.1,{sh:"star"}],[9,-6,2.6,.55]],lines:[["hi",0,4,"1h high"]],marks:[[1,"star 1","up"],[4,"star 2 · SHORT","up",LPR],[5,"COVER","dn",LPY]]},
+ coil:{segs:[[10,1.5,1,.8],[6,0,.35,.12],[8,6,3,.6]],spans:[[1,1,"quiet & flat"]],marks:[[1,"BUY","dn",LPG],[2,"SELL","up",LPY]]},
+ bflag:{segs:[[6,0,1,.6],[6,5,3.4,.45],[12,-1.6,.6,.22],[8,6,3,.6]],spans:[[1,1,"pole"],[2,2,"flag: quiet, drifting down"]],marks:[[2,"BUY","dn",LPG],[3,"SELL","up",LPY]]},
+ sflag:{segs:[[6,0,1,.6],[6,-5,3.4,.45],[12,1.6,.6,.22],[8,-6,3,.6]],spans:[[1,1,"pole"],[2,2,"flag: quiet, drifting up"]],marks:[[2,"SHORT","up",LPR],[3,"COVER","dn",LPY]]},
+ atri:{segs:[[5,0,1,.5],[5,3,1.1,.3],[1,0,1.3,.08,{t:"hi"}],[4,-2,.9,.3],[4,2,1,.3],[1,0,1.4,.08,{t:"hi"}],[3,-1.1,.9,.25],[3,1.1,1.2,.25],[1,0,1.9,.08,{t:"hi"}],[7,5.5,3,.6]],lines:[["hi",1,8,"1h high"]],marks:[[2,"1","up"],[5,"2","up"],[8,"3 · BUY","dn",LPG],[9,"SELL","up",LPY]]},
+ dtri:{segs:[[5,0,1,.5],[5,-3,1.1,.3],[1,0,1.3,.08,{t:"lo"}],[4,2,.9,.3],[4,-2,1,.3],[1,0,1.4,.08,{t:"lo"}],[3,1.1,.9,.25],[3,-1.1,1.2,.25],[1,0,1.9,.08,{t:"lo"}],[7,-5.5,3,.6]],lines:[["lo",1,8,"1h low"]],marks:[[2,"1","dn"],[5,"2","dn"],[8,"3 · SHORT","up",LPR],[9,"COVER","dn",LPY]]},
+ dip:{segs:[[10,0,1,.6],[4,-1,2.5,.22],[2,-5,5.5,.5],[8,2,1.3,.45]],spans:[[1,1,"small reds, 2–3× vol"]],marks:[[1,"SHORT","up",LPR],[2,"COVER","dn",LPY]]},
+ news:{segs:[[10,.2,1,.5],[6,.6,1.8,.35],[1,5,6,.4],[12,2,1.8,.55]],marks:[[0,"🔎 call-option buying","top"],[0,"BUY","dn",LPG],[1,"📊 beats earnings","top"],[3,"SELL","up",LPY]]},
+ open:{segs:[[14,-.5,1,.6],[7,6,3,.7],[6,.5,1.2,.5]],marks:[[0,"8:00 AM","top"],[0,"24h green → BUY","dn",LPG],[1,"SELL","up",LPY]]},
+ pump:{segs:[[8,0,1,.6],[6,1,2.2,.35],[4,10,10,.7],[12,-8,1.8,.6]],marks:[[0,"🗣️ trending","top"],[0,"BUY","dn",LPG],[2,"SELL · then SHORT","up",LPR],[3,"COVER","dn",LPY]]},
+ flush:{segs:[[10,0,1,.5],[4,-2.6,2,.35],[6,2.6,1.2,.4],[6,0,1,.5]],marks:[[0,":00","top"],[1,":02 BUY","dn",LPG],[2,":05 SELL","up",LPY]]},
+ flags:{segs:[[10,0,1,.5],[12,-.6,1.6,.35],[6,-14,8,1],[6,0,1.8,.5]],marks:[[0,"🚨 auditor resigns","top"],[0,"SHORT","up",LPR],[3,"COVER","dn",LPY]]},
+ squeeze:{segs:[[10,0,1,.5],[10,.4,1.4,.35],[6,12,8,1],[6,-2,1.8,.5]],marks:[[0,"🩳 short interest record","top"],[0,"BUY","dn",LPG],[2,"SELL","up",LPY]]},
+ crash:{segs:[[10,0,1,.5],[12,-1,1.8,.35],[9,-9,4,.8],[6,1,1.6,.5]],marks:[[0,"⚠️ futures sliding","top"],[0,"SHORT","up",LPR],[2,"COVER","dn",LPY]]},
+ whisper:{segs:[[8,0,1,.5],[12,1,1.8,.35],[10,9,4,.8],[8,2,2,.6]],marks:[[0,"👀 big money buying","top"],[0,"BUY","dn",LPG],[1,"🚀 BREAKING","top"],[3,"CLOSE","up",LPY]]}};
+function lessonPic(id,dim){ const sp=LPIC[id]; if(!sp) return ""; const r=RNG("pic"+id), C=[], segEnd=[], LV={}; let p=100;
+  sp.segs.forEach(([n,mv,vm,nz,o])=>{ for(let k=0;k<n;k++){ const op=p, cl=op+mv/n+(r()*2-1)*nz; let hi=Math.max(op,cl)+r()*nz*.7, lo=Math.min(op,cl)-r()*nz*.7;
+      if(o&&o.sh==="star"){ hi=LV.hi??Math.max(op,cl)+2.4; LV.hi=hi; } if(o&&o.sh==="ham"){ lo=LV.lo??Math.min(op,cl)-2.4; LV.lo=lo; }
+      if(o&&o.t==="hi"){ if(LV.hi==null) LV.hi=Math.max(op,cl)+.15; hi=LV.hi; } if(o&&o.t==="lo"){ if(LV.lo==null) LV.lo=Math.min(op,cl)-.15; lo=LV.lo; }
+      C.push([op,hi,lo,cl,vm*(.8+r()*.4)]); p=cl; } segEnd.push(C.length-1); });
+  const W=320,H=160,top=34,vh=24,bot=H-vh-6,n=C.length,cw=(W-10)/n, lo=Math.min(...C.map(c=>c[2]))-.6, hi=Math.max(...C.map(c=>c[1]))+.6, vmx=Math.max(...C.map(c=>c[4]));
+  const X=i=>5+i*cw+cw/2, Y=v=>top+(hi-v)/(hi-lo)*(bot-top), bw=Math.max(2,cw*.62); let g="";
+  for(let k=1;k<4;k++){ const y=top+(bot-top)*k/4; g+=`<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="#1a222c"/>`; }
+  C.forEach((c,i)=>{ const up=c[3]>=c[0], col=up?LPG:LPR, x=X(i), h=c[4]/vmx*vh;
+    g+=`<rect x="${x-bw/2}" y="${H-h}" width="${bw}" height="${h}" fill="${col}" opacity=".3"/><line x1="${x}" x2="${x}" y1="${Y(c[1])}" y2="${Y(c[2])}" stroke="${col}"/>`+
+       `<rect x="${x-bw/2}" y="${Y(Math.max(c[0],c[3]))}" width="${bw}" height="${Math.max(1,Math.abs(Y(c[0])-Y(c[3])))}" fill="${col}"/>`; });
+  const s0=k=>k?segEnd[k-1]+1:0;
+  (sp.lines||[]).forEach(([kd,a,b,lab])=>{ const cs=C.slice(s0(a),segEnd[b]+1), v=kd==="hi"?Math.max(...cs.map(c=>c[1])):Math.min(...cs.map(c=>c[2])), y=Y(v);
+    g+=`<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="${LPY}" stroke-dasharray="2 3" opacity=".75"/><text x="${W-4}" y="${kd==="hi"?y-4:y+10}" text-anchor="end" font-size="9" fill="${LPY}">${lab}</text>`; });
+  (sp.spans||[]).forEach(([a,b,lab])=>{ const x1=X(s0(a))-cw/2, x2=X(segEnd[b])+cw/2, cs=C.slice(s0(a),segEnd[b]+1), y=Y(Math.min(...cs.map(c=>c[2])))+12;
+    g+=`<path d="M${x1} ${y-4}V${y}H${x2}V${y-4}" fill="none" stroke="#8a97a8"/><text x="${(x1+x2)/2}" y="${y+10}" text-anchor="middle" font-size="9" fill="#cfd8e3">${lab}</text>`; });
+  let TOPN=0; (sp.marks||[]).forEach(([k,lab,at,col])=>{ const i=segEnd[k], c=C[i], x=X(i);
+    if(at==="top"){ const row=(TOPN++)%2, ty=11+row*11; g+=`<line x1="${x}" x2="${x}" y1="${ty+3}" y2="${bot}" stroke="#8a97a8" stroke-dasharray="2 3" opacity=".6"/><text x="${Math.min(Math.max(x,52),W-52)}" y="${ty}" text-anchor="middle" font-size="9" fill="#cfd8e3">${lab}</text>`; return; }
+    const y=at==="up"?Y(c[1])-6:Y(c[2])+6, ty=at==="up"?y-5:y+13, fc=col||"#cfd8e3";
+    g+=`<path d="M${x} ${y}l-3.5 ${at==="up"?-5:5}h7z" fill="${fc}"/><text x="${Math.min(Math.max(x,22),W-22)}" y="${ty}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${fc}">${lab}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;margin:8px 0 4px;background:#0a0d12;border:1px solid var(--line);border-radius:10px;font-family:Inter,sans-serif${dim?";opacity:.6":""}">${g}</svg>`; }
 const utcDay=()=>{ const n=new Date(); return [n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()]; }; // today, so daylight saving time is right
 function lt(h,sec){ const [y,m,d]=utcDay(); return new Date(Date.UTC(y,m,d,h,0,sec||0)).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}); }
 function flushTimes(){ return [0,3,6,9,12,15,18,21].map(h=>lt(h)).join(", "); }
@@ -969,7 +1011,7 @@ function buildStore(){
   let h=`<div class="pad"><div class="seg"><button data-seg="job" class="${seg==="job"?"on":""}">Profession</button><button data-seg="know" class="${seg==="know"?"on":""}">Knowledge</button><button data-seg="style" class="${seg==="style"?"on":""}">Style</button></div>`;
   if(seg==="style"){ main.innerHTML=h+styleHTML()+"</div>"; return; }
   if(seg==="know"){ h+=`<div class="t" style="margin:0 3px 8px">Lessons are permanent, even if you go broke. Nothing on the chart changes when you buy one; you just learn what to look for.</div>`;
-    const kc=(k,ok)=>{ const own=S.know[k.id]; return `<div class="card"><div class="row"><div class="g b">📘 ${k.n}${k.ch?` <span class="pill">${k.ch}</span>`:""}</div>${own?'<span class="pill ok">Learned</span>':ok?`<button class="btn gold sm" data-kn="${k.id}" data-cost="${k.c}">${money(k.c)}</button>`:`<span class="pill">🔒 ${money(k.c)}</span>`}</div><div class="t" style="margin-top:6px">${own?kd(k):k.t}</div></div>`; };
+    const kc=(k,ok)=>{ const own=S.know[k.id]; return `<div class="card"><div class="row"><div class="g b">📘 ${k.n}${k.ch?` <span class="pill">${k.ch}</span>`:""}</div>${own?'<span class="pill ok">Learned</span>':ok?`<button class="btn gold sm" data-kn="${k.id}" data-cost="${k.c}">${money(k.c)}</button>`:`<span class="pill">🔒 ${money(k.c)}</span>`}</div>${lessonPic(k.id,!own)}<div class="t" style="margin-top:6px">${own?kd(k):k.t}</div></div>`; };
     h+=`<h3>All stocks · ${KNOW.filter(k=>S.know[k.id]).length}/${KNOW.length}</h3>`;
     KNOW.forEach((k,i)=>{ h+=kc(k,i===0||S.know[KNOW[i-1].id]); });
     h+=`<h3>Longer charts · ${LONG.filter(k=>S.know[k.id]).length}/${LONG.length}</h3><div class="t" style="margin:0 3px 8px">Slower trades for the 10m to 1D charts. Fewer chances, bigger swings.</div>`;

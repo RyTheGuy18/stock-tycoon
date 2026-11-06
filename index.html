@@ -2337,9 +2337,14 @@ function musPlay(i,at){ if(!AC) return; if(!MUS.el){ const el=MUS.el=new Audio()
 function musWake(){ if(!mus()||!snd()||document.hidden){ return; } MUS.on=true;
   if(MUS.resume){ const r=MUS.resume; MUS.resume=null; return musPlay(r.i,r.at); }
   if(MUS.cur<0) return musPlay(musNext());
+  if(MUS.el&&MUS.el.paused&&!MUS.el.getAttribute('src')) return musPlay(MUS.cur,0);
   if(MUS.el&&MUS.el.paused){ const p=MUS.el.play(); p&&p.catch&&p.catch(()=>{}); musFade(musV()*SONGS[MUS.cur].g,1.2); } }
-function musPause(){ if(MUS.el&&!MUS.el.paused){ MUS.el.pause(); if(MUSB) MUSB.gain.value=0; } }
-function musStop(){ MUS.on=false; if(!MUS.el) return; musFade(0,.6); setTimeout(()=>{ if(!MUS.on&&MUS.el) MUS.el.pause(); },650); }
+// Leaving the app: unload the track entirely (not just pause), otherwise iPhone keeps a "Now Playing" player on the
+// lock screen. The song and spot are remembered and pick up again when you come back.
+function musUnload(){ if(!MUS.el) return; try{ MUS.el.pause(); MUS.el.removeAttribute('src'); MUS.el.load(); }catch(_){} if(MUSB) MUSB.gain.value=0;
+  try{ if(navigator.mediaSession){ navigator.mediaSession.metadata=null; navigator.mediaSession.playbackState='none'; } }catch(_){} }
+function musPause(){ if(!MUS.el) return; if(MUS.cur>=0&&MUS.el.getAttribute('src')) MUS.resume={i:MUS.cur,at:MUS.el.currentTime||0}; musUnload(); }
+function musStop(){ MUS.on=false; if(!MUS.el) return; musFade(0,.6); setTimeout(()=>{ if(!MUS.on&&MUS.el){ MUS.resume=MUS.cur>=0?{i:MUS.cur,at:MUS.el.currentTime||0}:null; musUnload(); } },650); }
 function musSkip(){ if(!MUS.el||MUS.cur<0) return musWake(); musFade(0,.4); setTimeout(()=>musPlay(musNext()),420); }
 function musLbl(){ const el=$("muslbl"); if(el) el.textContent=MUS.cur>=0&&MUS.on?`Now playing: ${SONGS[MUS.cur].n} · ${SONGS[MUS.cur].a}`:"Shuffles through 6 chill tracks while you play."; }
 function winFx(pl){ if(SIM) return; const big=Math.abs(pl)>Math.max(25,Math.abs(netWorth())*.1); if(!(pl>0)){ if(pl<0) sfx(big?'bigloss':'loss'); return; } const C=COSS(); if(C.fxb&&cosOk(FX[0])) burst(pl); if(C.fxs&&cosOk(FX[1])) chaChing(); else sfx(big?'bigwin':'win'); }
@@ -2390,7 +2395,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="75";
+const APPV="76";
 let UPD={ready:false,ver:null,told:false,pub:false,pubAt:0};
 // Is GitHub publishing a new version right now? (GitHub Pages "pages build and deployment" run queued or running.)
 // Only asked while Settings is open, at most every 20 s (GitHub allows 60 of these an hour without signing in).

@@ -73,6 +73,7 @@ nav button.on{color:var(--text)} nav button.on span{opacity:1;color:var(--gold)}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .icob{width:42px;height:42px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .utile2 .icob{width:36px;height:36px;border-radius:11px}
+.rar{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;vertical-align:2px}
 .tiers{display:flex;gap:3px;margin-top:6px} .tiers i{flex:1;height:4px;border-radius:9px;background:var(--c2)}
 .spot2{border:1.5px solid var(--gold)!important;background:linear-gradient(180deg,#241d08,var(--card) 75%)!important}
 .spot2 .sl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);font-weight:700}
@@ -80,10 +81,10 @@ nav button.on{color:var(--text)} nav button.on span{opacity:1;color:var(--gold)}
 .kvs2 .was{color:var(--mut)} .kvs2 .now,.utile2 .nxt b{color:#22c55e}
 .buybig{width:100%;margin-top:14px;padding:15px 0;font-size:17px;border-radius:12px;background:var(--gold);color:#2a1d00}
 .buyul{width:100%;margin-top:8px;background:var(--gold);color:#2a1d00;padding:9px 0}
-.utile2{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:0;padding:11px} .utile2.max{border-color:#22c55e55}
+.utile2{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:0;padding:11px} .utile2.max{border-color:#f5b30155}
 .utile2 .t{font-size:11.5px} .nxt{margin-top:2px}
 .pips{display:flex;gap:4px;margin:6px 0 5px} .pips i{width:16px;height:5px;border-radius:9px;background:var(--c2)}
-.maxb{margin-top:8px;width:100%;text-align:center;font-weight:800;font-size:12px;letter-spacing:.1em;color:#22c55e;background:#22c55e1a;border-radius:9px;padding:9px 0}
+.maxb{margin-top:8px;width:100%;text-align:center;font-weight:800;font-size:12px;letter-spacing:.1em;color:#f5b301;background:#f5b3011a;border-radius:9px;padding:9px 0}
 .buybig:not(:disabled),.buyul:not(:disabled){animation:canbuy 1.8s ease-in-out infinite}
 @keyframes canbuy{0%,100%{box-shadow:0 0 0 0 rgba(245,179,1,0)}50%{box-shadow:0 0 0 4px rgba(245,179,1,.3)}}
 .pop{animation:popin .55s cubic-bezier(.2,1.6,.4,1)} @keyframes popin{0%{transform:scale(.85)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
@@ -172,6 +173,7 @@ header{position:relative}
 .pavt .cam{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px}
 .pchips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px} .pchips div{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 6px;text-align:center} .pchips b{display:block;font:700 14px "JetBrains Mono";white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .pchips span{font-size:10.5px;color:var(--mut)}
 .pbar{height:5px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden} .pbar i{display:block;height:100%;border-radius:9px}
+.tn.done[style*=--rc]:before{background:var(--rc);border-color:var(--rc)}
 .kdet summary{list-style:none;cursor:pointer} .kdet summary::-webkit-details-marker{display:none} .kdet[open] summary .t{opacity:.6}
 .seg button svg{vertical-align:-3px} #modal .mh h2 svg{vertical-align:-3px}
 .sgrp{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:4px}
@@ -814,7 +816,8 @@ const achTop=()=>ACH.filter(a=>S.ach&&S.ach[a.id]).slice(-3).map(a=>a.id);
 const achStr=p=>Array.isArray(p.ab)&&p.ab.length?` <span class="achs" title="${+p.ach||0} achievements">${p.ab.filter(id=>ACHBY[id]).slice(0,3).map(id=>ACHBY[id].g).join("")}</span>`:"";
 function achHTML(){ S.ach=S.ach||{}; const n=ACH.filter(a=>S.ach[a.id]).length;
   return `<h3>Achievements · ${n}/${ACH.length}</h3><div class="t" style="margin:-2px 2px 8px">Your 3 hardest show next to your name for friends.</div><div class="achg">${ACH.map(a=>{ const on=!!S.ach[a.id];
-    return `<div class="ach${on?"":" off"}"><div class="ag">${a.g}</div><b>${a.n}</b><div class="t">${a.d}</div></div>`; }).join("")}</div>`; }
+    const r=rarOf(ACH.indexOf(a),ACH.length), c=RAR[r].c;
+    return `<div class="ach${on?"":" off"}" style="${on?`box-shadow:inset 0 0 0 1px ${c}66`:""}"><div class="ag">${a.g}</div><b style="${on?`color:${c}`:""}">${a.n}</b><div class="t">${a.d}</div><div style="margin-top:4px">${rarPill(r)}</div></div>`; }).join("")}</div>`; }
 
 // ---------- story milestones (permanent perks) ----------
 const MS=[
@@ -1201,7 +1204,7 @@ function jobCard(){ const el=$("job"); if(!el) return; const p=prof(); let h;
   else { const s=pst(), t=tier(), col=PCOL[p.id]||"#3b82f6";
     h=`<div class="row" style="gap:12px">${ICOB(p.id,col,24)}<div class="g" style="min-width:0"><div class="b">${p.n} <span class="pill">★ ${s.rep} rep</span></div>
       <div class="t">${t>=0?p.gear[t]:"<span class=dn>gear broken</span>"}${FUSE[t]>0?` · ${p.sup} ${s.fuel.toFixed(1)}/${FUSE[t]*4}`:""}${aOn("book")?" · auto-booking":""}</div>
-      <div class="tiers">${p.gear.map((_,i)=>`<i style="${i<=s.own?`background:${col}`:""}"></i>`).join("")}</div></div></div>`;
+      ${tierBar(p.gear.length,s.own)}</div></div>`;
     if(S.job){ const j=p.jobs[S.job.k]; h+=`<div class="bar" style="margin-top:12px"><i style="width:${(NOW-S.job.start)/(S.job.end-S.job.start)*100}%;background:${col}"></i></div><div class="row t"><span class="g">${j.n} · <b class="up">${money(S.job.pay)}</b></span><span>${dur(S.job.end-NOW)}</span></div>`; }
     else if(t<0) h+=`<div class="t" style="margin-top:8px">${s.momFix?"Mom's getting it fixed: "+dur(s.momFix-NOW)+". ":""}Repair it in the Store.</div>`;
     else h+=`<button class="btn buybig" data-x="jobs">Find a job</button>`; }
@@ -1358,6 +1361,13 @@ const LI={
  chart:'<path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
  exp:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'};
 const PCOL={lawn:"#22c55e",dog:"#f59e0b",car:"#3b82f6",deliv:"#f97316",photo:"#a855f7",handy:"#eab308",paint:"#ec4899",pool:"#06b6d4",phone:"#6366f1",move:"#d97706"};
+// ---------- rarity: the game's color language for "how far up the ladder" ----------
+// gray Common · green Uncommon · blue Rare · purple Epic · gold Legendary
+const RAR=[{n:"Common",c:"#9aa4b2"},{n:"Uncommon",c:"#22c55e"},{n:"Rare",c:"#3b82f6"},{n:"Epic",c:"#a855f7"},{n:"Legendary",c:"#f5b301"}];
+const rarOf=(i,n)=>n<=1?0:Math.min(4,Math.floor(i*5/n)); // rarity by position in an ordered list
+const GRAR=[0,0,1,1,1,2,2,3,3,3,4,4]; // gear tiers 1-12
+const rarPill=r=>`<span class="rar" style="color:${RAR[r].c};background:${RAR[r].c}1f;box-shadow:inset 0 0 0 1px ${RAR[r].c}55">${RAR[r].n}</span>`;
+const tierBar=(N,own)=>`<div class="tiers">${Array.from({length:N},(_,i)=>`<i style="${i<=own?`background:${RAR[GRAR[i]||0].c}`:""}"></i>`).join("")}</div>`;
 const ICO=(k,col,sz)=>`<svg viewBox="0 0 24 24" width="${sz||22}" height="${sz||22}" fill="none" stroke="${col}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${LI[k]||""}</svg>`;
 const ICOB=(k,col,sz)=>`<span class="icob" style="background:${col}22;box-shadow:inset 0 0 0 1px ${col}55">${ICO(k,col,sz)}</span>`;
 // ---------- business upgrades: 8 lines, 4 levels each ----------
@@ -1394,7 +1404,8 @@ function buildStore(){
     sets.forEach(([nm,sub,L,free])=>{ if(!L.length) return; const n=L.filter(k=>S.know[k.id]).length, nx=L.findIndex(k=>!S.know[k.id]);
       h+=`<h3>${nm} · ${n}/${L.length}</h3><div class="t" style="margin:-4px 3px 8px">${sub}</div><div class="tl">`;
       L.forEach((k,i)=>{ const own=S.know[k.id], open=free?!own:i===nx;
-        if(own) h+=`<div class="tn done"><details class="kdet"><summary class="row"><div class="g"><b style="color:var(--text)">${k.n}</b>${k.ch?` <span class="pill">${k.ch}</span>`:""}</div><span class="t">Read ▾</span></summary>${lessonPic(k.id)}<div class="t" style="margin-top:6px">${kd(k)}</div></details></div>`;
+        const kr=rarOf(i,L.length);
+        if(own) h+=`<div class="tn done" style="--rc:${RAR[kr].c}"><details class="kdet"><summary class="row"><div class="g"><b style="color:${RAR[kr].c}">${k.n}</b>${k.ch?` <span class="pill">${k.ch}</span>`:""}</div><span class="t">Read ▾</span></summary>${lessonPic(k.id)}<div class="t" style="margin-top:6px">${kd(k)}</div></details></div>`;
         else h+=`<div class="tn ${open?"cur":""}"><div class="row"><div class="g"><b>Lesson ${i+1} · ???</b><div class="t">${open?"Buy it to find out what it teaches.":"🔒 Learn the one before it first."}</div></div>${open?`<button class="btn gold sm" data-kn="${k.id}" data-cost="${k.c}">${money(k.c)}</button>`:`<span class="t m">${money(k.c)}</span>`}</div></div>`; });
       h+=`</div>`; });
     const lk=STOCKS.filter(d=>!unlocked(d)&&!d.gone); if(lk.length) h+=`<div class="t" style="margin:8px 3px">🔒 ${SK.filter(k=>lk.some(d=>d.s===k.sym)).length} more lessons unlock as you unlock ${lk.map(d=>d.s).join(", ")}.</div>`;
@@ -1404,11 +1415,13 @@ function buildStore(){
   const p=prof();
   if(p){ const s=pst(), t=tier(), N=p.gear.length, nx=s.own+1, cur=Math.max(0,t), brk=s.br[s.own], col=PCOL[p.id]||"#3b82f6"; ulMig(s);
     const pct=v=>(v<.02?(v*100).toFixed(1):Math.round(v*100))+"%", better=(a,b)=>`<span class="was">${a}</span> → <b class="now">${b}</b>`;
-    h+=`<div class="card row" style="gap:12px">${ICOB(p.id,col,24)}<div class="g"><div class="b">${t>=0?p.gear[t]:"No working gear"}${brk?' <span class="pill bad">BROKEN</span>':""}</div>
-      <div class="t">${p.n} · gear ${s.own+1} of ${N} · ★ ${s.rep} rep · pay ×${payMult(p.id).toFixed(2)}</div><div class="tiers">${p.gear.map((_,i)=>`<i class="${i<=s.own?"on":""}" style="${i<=s.own?`background:${col}`:""}"></i>`).join("")}</div></div>
+    const gr=GRAR[s.own]||0;
+    h+=`<div class="card row" style="gap:12px">${ICOB(p.id,col,24)}<div class="g"><div class="b" style="color:${RAR[gr].c}">${t>=0?p.gear[t]:"No working gear"}${brk?' <span class="pill bad">BROKEN</span>':""}</div>
+      <div class="t">${rarPill(gr)} ${p.n} · gear ${s.own+1} of ${N} · ★ ${s.rep} rep · pay ×${payMult(p.id).toFixed(2)}</div>${tierBar(N,s.own)}</div>
       ${brk?`<button class="btn gold sm" data-rep="${s.own}" data-cost="${Math.max(3,GCOST[s.own]*.25)}">Fix ${money(Math.max(3,GCOST[s.own]*.25))}</button>`:""}</div>`;
     if(nx<N){ const nj=p.jobs.filter(j=>j.t===nx);
-      h+=`<div class="card spot2"><div class="sl">Next upgrade</div><div class="b" style="font-size:17px;margin:2px 0 10px">${p.gear[nx]}</div>
+      const nr=GRAR[nx]||0;
+      h+=`<div class="card spot2"><div class="row"><div class="sl g">Next upgrade</div>${rarPill(nr)}</div><div class="b" style="font-size:17px;margin:2px 0 10px;color:${RAR[nr].c}">${p.gear[nx]}</div>
         <div class="kvs2"><span>Breaks</span><span>${better(pct(GBRK[cur]),pct(GBRK[nx]))}</span>
         <span>Job time</span><span>${better(pct(GSPD[cur]),pct(GSPD[nx]))}</span>
         ${FUSE[nx]?`<span>${p.sup} per job</span><span><span class="was">${FUSE[cur]||0}</span> → <b>${FUSE[nx]} ${p.unit}</b></span>`:""}
@@ -1421,8 +1434,9 @@ function buildStore(){
     const tot=UL.reduce((a,u)=>a+ulv(s,u.id),0);
     h+=`<div class="row" style="margin:16px 3px 6px"><h3 style="margin:0;flex:1">Business</h3><span class="t">${tot}/${UL.length*4} levels</span></div><div class="bar" style="margin:0 3px 10px"><i style="width:${tot/(UL.length*4)*100}%;background:linear-gradient(90deg,var(--gold),#22c55e)"></i></div><div class="g2">`;
     UL.forEach(u=>{ const l=ulv(s,u.id), mx=l>=4;
-      h+=`<div class="card utile2${mx?" max":""}" data-ul="${u.id}">${ICOB(u.ic,u.col,20)}<div class="b" style="font-size:13px;margin-top:8px">${u.n[Math.max(0,l-1)]}</div>
-        <div class="pips">${[0,1,2,3].map(i=>`<i style="${i<l?`background:${u.col}`:""}"></i>`).join("")}</div>
+      const rc=RAR[l].c; // level 0 gray, 1 green, 2 blue, 3 purple, 4 gold
+      h+=`<div class="card utile2${mx?" max":""}" data-ul="${u.id}" style="${l?`box-shadow:inset 0 0 0 1px ${rc}55`:""}">${ICOB(u.ic,rc,20)}<div class="b" style="font-size:13px;margin-top:8px;color:${l?rc:"var(--text)"}">${u.n[Math.max(0,l-1)]}</div>
+        <div class="pips">${[0,1,2,3].map(i=>`<i style="${i<l?`background:${RAR[i+1].c}`:""}"></i>`).join("")}</div>
         <div class="t">${ulDesc(u,l)}</div>${mx?"":`<div class="t nxt">Next: <b>${ulDesc(u,l+1)}</b></div>`}
         ${mx?`<div class="maxb">MAX</div>`:`<button class="btn buyul" data-up="${u.id}" data-cost="${u.c[l]}">${l?"Upgrade":"Buy"} · ${money(u.c[l])}</button>`}</div>`; });
     h+=`</div>`; }
@@ -2395,7 +2409,8 @@ function styleHTML(){ const C=COSS(); let n=0, got=0; COSCAT.forEach(x=>x[2].for
   let h=`<div class='t' style='margin:0 3px 8px'>Just for looks: nothing here changes the market. New looks unlock as you get further, and they're yours for good, even if you go broke. <b style='color:var(--text)'>${got}/${n} unlocked</b></div>`;
   COSCAT.forEach(([cat,name,L])=>{ const cur=cosGet(cat).id; h+=`<h3>${name}</h3>`;
     L.forEach(it=>{ const ok=cosOk(it), act=cur===it.id?`<span class='pill ok'>Using</span>`:ok?`<button class='btn ghost sm' data-cos='${cat}:${it.id}'>Use</button>`:`<span class='pill'>🔒</span>`;
-      h+=`<div class='card row${ok?'':' clk'}'><div class='cosp'>${cosPrev(cat,it)}</div><div class='g'><div class='b'>${it.n}</div><div class='t'>${ok?it.d:cosReq(it)}</div>${ok?'':lockBar(it)}</div>${act}</div>`; }); });
+      const r=rarOf(L.indexOf(it),L.length);
+      h+=`<div class='card row${ok?'':' clk'}'><div class='cosp'>${cosPrev(cat,it)}</div><div class='g'><div class='b' style='color:${RAR[r].c}'>${it.n} ${rarPill(r)}</div><div class='t'>${ok?it.d:cosReq(it)}</div>${ok?'':lockBar(it)}</div>${act}</div>`; }); });
   h+=`<h3>Effects</h3>`;
   FX.forEach(it=>{ const ok=cosOk(it), on=C[it.id];
     h+=`<div class='card row${ok?'':' clk'}'><div class='cosp' style='font-size:22px'>${it.g}</div><div class='g'><div class='b'>${it.n}</div><div class='t'>${ok?it.d:cosReq(it)}</div></div>${ok?`<button class='btn ${on?'buy':'ghost'} sm' data-cosfx='${it.id}'>${on?'ON':'OFF'}</button>`:`<span class='pill'>🔒</span>`}</div>`; });
@@ -2571,7 +2586,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="97";
+const APPV="98";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

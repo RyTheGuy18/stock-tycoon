@@ -816,7 +816,7 @@ const sp=sym=>pxi(BYSYM[sym].i,NOW);
 // Big orders fill a little worse than the chart (market impact). Tiny orders: basically nothing.
 const slip=(sym,usd)=>{ const d=BYSYM[sym]; return .4*d.vol*Math.sqrt(60)*Math.tanh(Math.max(0,usd)/LIQ(d)); };
 const fillBuy=(sym,q)=>{ const a=ask(sym); return a*Math.exp(slip(sym,q*a)); }, fillSell=(sym,q)=>{ const b=bid(sym); return b*Math.exp(-slip(sym,q*b)); };
-function maxQty(sym){ let q=Math.floor(Math.max(0,S.cash)/ask(sym)/(1+SALES_TAX)); while(q>1&&q*fillBuy(sym,q)*(1+SALES_TAX)>S.cash) q=Math.floor(q*.995); return q; }
+function maxQty(sym){ let q=Math.floor(Math.max(0,S.cash)/ask(sym)/(1+STX())); while(q>1&&q*fillBuy(sym,q)*(1+STX())>S.cash) q=Math.floor(q*.995); return q; }
 const bid=sym=>sp(sym)*(1-BYSYM[sym].spr*sprMult()/2), ask=sym=>sp(sym)*(1+BYSYM[sym].spr*sprMult()/2);
 const P=sym=>S.pos[sym]||(S.pos[sym]={l:0,lc:0,s:0,se:0});
 function posVal(){ let v=0; if(S.vb) for(const id in S.vb) v+=vbVal(S.vb[id]); for(const k in S.pos){ const p=S.pos[k]; if(p.l) v+=p.l*bid(k); if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-ask(k))); } return v; }
@@ -842,10 +842,10 @@ function trade(act,q){
   const sym=S.sel, p=P(sym); q=Math.floor(q);
   if((act==="buy"||act==="short")&&(p.l||p.s)) return toast("You already have a trade open in "+sym+". Close it first.");
   if(act==="buy"||act==="short") p.bot=null;
-  if(act==="buy"){ const a=fillBuy(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*a*(1+SALES_TAX)>S.cash+1e-9) return toast("Not enough cash for "+q+" share"+(q>1?"s":"")+" plus sales tax");
+  if(act==="buy"){ const a=fillBuy(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*a*(1+STX())>S.cash+1e-9) return toast("Not enough cash for "+q+" share"+(q>1?"s":"")+" plus sales tax");
     p.lc=(p.lc*p.l+q*a)/(p.l+q); p.l+=q; S.cash-=q*a; const tx=salesTax(q*a); flowPush(sym,1,q*a); autoStops(sym); mark(sym,"B",sp(sym)); toast(`Bought ${q} ${sym} at ${px(a)} (${money(q*a)} + ${money(tx)} sales tax)`); }
   if(act==="sell") sellLong(sym,Math.min(q,p.l));
-  if(act==="short"){ const b=fillSell(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*b*(1+SALES_TAX)>S.cash+1e-9) return toast("Not enough cash to back "+q+" share"+(q>1?"s":"")+" plus sales tax");
+  if(act==="short"){ const b=fillSell(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*b*(1+STX())>S.cash+1e-9) return toast("Not enough cash to back "+q+" share"+(q>1?"s":"")+" plus sales tax");
     p.se=(p.se*p.s+q*b)/(p.s+q); p.s+=q; S.cash-=q*b; const tx=salesTax(q*b); flowPush(sym,-1,q*b); autoStops(sym); mark(sym,"X",sp(sym)); toast(`Shorted ${q} ${sym} at ${px(b)} (${money(q*b)} held as collateral, ${money(tx)} sales tax)`); }
   if(act==="cover"){ cover(sym,Math.min(q,p.s)); }
   if((act==="buy"||act==="short")&&(p.l||p.s)){ preStops(sym); sfx(act==="short"?'short':'open'); tipTag(sym,act==="buy"?1:-1); }
@@ -884,7 +884,7 @@ function autoStops(sym){ const p=P(sym), o=ORD(sym);
   if(p.s){ if(aOn("asl")) o.ssl=p.se*(1+aV("asl")/100); if(aOn("atp")) o.stp=p.se*(1-aV("atp")/100); } }
 // Bots sit out while you have a trade of your own open (bots' own trades don't count)
 let BOTSKIP=0; const myOpen=()=>Object.values(S.pos).some(p=>p&&(p.l||p.s)&&!p.bot);
-function botOpen(sym,dir,tag){ const p=P(sym); if(p.l||p.s||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } let q=Math.floor(Math.max(0,S.cash)*aV(tag)/100/sp(sym)/(1+slip(sym,S.cash*aV(tag)/100))/(1+SALES_TAX)); if(q<1) return; const pr=dir>0?fillBuy(sym,q):fillSell(sym,q);
+function botOpen(sym,dir,tag){ const p=P(sym); if(p.l||p.s||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } let q=Math.floor(Math.max(0,S.cash)*aV(tag)/100/sp(sym)/(1+slip(sym,S.cash*aV(tag)/100))/(1+STX())); if(q<1) return; const pr=dir>0?fillBuy(sym,q):fillSell(sym,q);
   if(dir>0){ p.lc=pr; p.l=q; mark(sym,"B",pr); } else { p.se=pr; p.s=q; mark(sym,"X",pr); } S.cash-=q*pr; salesTax(q*pr); flowPush(sym,dir,q*pr); p.bot=tag; autoStops(sym); resetPeak(); life(`🤖 ${tag==="rit"?"Routine":"Open"} bot ${dir>0?"bought":"shorted"} ${q} ${sym} at ${px(pr)}`); }
 function botClose(sym,tag){ const p=P(sym); if(p.bot!==tag||(!p.l&&!p.s)) return; const n=S.hist.length; p.l?sellLong(sym,p.l,"🤖 Bot sold"):cover(sym,p.s,"🤖 Bot covered"); p.bot=null;
   const pl=S.hist[0]&&S.hist.length>=n?S.hist[0].pl:0; if(pl>0){ const fee=pl*.1; S.cash-=fee; } }
@@ -1004,8 +1004,10 @@ function bills(){ const e=earned();
 // ---------- taxes ----------
 // In this game a "year" is one real week. Tax day is every Monday at midnight (your time).
 // Sales tax: a small cut on every stock you buy or sell. Tax day bills: income tax (real US brackets on
-// this week's job pay + trading profits), property tax on homes you own, and a war tax in war years.
-const SALES_TAX=.005;
+// this week's job pay + trading profits), property tax on homes you own, and in war years every tax is ×3.
+const SALES_BASE=.005, WAR_X=3;
+// a war year (about 1 week in 6) triples every tax that week: income tax, property tax and the sales tax on every trade
+const STX=()=>SALES_BASE*(warYear(taxWk(NOW))?WAR_X:1);
 const BRACKETS=[[11925,.10],[48475,.12],[103350,.22],[197300,.24],[250525,.32],[626350,.35],[Infinity,.37]]; // 2025 single filer
 const HOMES=[["apt",4000,"Apartment"],["condo",100000,"Condo"],["cabin",1.2e6,"Lake cabin"],["house",3e6,"Dream house"],["island",1e8,"Private island"]];
 const taxWk=t=>Math.floor((t-new Date(t*1000).getTimezoneOffset()*60-345600)/604800);   // weeks since Mon Jan 5 1970, local time
@@ -1014,33 +1016,32 @@ const warYear=w=>RNG("war"+w)()<1/6;                                            
 function TX(){ const w=taxWk(NOW); if(!S.tx||S.tx.w==null) S.tx={w,inc:0,gain:0,sales:0}; return S.tx; }
 const txInc=a=>{ TX().inc+=a; }, txGain=a=>{ TX().gain+=a; };
 // after-tax result of an open trade: profit minus the sales tax paid to open it and the tax you'd pay to close it now
-const tx2=v=>Math.round(v*SALES_TAX*100)/100;
+const tx2=v=>Math.round(v*STX()*100)/100;
 const netLine=(g,n)=>taxTrap(g,n)?`<div class="taxw-t">⚠️ Taxes eat this profit. After tax you'd <b>lose ${money(-n)}</b></div>`:`<div class="t" style="font-size:11.5px;margin-top:2px;text-align:right">after tax ${sg(n)}</div>`;
 function netPL(sym){ const p=P(sym); if(p.l){ const b=bid(sym); return p.l*(b-p.lc)-tx2(p.l*p.lc)-tx2(p.l*b); } if(p.s){ const a=ask(sym); return Math.max(p.s*(p.se-a),-p.s*p.se)-tx2(p.s*p.se)-tx2(p.s*a); } return 0; }
 const taxTrap=(g,n)=>g>0&&n<0; // "profit" that is really a loss once taxes are paid
-function salesTax(amt){ const t=Math.round(amt*SALES_TAX*100)/100; if(t<=0) return 0; S.cash-=t; TX().sales+=t; S.st.taxes=(S.st.taxes||0)+t; return t; }
+function salesTax(amt){ const t=Math.round(amt*STX()*100)/100; if(t<=0) return 0; S.cash-=t; TX().sales+=t; S.st.taxes=(S.st.taxes||0)+t; return t; }
 function incomeTax(x){ let t=0, lo=0; for(const [hi,r] of BRACKETS){ if(x<=lo) break; t+=(Math.min(x,hi)-lo)*r; lo=hi; } return t; }
-function taxBill(tx,war){ const base=Math.max(0,tx.inc+Math.max(0,tx.gain)), acct=S.ms.acct?.85:1, it=incomeTax(base)*acct;
-  const homes=HOMES.filter(h=>S.ms[h[0]]), pt=homes.reduce((a,h)=>a+h[1]*.01,0)*acct;
-  const wt=war?Math.max(0,netWorth()-1000)*.02*acct:0;
+function taxBill(tx,war){ const base=Math.max(0,tx.inc+Math.max(0,tx.gain)), acct=S.ms.acct?.85:1, wx=war?WAR_X:1, it=incomeTax(base)*acct*wx;
+  const homes=HOMES.filter(h=>S.ms[h[0]]), pt=homes.reduce((a,h)=>a+h[1]*.01,0)*acct*wx, wt=0;
   return {base,it,pt,wt,homes,war,acct:acct<1,total:Math.round((it+pt+wt)*100)/100}; }
 function taxDay(){ const tx=TX(), w=taxWk(NOW); if(w===tx.w) return;
   const b=taxBill(tx,warYear(tx.w)); S.tx={w,inc:0,gain:0,sales:0};
-  if(warYear(w)&&!SIM){ toast("⚔️ War year: a 2% war tax on your net worth comes due next tax day","bad"); }
+  if(warYear(w)&&!SIM){ toast("⚔️ War year! All taxes are ×3 this week: income, property and sales tax","bad"); }
   if(b.total<=0) return;
   bill("🧾 Taxes",b.total); S.st.taxes=(S.st.taxes||0)+b.total;
   const row=(l,v)=>`<div class="li"><span>${l}</span><b class="m dn">-${money(v)}</b></div>`;
   S.taxPend=`<p>It's tax day. Here's the bill for the week ("year") that just ended.</p>`+
     (b.it>0?row(`Income tax on ${money(b.base)} earned`,b.it):"")+
     (b.pt>0?row(`Property tax: ${b.homes.map(h=>h[2]).join(", ")}`,b.pt):"")+
-    (b.wt>0?row("⚔️ War tax (2% of net worth over $1K)",b.wt):"")+
+    (b.war?`<p class="t" style="margin:6px 0">⚔️ It was a war year, so these taxes were ×3.</p>`:"")+
     `<div class="li"><b>Total</b><b class="m dn">-${money(b.total)}</b></div>`+
     (b.acct?`<p class="t">Your accountant saved you 15%.</p>`:"")+(inDebt()?`<p class="dn">You can't cover it all. Pay off the debt within 24 hours or you go broke.</p>`:""); }
 function taxCard(){ const el=$("taxc"); if(!el) return; const tx=TX(), w=tx.w, b=taxBill(tx,warYear(w)), left=taxDayAt(w)-NOW;
   { const fs=$("fs-tax"); if(fs) fs.innerHTML=`in ${dur(left)} · <b class="dn">≈ -${money(b.total)}</b>`; }
   el.innerHTML=`<div class="row"><div class="g"><div class="b">🧾 Tax day in ${dur(left)}${warYear(w)?' <span class="pill bad">⚔️ War year</span>':''}</div>
    <div class="t">Earned this year: ${money(b.base)} · sales tax paid: ${money(tx.sales)}</div></div><b class="m dn">≈ -${money(b.total)}</b></div>
-   <div class="t" style="margin-top:4px">Income tax ${money(b.it)}${b.pt?` · property ${money(b.pt)}`:""}${b.wt?` · war ${money(b.wt)}`:""} · ${(SALES_TAX*100).toFixed(1)}% sales tax on every stock buy and sell</div>`; }
+   <div class="t" style="margin-top:4px">Income tax ${money(b.it)}${b.pt?` · property ${money(b.pt)}`:""}${b.war?` · <b class="dn">⚔️ war year: all taxes ×3</b>`:""} · ${(STX()*100).toFixed(1)}% sales tax on every stock buy and sell</div>`; }
 function broke(why){
   for(const k in S.pos) S.pos[k]={l:0,lc:0,s:0,se:0};
   S.cash=0; S.job=null; S.debtDue=0; S.liqPeak=0; S.st.broke++; AF().bk=1;
@@ -1114,9 +1115,9 @@ function upd(){
   if(h&&!P(sym).bot&&["rit","openb","pscalp","pflush","ppump","pswing"].some(aOn)) h+=`<div class="t" style="margin-top:6px">🤖 Your bots sit out while you have a trade open.</div>`; else if(h&&P(sym).bot) h+=`<div class="t" style="margin-top:6px">🤖 A bot opened this trade and will close it.</div>`;
   if(PHONE()&&(p.l||p.s)) h=(()=>{ const g=p.l?p.l*(bid(sym)-p.lc):Math.max(p.s*(p.se-ask(sym)),-p.s*p.se), n=netPL(sym); return taxTrap(g,n)?netLine(g,n):""; })()+ordBtns(p.l?"l":"s")+(P(sym).bot?`<div class="t" style="margin-top:4px">🤖 A bot opened this trade and will close it.</div>`:["rit","openb","pscalp","pflush","ppump","pswing"].some(aOn)?`<div class="t" style="margin-top:4px">🤖 Your bots sit out while you have a trade open.</div>`:"");
   $("pos").innerHTML=h||(PHONE()?"":`<div class="t">No position in ${sym}. Small orders fill at the chart price; big ones move it a little.</div>`); $("pos").style.display=h||!PHONE()?"":"none";
-  const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+" + "+money(S.qty*a*SALES_TAX)+" tax"+(sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
+  const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+" + "+money(S.qty*a*STX())+" tax"+(sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
   const q=s=>main.querySelector(s);
-  const open=p.l>0||p.s>0; { const qr=q(".qty"); if(qr) qr.style.display=PHONE()&&open?"none":""; } q("[data-a=buy]").disabled=open||inDebt()||S.qty*fillBuy(sym,S.qty)*(1+SALES_TAX)>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||S.qty*fillSell(sym,S.qty)*(1+SALES_TAX)>S.cash+1e-9;
+  const open=p.l>0||p.s>0; { const qr=q(".qty"); if(qr) qr.style.display=PHONE()&&open?"none":""; } q("[data-a=buy]").disabled=open||inDebt()||S.qty*fillBuy(sym,S.qty)*(1+STX())>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||S.qty*fillSell(sym,S.qty)*(1+STX())>S.cash+1e-9;
   const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; const cn=open?netPL(sym):0, ctr=taxTrap(cpl,cn); cb.className="btn "+(open?(ctr?"taxw":cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?(ctr?`CLOSE<small>after tax ${sg(cn)}</small>`:`CLOSE<small>${sg(cpl)}</small>`):"CLOSE";
   preCard(open); jobCard(); momCard(); tipCard(); compCard(); draw();
   if(NOW%5===0){ fundCard(); taxCard(); } }
@@ -1882,7 +1883,7 @@ const TUT=[
  ["#chart","Stop loss and take profit","Once you're in a trade, tap <b>Stop loss</b> or <b>Take profit</b> on your position card, then <b>tap the chart</b> where you want it. Drag the handle on the right edge to move it. When the price gets there, your trade closes by itself, even while you're away.","trade"],
  ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed. Learn better jobs in the job list as you build reputation.","trade"],
  ["#momw","Practice with Mom","No money yet? Practice on Mom's dime. Close a practice trade in profit and she pays you for it, until you've got $15.","trade"],
- ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which adds a 2% war tax on your net worth. Can't pay? It turns into debt, and you have 24 hours.","trade"],
+ ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which triples every tax that week (income, property and sales tax). Can't pay? It turns into debt, and you have 24 hours.","trade"],
  ["#bell","News","The bell gets a red dot when there's big news: breaking stories, market crashes, collapses, huge spikes and rumors. Many big moves have a warning headline first, so check it often.","trade"],
  ['[data-tab="store"]',"The Store","Better gear for your job, and lessons that teach you the patterns the market repeats. That's where the real money is.","trade"],
  ['[data-tab="auto"]',"Automations","Later on, you can buy bots that trade for you while the app is closed (as long as you don't have a trade of your own open), and tools that keep your jobs running.","trade"],
@@ -2404,7 +2405,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="79";
+const APPV="80";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

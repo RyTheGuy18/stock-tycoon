@@ -2258,7 +2258,7 @@ const SFXVOL=1.7; // at the slider's middle (50%)
 const svol=()=>S.set&&S.set.sv!=null?S.set.sv:.5, mvol=()=>S.set&&S.set.mv!=null?S.set.mv:.5;
 const sfxGain=()=>SFXVOL*2*svol(); // all effects run through one bus, a bit louder than before, with a limiter so stacked sounds don't crackle
 function actx(){
-  if(AC&&AC.state==='closed'){ AC=null; SFXB=null; MUSB=null; if(MUS.el) MUS.el.pause(); MUS.el=null; MUS.src=null; MUS.cur=-1; }
+  if(AC&&AC.state==='closed'){ AC=null; SFXB=null; MUSB=null; if(MUS.cur>=0&&!MUS.resume) MUS.resume={i:MUS.cur,at:MUS.off}; MUS.node=null; MUS.buf=null; MUS.cur=-1; }
   if(!AC){ try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(_){} AC=new (window.AudioContext||window.webkitAudioContext)();
     const lim=AC.createDynamicsCompressor(); lim.threshold.value=-10; lim.knee.value=6; lim.ratio.value=12; lim.attack.value=.002; lim.release.value=.15; lim.connect(AC.destination);
     SFXB=AC.createGain(); SFXB.gain.value=sfxGain(); SFXB.connect(lim);
@@ -2268,9 +2268,8 @@ function actx(){
 // After switching apps, iPhone often leaves the old audio engine stuck ("interrupted"/"suspended") and resume()
 // quietly does nothing, even on a tap. So on a tap, a stuck engine is thrown away and a fresh one is built right
 // there inside the tap (the only moment iPhone allows it), and the song picks up where it left off.
-function rebuildAudio(){ const cur=MUS.cur, pos=MUS.el?MUS.el.currentTime:0;
-  try{ if(MUS.el){ MUS.el.pause(); MUS.el.removeAttribute('src'); MUS.el.load(); } }catch(_){}
-  MUS.el=null; MUS.src=null; MUS.cur=-1; try{ AC.close(); }catch(_){} AC=null; SFXB=null; MUSB=null; SNDU=false;
+function rebuildAudio(){ const cur=MUS.cur, pos=musPos(); musHalt(); MUS.tok++; MUS.buf=null;
+  MUS.cur=-1; try{ AC.close(); }catch(_){} AC=null; SFXB=null; MUSB=null; SNDU=false;
   actx(); if(cur>=0&&mus()&&snd()) MUS.resume={i:cur,at:pos}; }
 // After the screen is locked (or the app sits in the background), iPhone can leave the engine saying "running" while
 // it's actually silent, so the state can't be trusted: the first tap after coming back always builds fresh audio.
@@ -2327,30 +2326,35 @@ const SONGS=[{f:"lofi-tech-zephira",n:"Lofi Tech",a:"ZephiraMusic",g:1},{f:"feel
   {f:"lofi-tech-mountain",n:"Lofi Tech",a:"The Mountain",g:.66},{f:"elevator-ikoliks",n:"Elevator Music",a:"ikoliks_aj",g:1},{f:"elevator-andriih",n:"Elevator Music",a:"AndriiH",g:1.28}];
 const musV=()=>.2*mvol(); // music sits under the effects (0.1 at the slider's middle)
 const mus=()=>!S.set||S.set.mus!==0;
-const MUS={el:null,src:null,q:[],cur:-1,on:false};
+// Music plays through Web Audio (decoded buffers), NOT an <audio> element: iPhone turns any playing <audio> element
+// into a "Now Playing" player on the lock screen, which can't be removed while the app is open in the background.
+// Only the current song is kept in memory.
+const MUS={buf:null,node:null,q:[],cur:-1,on:false,t0:0,off:0,tok:0,resume:null};
+const BUFS={}; // song index -> decoded AudioBuffer (just the current one is kept)
 function musNext(){ if(!MUS.q.length){ const a=SONGS.map((_,i)=>i).filter(i=>i!==MUS.cur); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } MUS.q=a; } return MUS.q.shift(); }
 function musFade(v,sec){ if(!MUSB) return; const g=MUSB.gain, t=AC.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value,t); g.linearRampToValueAtTime(v,t+sec); }
-function musPlay(i,at){ if(!AC) return; if(!MUS.el){ const el=MUS.el=new Audio(); el.preload="auto"; el.setAttribute('playsinline',''); el.addEventListener('ended',()=>musPlay(musNext())); el.addEventListener('error',()=>{ if(MUS.on) setTimeout(()=>musPlay(musNext()),3000); }); }
-  if(!MUS.src){ try{ MUS.src=AC.createMediaElementSource(MUS.el); MUS.src.connect(MUSB); }catch(_){} }
-  MUS.cur=i; const s=SONGS[i]; MUS.el.src="music/"+s.f+".mp3"; MUSB.gain.value=0;
-  if(at>1){ const el=MUS.el, seek=()=>{ try{ el.currentTime=at; }catch(_){} }; if(el.readyState>=1) seek(); else el.addEventListener('loadedmetadata',seek,{once:true}); } const p=MUS.el.play(); p&&p.catch&&p.catch(()=>{}); musFade(musV()*s.g,2.5); musLbl(); }
-function musWake(){ if(!mus()||!snd()||document.hidden){ return; } MUS.on=true;
+const musPos=()=>MUS.node&&AC?Math.max(0,AC.currentTime-MUS.t0):MUS.off;
+function decode(ab){ return new Promise((res,rej)=>{ try{ const p=AC.decodeAudioData(ab,res,rej); if(p&&p.then) p.then(res,rej); }catch(e){ rej(e); } }); }
+async function musLoad(i){ if(BUFS[i]) return BUFS[i]; const r=await fetch("music/"+SONGS[i].f+".mp3"); if(!r.ok) throw 0; const buf=await decode(await r.arrayBuffer());
+  for(const k in BUFS) delete BUFS[k]; BUFS[i]=buf; return buf; }
+function musHalt(){ if(MUS.node){ MUS.off=musPos(); const n=MUS.node; MUS.node=null; try{ n.onended=null; n.stop(); }catch(_){} } }
+function musStart(at){ if(!AC||!MUS.buf) return; musHalt(); const n=AC.createBufferSource(); n.buffer=MUS.buf; n.connect(MUSB);
+  at=Math.min(Math.max(0,at||0),Math.max(0,MUS.buf.duration-.5)); n.onended=()=>{ if(MUS.node===n){ MUS.node=null; if(MUS.on) musPlay(musNext()); } };
+  n.start(0,at); MUS.node=n; MUS.t0=AC.currentTime-at; }
+function musPlay(i,at){ if(!AC) return; const tok=++MUS.tok; MUS.cur=i; musHalt(); MUS.buf=null; if(MUSB) MUSB.gain.value=0; musLbl();
+  musLoad(i).then(buf=>{ if(tok!==MUS.tok||!AC||!MUS.on) return; MUS.buf=buf; musStart(at||0); musFade(musV()*SONGS[i].g,2.5); })
+    .catch(()=>{ if(tok===MUS.tok&&MUS.on) setTimeout(()=>{ if(tok===MUS.tok) musPlay(musNext()); },3000); }); }
+function musWake(){ if(!mus()||!snd()||document.hidden||!AC) return; MUS.on=true;
   if(MUS.resume){ const r=MUS.resume; MUS.resume=null; return musPlay(r.i,r.at); }
   if(MUS.cur<0) return musPlay(musNext());
-  if(MUS.el&&MUS.el.paused&&!MUS.el.getAttribute('src')) return musPlay(MUS.cur,0);
-  if(MUS.el&&MUS.el.paused){ const p=MUS.el.play(); p&&p.catch&&p.catch(()=>{}); musFade(musV()*SONGS[MUS.cur].g,1.2); } }
-// Leaving the app: unload the track entirely (not just pause), otherwise iPhone keeps a "Now Playing" player on the
-// lock screen. The song and spot are remembered and pick up again when you come back.
-function musUnload(){ if(!MUS.el) return; try{ MUS.el.pause(); MUS.el.removeAttribute('src'); MUS.el.load(); }catch(_){} if(MUSB) MUSB.gain.value=0;
-  try{ if(navigator.mediaSession){ navigator.mediaSession.metadata=null; navigator.mediaSession.playbackState='none'; } }catch(_){} }
-function musPause(){ if(MUS.el){ if(MUS.cur>=0&&MUS.el.getAttribute('src')) MUS.resume={i:MUS.cur,at:MUS.el.currentTime||0}; musUnload(); } }
-// Leaving the app: shut ALL audio down (music player and the sound engine). As long as either exists, iPhone keeps an
-// empty "Stock Tycoon" player on the lock screen. The first tap back builds fresh audio and the song carries on.
-function audioOff(){ musPause(); MUS.el=null; MUS.src=null; MUS.cur=-1;
-  try{ if(AC) AC.close(); }catch(_){} AC=null; SFXB=null; MUSB=null; SNDU=false; STALE=false;
-  try{ if(navigator.mediaSession){ for(const a of ["play","pause","seekbackward","seekforward","previoustrack","nexttrack"]) navigator.mediaSession.setActionHandler(a,null); } }catch(_){} }
-function musStop(){ MUS.on=false; if(!MUS.el) return; musFade(0,.6); setTimeout(()=>{ if(!MUS.on&&MUS.el){ MUS.resume=MUS.cur>=0?{i:MUS.cur,at:MUS.el.currentTime||0}:null; musUnload(); } },650); }
-function musSkip(){ if(!MUS.el||MUS.cur<0) return musWake(); musFade(0,.4); setTimeout(()=>musPlay(musNext()),420); }
+  if(!MUS.node&&MUS.buf){ musStart(MUS.off); musFade(musV()*SONGS[MUS.cur].g,1.2); } }
+function musPause(){ if(MUS.cur>=0&&(MUS.node||MUS.buf)) MUS.resume={i:MUS.cur,at:musPos()}; musHalt(); MUS.tok++; if(MUSB) MUSB.gain.value=0; }
+// Leaving the app: shut all audio down (the iPhone lock screen gets nothing to show). The first tap back builds fresh
+// audio and the song carries on from the same spot.
+function audioOff(){ musPause(); MUS.buf=null; MUS.cur=-1;
+  try{ if(AC) AC.close(); }catch(_){} AC=null; SFXB=null; MUSB=null; SNDU=false; STALE=false; }
+function musStop(){ MUS.on=false; if(MUS.cur<0) return; musFade(0,.6); setTimeout(()=>{ if(!MUS.on){ MUS.resume={i:MUS.cur,at:musPos()}; musHalt(); MUS.tok++; } },650); }
+function musSkip(){ if(MUS.cur<0) return musWake(); musFade(0,.4); setTimeout(()=>musPlay(musNext()),420); }
 function musLbl(){ const el=$("muslbl"); if(el) el.textContent=MUS.cur>=0&&MUS.on?`Now playing: ${SONGS[MUS.cur].n} · ${SONGS[MUS.cur].a}`:"Shuffles through 6 chill tracks while you play."; }
 function winFx(pl){ if(SIM) return; const big=Math.abs(pl)>Math.max(25,Math.abs(netWorth())*.1); if(!(pl>0)){ if(pl<0) sfx(big?'bigloss':'loss'); return; } const C=COSS(); if(C.fxb&&cosOk(FX[0])) burst(pl); if(C.fxs&&cosOk(FX[1])) chaChing(); else sfx(big?'bigwin':'win'); }
 main.addEventListener('click',e=>{ const a=e.target.closest('[data-cos],[data-cosfx]'); if(!a) return; const C=COSS();
@@ -2400,7 +2404,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="78";
+const APPV="79";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

@@ -932,7 +932,7 @@ function bills(){ const e=earned();
 // In this game a "year" is one real week. Tax day is every Monday at midnight (your time).
 // Sales tax: a small cut on every stock you buy or sell. Tax day bills: income tax (real US brackets on
 // this week's job pay + trading profits), property tax on homes you own, and a war tax in war years.
-const SALES_TAX=.015;
+const SALES_TAX=.005;
 const BRACKETS=[[11925,.10],[48475,.12],[103350,.22],[197300,.24],[250525,.32],[626350,.35],[Infinity,.37]]; // 2025 single filer
 const HOMES=[["apt",4000,"Apartment"],["condo",100000,"Condo"],["cabin",1.2e6,"Lake cabin"],["house",3e6,"Dream house"],["island",1e8,"Private island"]];
 const taxWk=t=>Math.floor((t-new Date(t*1000).getTimezoneOffset()*60-345600)/604800);   // weeks since Mon Jan 5 1970, local time
@@ -1652,7 +1652,7 @@ const TUT=[
  ["#chart","Stop loss and take profit","Once you're in a trade, tap <b>Stop loss</b> or <b>Take profit</b> on your position card, then <b>tap the chart</b> where you want it. Drag the handle on the right edge to move it. When the price gets there, your trade closes by itself, even while you're away.","trade"],
  ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed. Learn better jobs in the job list as you build reputation.","trade"],
  ["#momw","Practice with Mom","No money yet? Practice on Mom's dime. Close a practice trade in profit and she pays you for it, until you've got $15.","trade"],
- ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>1.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which adds a 2% war tax on your net worth. Can't pay? It turns into debt, and you have 24 hours.","trade"],
+ ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which adds a 2% war tax on your net worth. Can't pay? It turns into debt, and you have 24 hours.","trade"],
  ["#bell","News","The bell gets a red dot when there's big news: breaking stories, market crashes, collapses, huge spikes and rumors. Many big moves have a warning headline first, so check it often.","trade"],
  ['[data-tab="store"]',"The Store","Better gear for your job, and lessons that teach you the patterns the market repeats. That's where the real money is.","trade"],
  ['[data-tab="auto"]',"Automations","Later on, you can buy bots that trade for you while the app is closed (as long as you don't have a trade of your own open), and tools that keep your jobs running.","trade"],

@@ -935,7 +935,7 @@ function draw(){
   if(LINE&&LINE.a){ const x=tX(LINE.a[0]), y=Y(LINE.a[1]); c.fillStyle="#f5b301"; c.beginPath(); c.arc(x,y,4.5,0,7); c.fill(); }
   // hover / tap readout: the top half of a candle shows its high, the bottom half its low
   if(HOV&&(HOV.until==null||Date.now()<HOV.until)){ const j=Math.floor(HOV.x/cw), k=data[j];
-    if(k&&k[0]!==null&&HOV.x<pw){ const x=X(j), yh=Y(k[1]), yl=Y(k[2]), top=HOV.y<(yh+yl)/2, v=top?k[1]:k[2], y=top?yh:yl;
+    const hw=Math.max(2,ZCW*.36)+.5; if(k&&k[0]!==null&&HOV.x<pw&&Math.abs(HOV.x-X(j))<=hw&&HOV.y>=Y(k[1])-3&&HOV.y<=Y(k[2])+3){ const x=X(j), yh=Y(k[1]), yl=Y(k[2]), top=HOV.y<(yh+yl)/2, v=top?k[1]:k[2], y=top?yh:yl;
       c.strokeStyle="rgba(255,255,255,.6)"; c.strokeRect(x-Math.max(2,cw*.45),yh-2,Math.max(4,cw*.9),yl-yh+4);
       const tx=(top?"High ":"Low ")+px(v); c.font="bold 11px JetBrains Mono"; const w=c.measureText(tx).width+10, bx=Math.min(Math.max(2,x-w/2),pw-w-2), by=top?Math.max(2,y-24):Math.min(H-20,y+6);
       c.fillStyle="rgba(5,8,11,.92)"; c.fillRect(bx,by,w,18); c.strokeStyle=top?"#16c784":"#ea3943"; c.strokeRect(bx,by,w,18); c.fillStyle="#fff"; c.fillText(tx,bx+5,by+9); } }

@@ -1302,8 +1302,8 @@ function hdr(){ applyCos(); const c=$("cash"); c.textContent=money(S.cash); c.cl
 
 // ---------- modals ----------
 const XSVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
-// a title starting with "✕|" gets a close button at the top left
-function modal(t,body,btns,cb){ const m=$("modal"), xb=t.startsWith("✕|"); if(xb) t=t.slice(2); m.innerHTML=`<div class="box">${xb?`<div class="mh"><button class="mx" data-mx aria-label="Close">${XSVG}</button><h2>${t}</h2></div>`:`<h2>${t}</h2>`}${body}${btns&&btns.length?`<div class="row" style="margin-top:12px">${btns.map((b,i)=>`<button class="btn g ${b[1]||""}" data-i="${i}">${b[0]}</button>`).join("")}</div>`:""}</div>`;
+// a title starting with "✕|" gets a close button at the top right
+function modal(t,body,btns,cb){ const m=$("modal"), xb=t.startsWith("✕|"); if(xb) t=t.slice(2); m.innerHTML=`<div class="box">${xb?`<div class="mh"><h2>${t}</h2><button class="mx" data-mx aria-label="Close">${XSVG}</button></div>`:`<h2>${t}</h2>`}${body}${btns&&btns.length?`<div class="row" style="margin-top:12px">${btns.map((b,i)=>`<button class="btn g ${b[1]||""}" data-i="${i}">${b[0]}</button>`).join("")}</div>`:""}</div>`;
   m.classList.remove("hide"); m.onclick=e=>{ if(e.target.closest("[data-mx]")) return closeModal(); const sxb=e.target.closest("[data-sx]"); if(sxb) return sx(sxb.dataset.sx); const jl=e.target.closest("[data-jl]"); if(jl&&!jl.disabled) return learnJob(+jl.dataset.jl); const o=e.target.closest("[data-pp],[data-jb],[data-op]"); if(o&&!o.disabled){ o.dataset.op?setOrder(o.dataset.op):o.dataset.pp?chooseProf(o.dataset.pp):startJob(+o.dataset.jb); return; }
     const b=e.target.closest("[data-i]"); if(!b&&(e.target!==m||m.dataset.lock)) return; closeModal(); if(b&&btns[+b.dataset.i][2]) btns[+b.dataset.i][2](); }; }
 function closeModal(){ const m=$("modal"); m.classList.add("hide"); delete m.dataset.lock; }

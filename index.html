@@ -1753,9 +1753,12 @@ let CB={list:null,w:-1,busy:false,view:'all'}, CPL=0;
 // Week N's competition: register during week N-1 (register / unregister freely, your net worth is recorded when you
 // register). The moment week N starts, registration locks (the database refuses changes after that) and the prizes
 // are fixed from the AVERAGE recorded net worth of everyone registered. Only registered players can play week N.
-// Prizes: 1st = 60% of the average (at least $50), 2nd = 1st/4, 3rd = 1st/16, all rounded to $25 (min $25). Needs 2+ players.
+// Prizes: 1st = 60% of the average (min $25), 2nd = 1st/4, 3rd = 1st/16 (see prizesFor). Needs 2+ players.
 const r25=v=>Math.max(25,Math.round(v/25)*25);
-const prizesFor=avg=>{ const p1=Math.max(50,r25(avg*.6)); return [p1,r25(p1/4),r25(p1/16)]; }; // each place a quarter of the one above
+// 1st: 60% of the average, rounded to $25, at least $25. 2nd and 3rd: a quarter of the place above, no minimum,
+// rounded to a step that fits their size ($25 from $100 up, $5 from $10 up, else $1) so small prizes don't round to $0.
+const rNice=v=>v>=100?Math.round(v/25)*25:v>=10?Math.round(v/5)*5:Math.max(1,Math.round(v));
+const prizesFor=avg=>{ const p1=r25(avg*.6); return [p1,rNice(p1/4),rNice(p1/16)]; };
 const RG={}; // week -> {list:[{id,nw,name,uname,av}], busy, at}
 async function regsLoad(w,force){ const R=RG[w]=RG[w]||{list:null,busy:false,at:0}; if(!DB||R.busy||(!force&&R.list&&Date.now()-R.at<30000)) return R.list;
   R.busy=true; try{ const q=await DB.collection('comps/'+w+'/regs').limit(500).get(); R.list=q.docs.map(d=>Object.assign({id:d.id},d.data())); R.at=Date.now(); }catch(_){ R.list=R.list||[]; R.at=Date.now(); } R.busy=false; return R.list; }

@@ -1562,8 +1562,19 @@ async function loadBoard(){ if(!DB||FR.busy) return; FR.busy=true; try{ const q=
 // Friends tab: your card on top, then three sub-tabs so each screen stays short:
 // Friends (requests, chats, add a friend) · Compete (weekly competition) · Ranks (leaderboard)
 let FSEG="friends";
+const chOf=n=>{ let c=0; CHAP.forEach((x,k)=>{ if((n||0)>=x.at) c=k; }); return c; };
+// one leaderboard row; used for the Ranks list and for "How friends see you"
+function lbRow(p,i,me){ const st=+p.stories||0, col=(COLS[p.col||0]||COLS[0])[1];
+  return `<div class="lbr${me?" me":""}"><div class="rk${i!=null&&i<3?" top":""}">${i==null?"–":i<3?["🥇","🥈","🥉"][i]:i+1}</div>${avh(p,40)}
+    <div class="g" style="min-width:0"><div class="nm">${String(p.name||"Trader").replace(/</g,"")}${me?' <span class="pill ok">you</span>':""}${troStr(p.tro)}</div>
+    <div class="sub">${p.home||"🏠 Mom's basement"} · Ch ${chOf(st)+1}${p.uname?" · @"+esc(p.uname):""}</div>
+    <div class="pbar"><i style="width:${Math.min(100,st/MS.length*100)}%;background:${col}"></i></div></div>
+    <div class="lnw">${money(p.nw||0)}<small>${st}/${MS.length} story</small></div></div>`; }
 function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[], cc=COLS[m.col||0]||COLS[0];
-  let h=`<div class="pad"><div class="fme${bdCls()}" style="background:linear-gradient(135deg,${cc[0]},#0d1219 90%)"><div class="pav" style="width:44px;height:44px;font-size:24px;border-color:${cc[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><div class="g" style="min-width:0"><b style="font-size:15px">${(m.name||"").replace(/</g,"")}</b><div class="t">${UNAME?"@"+UNAME:"Not signed in"} · ${money(netWorth())}</div></div><button class="btn ghost sm" data-fx="edit">Edit</button></div>`;
+  // top of the tab: your own leaderboard row, drawn exactly the way friends see it
+  const meP={name:m.name,av:m.av,img:okImg(m.img)?m.img:"",col:m.col||0,nw:netWorth(),stories:MS.filter(x=>S.ms[x.id]).length,home:homeName(),uname:UNAME,tro:S.st.tro||null};
+  const myRank=FR.list?FR.list.findIndex(p=>p.id===UID):-1;
+  let h=`<div class="pad"><div class="row" style="margin:0 3px 6px"><div class="g t">How friends see you</div><button class="btn ghost sm" data-fx="edit" style="padding:5px 12px">Edit</button></div><div class="card" style="padding:4px 10px;margin-bottom:12px">${lbRow(meP,myRank>=0?myRank:null,false)}</div>`;
   if(!DB){ h+=window.NET?`<div class="card"><div class="t">Sign in to add friends, chat, join weekly competitions and see the leaderboard.</div><button class="btn gold" style="width:100%;margin-top:8px" data-sx2="login">Sign in or create an account</button></div>`:`<div class="card t">Online features aren't set up for this copy of the game. Single-player works the same.</div>`; main.dataset.h=main.innerHTML=h+"</div>"; return; }
   const nreq=FS.list.filter(f=>f.status==='pending'&&f.from!==UID).length, nun=FS.list.filter(f=>unread(f)).length, c=compCur();
   const dot=n=>n?` <span class="pill bad" style="padding:0 6px">${n}</span>`:"";
@@ -1573,13 +1584,7 @@ function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[], cc=COLS[m
     h+=`<div class="seg" style="margin-top:-2px"><button data-fv="friends" class="${FR.view==="friends"?"on":""}">Friends</button><button data-fv="all" class="${FR.view==="all"?"on":""}">Everyone</button></div>`;
     if(FR.list===null){ h+=`<div class="t">Loading the leaderboard…</div>`; loadBoard(); }
     else { const rows=FR.list.filter(p=>FR.view==="all"||fr.includes(p.code)||p.id===UID);
-      const chOf=n=>{ let c=0; CHAP.forEach((x,k)=>{ if((n||0)>=x.at) c=k; }); return c; };
-      h+=`<div class="card" style="padding:4px 10px">${rows.length?rows.map((p,i)=>{ const st=+p.stories||0, col=(COLS[p.col||0]||COLS[0])[1], me=p.id===UID;
-        return `<div class="lbr${me?" me":""}"><div class="rk${i<3?" top":""}">${i<3?["🥇","🥈","🥉"][i]:i+1}</div>${avh(p,40)}
-          <div class="g" style="min-width:0"><div class="nm">${String(p.name||"Trader").replace(/</g,"")}${me?' <span class="pill ok">you</span>':""}${troStr(p.tro)}</div>
-          <div class="sub">${p.home||"🏠 Mom's basement"} · Ch ${chOf(st)+1}${p.uname?" · @"+esc(p.uname):""}</div>
-          <div class="pbar"><i style="width:${Math.min(100,st/MS.length*100)}%;background:${col}"></i></div></div>
-          <div class="lnw">${money(p.nw||0)}<small>${st}/${MS.length} story</small></div></div>`; }).join(""):`<div class="t" style="padding:10px 2px">${FR.view==="friends"?"No friends on the board yet. Add some in the Friends tab.":"Nobody here yet."}</div>`}</div>
+      h+=`<div class="card" style="padding:4px 10px">${rows.length?rows.map((p,i)=>lbRow(p,i,p.id===UID)).join(""):`<div class="t" style="padding:10px 2px">${FR.view==="friends"?"No friends on the board yet. Add some in the Friends tab.":"Nobody here yet."}</div>`}</div>
       <button class="btn ghost sm" style="width:100%" data-fx="ref">↻ Refresh</button>`; } }
   else h+=socialHTML();
   main.dataset.h=main.innerHTML=h+"</div>"; compTick(); }

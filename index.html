@@ -1343,17 +1343,17 @@ document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.datase
   if(k==="sv"&&SFXB) SFXB.gain.setTargetAtTime(sfxGain(),AC.currentTime,.02);
   if(k==="mv"&&MUSB&&MUS.cur>=0&&MUS.on) MUSB.gain.setTargetAtTime(musV()*SONGS[MUS.cur].g,AC.currentTime,.05); });
 document.addEventListener("change",e=>{ const k=e.target.dataset&&e.target.dataset.vol; if(!k) return; save(); act(); if(k==="sv") sfx('ping'); });
-let SETV="gen", PUBT_ON=false;
+let SETV="gen";
 function openSettings(v){ if(v) SETV=v; const p=prof();
   let h=`<div class="seg"><button data-setv="gen" class="${SETV==="gen"?"on":""}">⚙️ General</button><button data-setv="save" class="${SETV==="save"?"on":""}">💾 Save</button><button data-setv="stats" class="${SETV==="stats"?"on":""}">📊 Stats</button></div>`;
   if(SETV==="gen") h+=acctHTML()+notifHTML()
     +sgrp("Sound",[srow("🔊","Sound effects","On iPhone, also check the volume and silent switch",tgl(snd(),"snd")),volRow("sv",svol()),
       srow("🎵","Music",`<span id="muslbl"></span>`,(mus()&&MUS.on?`<button class='btn ghost sm' data-sx='mskip'>Skip ⏭</button>`:"")+tgl(mus(),"mus")),volRow("mv",mvol())])
     +sgrp("Work",[`<button class="srow" id="chprof"><span class="ic">${p?p.i:"💼"}</span><div class="g"><div class="tt">Profession</div><div class="st">${p?p.n:"None yet"}</div></div><span class="t">Change</span><span class="chev">›</span></button>`])
-    +sgrp("App",[UPD.pub&&!UPD.ready?srow("⏳","A new update is on its way","GitHub is putting it online right now. It usually takes 1–2 minutes, then it downloads here.",`<span class="t">Publishing…</span>`):"",UPD.ready?`<div class="srow" id="updrow"><span class="ic">⬆️</span><div class="g"><div class="tt">Update ready${UPD.ver?`: version ${UPD.ver}`:""}</div><div class="st">You're on version ${APPV}. Your game is saved first.</div></div><button class="btn gold sm" data-sx="updgo">Update now</button></div>`:srow("ℹ️",`Version ${APPV}`,"Updates only install when you choose to",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
+    +sgrp("App",[UPD.ready?`<div class="srow" id="updrow"><span class="ic">⬆️</span><div class="g"><div class="tt">Update ready${UPD.ver?`: version ${UPD.ver}`:""}</div><div class="st">You're on version ${APPV}. Your game is saved first.</div></div><button class="btn gold sm" data-sx="updgo">Update now</button></div>`:srow("ℹ️",`Version ${APPV}`,"Updates only install when you choose to",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
   else if(SETV==="save") h+=SAVEHTML();
   else h+=stats_html();
-  modal("✕|⚙︎ Settings",h,[]); fixBox(); /* same size on every tab */ musLbl(); if(SETV==="gen"&&!PUBT_ON){ PUBT_ON=true; pubWatch(); setTimeout(()=>PUBT_ON=false,1000); }
+  modal("✕|⚙︎ Settings",h,[]); fixBox(); /* same size on every tab */ musLbl();
   $("modal").querySelectorAll("[data-setv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openSettings(b.dataset.setv); });
   const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
@@ -2395,16 +2395,9 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="76";
-let UPD={ready:false,ver:null,told:false,pub:false,pubAt:0};
-// Is GitHub publishing a new version right now? (GitHub Pages "pages build and deployment" run queued or running.)
-// Only asked while Settings is open, at most every 20 s (GitHub allows 60 of these an hour without signing in).
-async function ghPublishing(){ if(Date.now()-UPD.pubAt<20000) return UPD.pub; UPD.pubAt=Date.now();
-  try{ const r=await fetch("https://api.github.com/repos/RyTheGuy18/stock-tycoon/actions/runs?per_page=5",{cache:"no-store"}); if(!r.ok) return UPD.pub;
-    const j=await r.json(); UPD.pub=(j.workflow_runs||[]).some(x=>/pages build/i.test(x.name||"")&&x.status!=="completed"); }catch(_){} return UPD.pub; }
-let PUBT=null;
-function pubWatch(){ clearTimeout(PUBT); const was=UPD.pub; ghPublishing().then(p=>{ const open=!$("modal").classList.contains("hide")&&$("muslbl");
-  if(!open) return; if(p!==was) openSettings(); if(!p&&was) checkUpdate(); PUBT=setTimeout(pubWatch,20000); }); }
+const APPV="77";
+let UPD={ready:false,ver:null,told:false};
+
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }
 const swReg=async()=>{ try{ return "serviceWorker" in navigator?await navigator.serviceWorker.getRegistration():null; }catch(_){ return null; } };
 // ask the service worker which version you accepted and which one it has downloaded

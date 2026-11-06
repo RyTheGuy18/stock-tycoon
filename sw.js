@@ -1,5 +1,5 @@
 // Stock Tycoon service worker: the game loads and runs offline; online features need a connection.
-const C = "tt-v99";
+const C = "tt-v100";
 const SHELL = ["./", "index.html", "net.js", "config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 // Updates are MANUAL. Each version keeps its files in its own cache (tt-vNN). A small "meta" cache remembers which

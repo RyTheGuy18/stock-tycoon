@@ -73,6 +73,9 @@ nav button.on{color:var(--text)} nav button.on span{opacity:1;color:var(--gold)}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .icob{width:42px;height:42px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .utile2 .icob{width:36px;height:36px;border-radius:11px}
+.adash{background:linear-gradient(180deg,#14220f,var(--card) 80%)} .abars{display:flex;align-items:flex-end;gap:5px;height:44px;margin-top:10px} .abars i{flex:1;border-radius:4px;opacity:.75}
+.abot{display:flex;flex-direction:column;margin-bottom:0;padding:11px} .abot.lock{border-style:dashed} .abot .aexp{margin-top:6px}
+.tg.on{background:var(--up)}
 .rar{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;vertical-align:2px}
 .tiers{display:flex;gap:3px;margin-top:6px} .tiers i{flex:1;height:4px;border-radius:9px;background:var(--c2)}
 .spot2{border:1.5px solid var(--gold)!important;background:linear-gradient(180deg,#241d08,var(--card) 75%)!important}
@@ -949,14 +952,19 @@ function autoStops(sym){ const p=P(sym), o=ORD(sym);
 let BOTSKIP=0; const myOpen=()=>Object.values(S.pos).some(p=>p&&(p.l||p.s)&&!p.bot);
 function botOpen(sym,dir,tag){ const p=P(sym); if(p.l||p.s||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } let q=Math.floor(Math.max(0,S.cash)*aV(tag)/100/sp(sym)/(1+slip(sym,S.cash*aV(tag)/100))/(1+STX())); if(q<1) return; const pr=dir>0?fillBuy(sym,q):fillSell(sym,q);
   if(dir>0){ p.lc=pr; p.l=q; mark(sym,"B",pr); } else { p.se=pr; p.s=q; mark(sym,"X",pr); } S.cash-=q*pr; salesTax(q*pr); flowPush(sym,dir,q*pr); p.bot=tag; autoStops(sym); resetPeak(); life(`🤖 ${tag==="rit"?"Routine":"Open"} bot ${dir>0?"bought":"shorted"} ${q} ${sym} at ${px(pr)}`); }
+// bot earnings log for the Automations dashboard: per day (midnight Central) and per bot
+const dayN=()=>Math.floor((NOW/3600-6)/24);
+function botLog(id,pl){ const d=dayN(); S.bl=S.bl||{}; const b=S.bl[d]=S.bl[d]||{}; const r=b[id]=b[id]||{pl:0,n:0,w:0}; r.pl+=pl; r.n++; if(pl>0) r.w++;
+  for(const k in S.bl) if(+k<d-8) delete S.bl[k]; }
+function botStats(days,id){ const d=dayN(); let pl=0,n=0,w=0; const per=[]; for(let k=d-days+1;k<=d;k++){ let dp=0; const b=(S.bl||{})[k]||{}; for(const x in b){ if(id&&x!==id) continue; dp+=b[x].pl; n+=b[x].n; w+=b[x].w; } pl+=dp; per.push(dp); } return {pl,n,w,per}; }
 function botClose(sym,tag){ const p=P(sym); if(p.bot!==tag||(!p.l&&!p.s)) return; const n=S.hist.length; p.l?sellLong(sym,p.l,"🤖 Bot sold"):cover(sym,p.s,"🤖 Bot covered"); p.bot=null;
-  const pl=S.hist[0]&&S.hist.length>=n?S.hist[0].pl:0; if(pl>0){ const fee=pl*.1; S.cash-=fee; } }
+  const pl=S.hist[0]&&S.hist.length>=n?S.hist[0].pl:0; let fee=0; if(pl>0){ fee=pl*.1; S.cash-=fee; } botLog(tag,pl-fee); }
 // PNNY starter bots: open trades only while you're away; they use your real cash (the slider sets how much),
 // win most of the time, and bail out if a trade ever gets 20% against them
 const vbVal=v=>{ const pr=price(0,NOW); return v.dir>0?v.q*pr:Math.max(0,v.q*v.en+v.q*(v.en-pr)); };
 function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; const pr=price(0,NOW), h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
   const open=(id,dir)=>{ if(!SIM||!aOn(id)||S.vb[id]||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } const q=Math.floor(Math.min(Math.max(0,S.cash)*aV(id)/100,25)/pr); if(q<1) return; S.cash-=q*pr; S.vb[id]={dir,q,en:pr}; resetPeak(); };
-  const close=id=>{ const v=S.vb[id]; if(!v) return; delete S.vb[id]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; resetPeak(); };
+  const close=id=>{ const v=S.vb[id]; if(!v) return; delete S.vb[id]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; botLog(id,pl); resetPeak(); };
   for(const id in S.vb){ const v=S.vb[id]; if(vbVal(v)<=v.q*v.en*.8) close(id); }   // never more than 20% wrong
   d.rit.forEach(R=>{ const t0=R.h*3600+R.m; if(sod===t0) open("pscalp",R.dir); else if(sod===t0+R.L){ close("pscalp"); open("pscalp",-R.dir); } else if(sod===t0+2*R.L) close("pscalp"); });
   if(h%3===0){ if(k===120) open("pflush",1); else if(k===300) close("pflush"); }
@@ -997,13 +1005,26 @@ function autoInfo(x){ const a=A(x.id), v=a.own?a.v:(x.set||[])[3], li=arr=>`<ul 
    case "inv": return li([`Every paycheck, <b>${v}%</b> goes straight into the index fund. Example: a $100 job puts $${v} in the fund and $${100-v} in your cash.`,`The index fund rises with the whole market, and you can withdraw any time on the Market tab.`,`Money in the fund is safer from bad trades, but it still drops in a crash.`]);
    case "fix": return li([`When gear breaks at the end of a job, it pays to fix it immediately: <b>25% of the gear's price</b> (at least $3).`,`Only if you have the cash. Otherwise the gear stays broken until you repair it in the Store.`,`If you own gear insurance, insurance pays instead.`,`Pairs with Booking app, so a breakage doesn't stop your jobs overnight.`]);
   } return ""; }
-function buildAuto(){ let h=`<div class="pad"><div class="t" style="margin:0 3px 8px">Bots only trade while the app is closed, and they <b>sit out while you have a trade of your own open</b>. Close your trades before you leave if you want the bots to work. You lose automations if you go broke.</div>`;
-  ["PNNY","Trading","Hustle"].forEach(cat=>{ h+=`<h3>${cat==="PNNY"?"🪙 PNNY starter bots":cat==="Trading"?"📈 Trading":"🛠 Hustle"}</h3>`+(cat==="PNNY"?`<div class="t" style="margin:-2px 3px 8px">They trade with your real cash while the app is closed. They win most trades, but can lose, and they bail out if a trade gets 20% against them. Bet more for bigger wins and bigger losses (max $25 per trade). Net so far: <b class="${(S.st.botPay||0)>=0?"up":"dn"}">${sg(S.st.botPay||0)}</b></div>`:"");
-    AUTOS.filter(x=>x.cat===cat).forEach(x=>{ const a=A(x.id);
-      const ex=AEXP.has(x.id);
-      h+=`<div class="card"><div class="row"><div class="g"><div class="b">${x.n}</div><div class="t">${x.d}</div><button class="aexp" data-aexp="${x.id}">${ex?"Hide details ▴":"How it works ▾"}</button></div>${a.own?`<button class="btn ${a.on?"buy":"ghost"} sm" data-atog="${x.id}">${a.on?"ON":"OFF"}</button>`:`<button class="btn gold sm" data-abuy="${x.id}" data-cost="${x.c}">${money(x.c)}</button>`}</div>
-      ${a.own&&x.set?`<div class="t" style="margin-top:8px">Setting: <b style="color:var(--text)" id="av-${x.id}">${a.v}${x.set[4]}</b></div><input type="range" style="width:100%" min="${x.set[0]}" max="${x.set[1]}" step="${x.set[2]}" value="${a.v}" data-aset="${x.id}">`:""}${ex?`<div class="axd">${autoInfo(x)}</div>`:""}</div>`; }); });
-  main.dataset.h=main.innerHTML=h+"</div>"; }
+// Automations: earnings dashboard on top (last 7 days), then your bots as cards, then trading tools and hustle helpers.
+const botRar=(i,n)=>Math.min(4,Math.floor(i*5/n));
+const BOTS=["pscalp","pflush","ppump","pswing","rit","openb"], AICON={asl:"ins",atp:"target",trail:"trend",resup:"sup",book:"cal",inv:"piggy",fix:"upk"};
+function buildAuto(){ const st=botStats(7), td=botStats(1), mx=Math.max(1,...st.per.map(Math.abs)), on=AUTOS.filter(x=>aOn(x.id)).length;
+  let h=`<div class="pad"><div class="card adash"><div class="row"><div class="g"><div class="t">Bots earned · last 7 days</div><div class="m b" style="font-size:24px;color:${st.pl>=0?"var(--up)":"var(--dn)"}">${sg(st.pl)}</div></div><div class="t" style="text-align:right">${on} on<br>${st.n?`${Math.round(st.w/st.n*100)}% won · ${st.n} trades`:"no trades yet"}</div></div>
+    <div class="abars">${st.per.map((v,i)=>`<i title="${sg(v)}" style="height:${Math.max(3,Math.abs(v)/mx*100)}%;background:${v>0?"var(--up)":v<0?"var(--dn)":"#2a3442"};${i===6?"opacity:1":""}"></i>`).join("")}</div>
+    <div class="t" style="margin-top:8px">Bots only trade while the app is closed, and sit out while you have a trade of your own open.</div></div>`;
+  const row=(x,big)=>{ const a=A(x.id), ex=AEXP.has(x.id), i=BOTS.indexOf(x.id), r=big?botRar(i,BOTS.length):0, col=big?RAR[r].c:(a.own?"var(--gold)":"#77879a"), ic=big?"robot":AICON[x.id];
+    const today=botStats(1,x.id), ctl=a.own?`<button class="tg ${a.on?"on":""}" data-atog="${x.id}" aria-label="on/off"></button>`:`<button class="btn buyul" style="margin-top:0;width:auto;padding:7px 12px" data-abuy="${x.id}" data-cost="${x.c}">${money(x.c)}</button>`;
+    const set=a.own&&x.set?`<div class="t" style="margin-top:8px">${x.set[4].includes("%")?"Setting":"Bet"}: <b style="color:var(--text)" id="av-${x.id}">${a.v}${x.set[4]}</b></div><input type="range" style="width:100%" min="${x.set[0]}" max="${x.set[1]}" step="${x.set[2]}" value="${a.v}" data-aset="${x.id}">`:"";
+    const more=`<button class="aexp" data-aexp="${x.id}">${ex?"Hide details ▴":"How it works ▾"}</button>${ex?`<div class="axd">${autoInfo(x)}</div>`:""}`;
+    if(big) return `<div class="card abot${a.own?"":" lock"}" style="${a.own&&a.on?`box-shadow:inset 0 0 0 1px ${col}66`:""}"><div class="row">${ICOB("robot",a.own?col:"#77879a",20)}<span class="g"></span>${ctl}</div>
+      <div class="b" style="margin-top:8px;color:${a.own?col:"var(--text)"}">${x.n}</div>
+      <div class="t">${!a.own?x.d.split(". ")[0].replace(/\.+$/,"")+".":!a.on?"Off":today.n?`<b class="${today.pl>=0?"up":"dn"}">${sg(today.pl)}</b> today · ${today.n} trade${today.n>1?"s":""}`:"Resting · no trades today"}</div>${set}${more}</div>`;
+    return `<div class="card"><div class="row" style="gap:10px">${ICOB(ic,a.own&&a.on?"#f5b301":"#77879a",18)}<div class="g"><div class="b">${x.n}</div><div class="t">${x.d}</div></div>${ctl}</div>${set}${more}</div>`; };
+  h+=`<h3>Your bots</h3><div class="g2">${BOTS.map(id=>row(AUTOS.find(x=>x.id===id),1)).join("")}</div>`;
+  h+=`<h3>Trading tools</h3>`+AUTOS.filter(x=>x.cat==="Trading"&&!BOTS.includes(x.id)).map(x=>row(x,0)).join("");
+  h+=`<h3>Hustle helpers</h3>`+AUTOS.filter(x=>x.cat==="Hustle").map(x=>row(x,0)).join("");
+  h+=`<div class="t" style="margin:10px 3px">You lose automations if you go broke.</div>`;
+  setMain(h+"</div>"); }
 // ---------- stop loss / take profit ----------
 const ORD=sym=>{ S.ord=S.ord||{}; return S.ord[sym]||(S.ord[sym]={}); };
 function checkOrders(){ if(!S.ord) return; for(const sym in S.ord){ const o=S.ord[sym], p=P(sym), pr=sp(sym);
@@ -1359,6 +1380,11 @@ const LI={
  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
  save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',
  chart:'<path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
+ robot:'<rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4M8 16h.01M16 16h.01"/>',
+ target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+ trend:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+ cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+ piggy:'<path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5z"/><path d="M2 9v1c0 1.1.9 2 2 2h1"/><path d="M16 11h.01"/>',
  exp:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'};
 const PCOL={lawn:"#22c55e",dog:"#f59e0b",car:"#3b82f6",deliv:"#f97316",photo:"#a855f7",handy:"#eab308",paint:"#ec4899",pool:"#06b6d4",phone:"#6366f1",move:"#d97706"};
 // ---------- rarity: the game's color language for "how far up the ladder" ----------
@@ -1582,9 +1608,9 @@ main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||
   if(d.rep){ const i=+d.rep, c=Math.max(3,GCOST[i]*.25); if(S.cash>=c){ S.cash-=c; s.br[i]=false; if(!i) s.momFix=0; resetPeak(); } }
   if(d.up){ const u=UL.find(x=>x.id===d.up); ulMig(s); const l=ulv(s,u.id); if(l<4&&S.cash>=u.c[l]){ S.cash-=u.c[l]; s.ul[u.id]=l+1; resetPeak(); toast(`${l?"⬆️ Level "+(l+1)+": ":"✅ "}${u.n[l]} · ${ulDesc(u,l+1)}`,"good"); sfx(l+1>=4?'levelmax':'bubble'); POP="ul:"+u.id; } }
   if(d.ord){ const o=ORD(sym); if(ARM===d.ord){ ARM=null; } else if(o[d.ord]){ delete o[d.ord]; toast(d.ord.endsWith("sl")?"Stop loss removed":"Take profit removed"); } else { ARM=d.ord; toast("Now tap the chart where you want your "+(d.ord.endsWith("sl")?"stop loss":"take profit")); } $("pos").dataset.k=""; return build(true); }
-  if(d.abuy){ const x=AUTOS.find(y=>y.id===d.abuy); if(S.cash>=x.c){ S.cash-=x.c; A(x.id).own=1; A(x.id).on=1; resetPeak(); toast("🤖 "+x.n+" is on","good"); sfx('buyItem'); } return buildAuto(), hdr(); }
+  if(d.abuy){ const x=AUTOS.find(y=>y.id===d.abuy); if(S.cash>=x.c){ S.cash-=x.c; A(x.id).own=1; A(x.id).on=1; resetPeak(); toast("🤖 "+x.n+" is on","good"); sfx('bubble'); sfx('levelmax'); } return buildAuto(), hdr(); }
   if(d.aexp){ AEXP.has(d.aexp)?AEXP.delete(d.aexp):AEXP.add(d.aexp); const y=main.scrollTop; buildAuto(); main.scrollTop=y; return; }
-  if(d.atog){ const a=A(d.atog); a.on=a.on?0:1; return buildAuto(); }
+  if(d.atog){ const a=A(d.atog); a.on=a.on?0:1; sfx(a.on?'bubble':'tap'); return buildAuto(); }
   if(d.pf){ const id=d.pf; return modal("Switch to "+PB[id].n+"?",`<p>${S.profs[id]?"You'll pick up with your old gear and reputation.":"You've never done this. You start with borrowed gear."}</p>`,[["Cancel","ghost"],["Switch","gold",()=>chooseProf(id)]]); }
   if(d.ms){ const m=MS.find(x=>x.id===d.ms); if(S.cash>=m.c){ S.cash-=m.c; S.ms[m.id]=1; resetPeak(); life("🎉 "+m.n); sfx('unlock'); modal("🎉 "+m.n,`<div class="mom">"${m.mom}"</div><p>Permanent perk: <b>${m.p}</b></p>`,[["Let's go","gold"]]); } }
   switch(d.x){
@@ -2591,7 +2617,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="99";
+const APPV="100";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

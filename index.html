@@ -1352,12 +1352,16 @@ const viewPrefs=()=>({tf:S.tf,sel:S.sel,qty:S.qty,cq:S.cq,csel:S.csel});
 // unless it has an action of its own waiting to go up, in which case its push wins. This is what stops a second
 // device that's just sitting there from overwriting a trade you opened on the first one.
 const DEV=(()=>{ try{ let d=localStorage.getItem("st.dev"); if(!d){ d=Math.random().toString(36).slice(2,10); localStorage.setItem("st.dev",d); } return d; }catch(_){ return "x"+Math.random().toString(36).slice(2,8); } })();
-let SYNC=0, lastTap=0, tapT=null, unwatch=null, ACT=false;
+// ACT = this device has a change the cloud doesn't have yet. It's remembered across app restarts ("st.pend"), so a
+// change made right before closing the app (deposit, trade) still goes up next time instead of being overwritten.
+let SYNC=0, lastTap=0, tapT=null, unwatch=null, ACT=(()=>{ try{ return localStorage.getItem("st.pend")==="1"; }catch(_){ return false; } })();
+const setPend=v=>{ try{ v?localStorage.setItem("st.pend","1"):localStorage.removeItem("st.pend"); }catch(_){} };
 let BASE=(()=>{ try{ return +localStorage.getItem("st.rev")||0; }catch(_){ return 0; } })();
 const setBase=r=>{ BASE=r; try{ localStorage.setItem("st.rev",String(r)); }catch(_){} };
-function act(){ ACT=true; lastTap=Date.now(); clearTimeout(tapT); tapT=setTimeout(csave,1000); }
+function act(){ ACT=true; setPend(1); setTimeout(save,0); lastTap=Date.now(); clearTimeout(tapT); tapT=setTimeout(csave,1000); }
 document.addEventListener("pointerdown",e=>{ if(e.target.closest&&e.target.closest("button,input,select,textarea,label,[data-x],[data-kn],[data-pre]")) act(); },true);
 document.addEventListener("keydown",e=>{ if(e.key==="Enter") act(); },true);
+document.addEventListener("click",()=>{ if(ACT) setTimeout(save,0); }); // after the tap has done its thing (bubble phase), save it on this device right away
 const cloudRev=d=>d?(d.rev||0):0;
 function adoptCloud(d){ if(!d||typeof d.save!=="string"||d.dev===DEV) return false;
   const r=cloudRev(d); if(r?r<=BASE:(d.savedAt||0)<=SYNC) return false;
@@ -1372,7 +1376,7 @@ async function csave(force){ if(!cref) return; if(!ACT&&!force) return; if(cbusy
   save(); const j=JSON.stringify(S), had=ACT; cbusy=true; ACT=false;
   try{ const doc={save:j,savedAt:S.savedAt,dev:DEV};
     const r=cref.tx?await cref.tx(cur=>Math.max(cloudRev(cur),BASE)+1,doc):(await cref.set(Object.assign(doc,{rev:BASE+1})),BASE+1);
-    setBase(r); clast=j; SYNC=S.savedAt; }
+    setBase(r); clast=j; SYNC=S.savedAt; if(!ACT) setPend(0); }
   catch(e){ ACT=ACT||had; if(["invalid_argument","revoked","quota_exceeded","not_granted"].includes(e&&e.code)) cref=null; }
   cbusy=false; }
 let lastSave=0;
@@ -1509,7 +1513,7 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
       save(); DB=N.db; UID=u.uid; cref=ref; clast="";
       cloudSt="Signed in as @"+u.username+" · progress saves to your account";
       if(!NETON){ NETON=true; setInterval(pubProfile,300000); setInterval(flowSync,15000); setInterval(tipSync,15000); }
-      pubProfile(); flowSync(); tipSync(); csave(pushMine); watchSave(ref); socialStart(N,u.uid); compSettle(); build(); pushSave();
+      pubProfile(); flowSync(); tipSync(); csave(pushMine||ACT); watchSave(ref); socialStart(N,u.uid); compSettle(); build(); pushSave();
       if(!S.prof&&$("modal").classList.contains("hide")&&!$("intro")) intro();
     }catch(e){ console.warn(e); toast("Couldn't reach the server. Playing offline."); } }); }
 function showAuth(){ if($('auth')||!window.NET) return; const el=document.createElement('div'); el.id='auth'; document.body.appendChild(el); let mode='in', un='';

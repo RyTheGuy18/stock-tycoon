@@ -930,9 +930,10 @@ function bills(){ const e=earned();
   if(e>=30&&!S.ms.house&&Math.random()<1/21600){ const b=pick(BILLS); bill(b[0],((b[1]+Math.random()*(b[2]-b[1]))*Math.min(1,Math.max(.1,e/1500))+Math.max(0,S.cash)*b[3])*eff("bill")); } }
 // ---------- taxes ----------
 // In this game a "year" is one real week. Tax day is every Monday at midnight (your time).
-// Sales tax: a small cut on every stock you buy or sell. Tax day bills: income tax (flat 4% of
+// Sales tax: a small cut on every stock you buy or sell. Tax day bills: income tax (real US brackets on
 // this week's job pay + trading profits), property tax on homes you own, and a war tax in war years.
-const SALES_TAX=.005;
+const SALES_TAX=.015;
+const BRACKETS=[[11925,.10],[48475,.12],[103350,.22],[197300,.24],[250525,.32],[626350,.35],[Infinity,.37]]; // 2025 single filer
 const HOMES=[["apt",4000,"Apartment"],["condo",100000,"Condo"],["cabin",1.2e6,"Lake cabin"],["house",3e6,"Dream house"],["island",1e8,"Private island"]];
 const taxWk=t=>Math.floor((t-new Date(t*1000).getTimezoneOffset()*60-345600)/604800);   // weeks since Mon Jan 5 1970, local time
 const taxDayAt=w=>{ const g=w*604800+345600+604800; return g+new Date(g*1000).getTimezoneOffset()*60; }        // next Monday 00:00 local
@@ -940,8 +941,7 @@ const warYear=w=>RNG("war"+w)()<1/6;                                            
 function TX(){ const w=taxWk(NOW); if(!S.tx||S.tx.w==null) S.tx={w,inc:0,gain:0,sales:0}; return S.tx; }
 const txInc=a=>{ TX().inc+=a; }, txGain=a=>{ TX().gain+=a; };
 function salesTax(amt){ const t=Math.round(amt*SALES_TAX*100)/100; if(t<=0) return 0; S.cash-=t; TX().sales+=t; S.st.taxes=(S.st.taxes||0)+t; return t; }
-const INCOME_TAX=.04; // flat 4% of what you earned this year (Ryan, v7.0)
-function incomeTax(x){ return Math.max(0,x)*INCOME_TAX; }
+function incomeTax(x){ let t=0, lo=0; for(const [hi,r] of BRACKETS){ if(x<=lo) break; t+=(Math.min(x,hi)-lo)*r; lo=hi; } return t; }
 function taxBill(tx,war){ const base=Math.max(0,tx.inc+Math.max(0,tx.gain)), acct=S.ms.acct?.85:1, it=incomeTax(base)*acct;
   const homes=HOMES.filter(h=>S.ms[h[0]]), pt=homes.reduce((a,h)=>a+h[1]*.01,0)*acct;
   const wt=war?Math.max(0,netWorth()-1000)*.02*acct:0;
@@ -953,7 +953,7 @@ function taxDay(){ const tx=TX(), w=taxWk(NOW); if(w===tx.w) return;
   bill("🧾 Taxes",b.total); S.st.taxes=(S.st.taxes||0)+b.total;
   const row=(l,v)=>`<div class="li"><span>${l}</span><b class="m dn">-${money(v)}</b></div>`;
   S.taxPend=`<p>It's tax day. Here's the bill for the week ("year") that just ended.</p>`+
-    (b.it>0?row(`Income tax (4%) on ${money(b.base)} earned`,b.it):"")+
+    (b.it>0?row(`Income tax on ${money(b.base)} earned`,b.it):"")+
     (b.pt>0?row(`Property tax: ${b.homes.map(h=>h[2]).join(", ")}`,b.pt):"")+
     (b.wt>0?row("⚔️ War tax (2% of net worth over $1K)",b.wt):"")+
     `<div class="li"><b>Total</b><b class="m dn">-${money(b.total)}</b></div>`+
@@ -1652,7 +1652,7 @@ const TUT=[
  ["#chart","Stop loss and take profit","Once you're in a trade, tap <b>Stop loss</b> or <b>Take profit</b> on your position card, then <b>tap the chart</b> where you want it. Drag the handle on the right edge to move it. When the price gets there, your trade closes by itself, even while you're away.","trade"],
  ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed. Learn better jobs in the job list as you build reputation.","trade"],
  ["#momw","Practice with Mom","No money yet? Practice on Mom's dime. Close a practice trade in profit and she pays you for it, until you've got $15.","trade"],
- ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: a flat <b>4% income tax</b> on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which adds a 2% war tax on your net worth. Can't pay? It turns into debt, and you have 24 hours.","trade"],
+ ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>1.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which adds a 2% war tax on your net worth. Can't pay? It turns into debt, and you have 24 hours.","trade"],
  ["#bell","News","The bell gets a red dot when there's big news: breaking stories, market crashes, collapses, huge spikes and rumors. Many big moves have a warning headline first, so check it often.","trade"],
  ['[data-tab="store"]',"The Store","Better gear for your job, and lessons that teach you the patterns the market repeats. That's where the real money is.","trade"],
  ['[data-tab="auto"]',"Automations","Later on, you can buy bots that trade for you while the app is closed (as long as you don't have a trade of your own open), and tools that keep your jobs running.","trade"],

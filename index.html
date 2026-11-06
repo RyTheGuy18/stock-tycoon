@@ -2081,14 +2081,24 @@ function actx(){
   if(!AC){ try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(_){} AC=new (window.AudioContext||window.webkitAudioContext)();
     const lim=AC.createDynamicsCompressor(); lim.threshold.value=-10; lim.knee.value=6; lim.ratio.value=12; lim.attack.value=.002; lim.release.value=.15; lim.connect(AC.destination);
     SFXB=AC.createGain(); SFXB.gain.value=sfxGain(); SFXB.connect(lim);
-    MUSB=AC.createGain(); MUSB.gain.value=0; MUSB.connect(AC.destination); }
+    MUSB=AC.createGain(); MUSB.gain.value=0; MUSB.connect(AC.destination); AC._born=Date.now(); }
   if(AC.state!=='running'){ try{ const p=AC.resume(); p&&p.catch&&p.catch(()=>{}); }catch(_){} }
   return AC; }
-function wake(){ try{ actx(); if(!SNDU){ SNDU=true; const b=AC.createBuffer(1,1,22050), s=AC.createBufferSource(); s.buffer=b; s.connect(AC.destination); s.start(0); } musWake(); }catch(_){} }
+// After switching apps, iPhone often leaves the old audio engine stuck ("interrupted"/"suspended") and resume()
+// quietly does nothing, even on a tap. So on a tap, a stuck engine is thrown away and a fresh one is built right
+// there inside the tap (the only moment iPhone allows it), and the song picks up where it left off.
+function rebuildAudio(){ const cur=MUS.cur, pos=MUS.el?MUS.el.currentTime:0;
+  try{ if(MUS.el){ MUS.el.pause(); MUS.el.removeAttribute('src'); MUS.el.load(); } }catch(_){}
+  MUS.el=null; MUS.src=null; MUS.cur=-1; try{ AC.close(); }catch(_){} AC=null; SFXB=null; MUSB=null; SNDU=false;
+  actx(); if(cur>=0&&mus()&&snd()) MUS.resume={i:cur,at:pos}; }
+function wake(e){ try{ if(e&&e.isTrusted&&AC&&AC.state!=='running'&&Date.now()-(AC._born||0)>1000) rebuildAudio();
+  actx(); if(!SNDU){ SNDU=true; const b=AC.createBuffer(1,1,22050), s=AC.createBufferSource(); s.buffer=b; s.connect(AC.destination); s.start(0); } musWake(); }catch(_){} }
 // iPhone only lets audio start from certain touch events, and which ones changed between iOS versions, so listen to all of them
 ['pointerdown','touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,wake,true));
+// coming back to the app: try to restart audio straight away (works on some iPhones); if it can't, the first tap will
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) musPause(); else if(AC) wake(); });
 window.addEventListener('pageshow',()=>{ if(AC) wake(); });
+window.addEventListener('focus',()=>{ if(AC) wake(); });
 document.addEventListener('click',e=>{ const b=e.target.closest('button,label'); if(!b) return;
   sfx(b.closest('nav')?'tab':b.dataset.tf||b.closest('[data-sym],.tf')?'tick':'tap'); },true);
 function tone(f,d,dur,type,vol,f2){ const c=AC, t=c.currentTime+d, o=c.createOscillator(), g=c.createGain(); o.type=type||'sine'; o.frequency.setValueAtTime(f,t); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t+dur);
@@ -2135,10 +2145,13 @@ const mus=()=>!S.set||S.set.mus!==0;
 const MUS={el:null,src:null,q:[],cur:-1,on:false};
 function musNext(){ if(!MUS.q.length){ const a=SONGS.map((_,i)=>i).filter(i=>i!==MUS.cur); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } MUS.q=a; } return MUS.q.shift(); }
 function musFade(v,sec){ if(!MUSB) return; const g=MUSB.gain, t=AC.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value,t); g.linearRampToValueAtTime(v,t+sec); }
-function musPlay(i){ if(!AC) return; if(!MUS.el){ const el=MUS.el=new Audio(); el.preload="auto"; el.setAttribute('playsinline',''); el.addEventListener('ended',()=>musPlay(musNext())); el.addEventListener('error',()=>{ if(MUS.on) setTimeout(()=>musPlay(musNext()),3000); }); }
+function musPlay(i,at){ if(!AC) return; if(!MUS.el){ const el=MUS.el=new Audio(); el.preload="auto"; el.setAttribute('playsinline',''); el.addEventListener('ended',()=>musPlay(musNext())); el.addEventListener('error',()=>{ if(MUS.on) setTimeout(()=>musPlay(musNext()),3000); }); }
   if(!MUS.src){ try{ MUS.src=AC.createMediaElementSource(MUS.el); MUS.src.connect(MUSB); }catch(_){} }
-  MUS.cur=i; const s=SONGS[i]; MUS.el.src="music/"+s.f+".mp3"; MUSB.gain.value=0; const p=MUS.el.play(); p&&p.catch&&p.catch(()=>{}); musFade(musV()*s.g,2.5); musLbl(); }
-function musWake(){ if(!mus()||!snd()||document.hidden){ return; } MUS.on=true; if(MUS.cur<0) return musPlay(musNext());
+  MUS.cur=i; const s=SONGS[i]; MUS.el.src="music/"+s.f+".mp3"; MUSB.gain.value=0;
+  if(at>1){ const el=MUS.el, seek=()=>{ try{ el.currentTime=at; }catch(_){} }; if(el.readyState>=1) seek(); else el.addEventListener('loadedmetadata',seek,{once:true}); } const p=MUS.el.play(); p&&p.catch&&p.catch(()=>{}); musFade(musV()*s.g,2.5); musLbl(); }
+function musWake(){ if(!mus()||!snd()||document.hidden){ return; } MUS.on=true;
+  if(MUS.resume){ const r=MUS.resume; MUS.resume=null; return musPlay(r.i,r.at); }
+  if(MUS.cur<0) return musPlay(musNext());
   if(MUS.el&&MUS.el.paused){ const p=MUS.el.play(); p&&p.catch&&p.catch(()=>{}); musFade(musV()*SONGS[MUS.cur].g,1.2); } }
 function musPause(){ if(MUS.el&&!MUS.el.paused){ MUS.el.pause(); if(MUSB) MUSB.gain.value=0; } }
 function musStop(){ MUS.on=false; if(!MUS.el) return; musFade(0,.6); setTimeout(()=>{ if(!MUS.on&&MUS.el) MUS.el.pause(); },650); }

@@ -1668,15 +1668,17 @@ function notifHTML(){ let h=`<h3>Notifications</h3>`; const P=pushGet();
   if(Notification.permission==="denied") return h+`<div class='card t'>Notifications are blocked. Turn them on for Stock Tycoon in your phone's Settings → Notifications.</div>`;
   if(!P||P.uid!==UID) return h+`<div class='card row'><div class='g t'>Get notified about big market news (crashes, breaking news, bull and bear markets) and your friends, even when the app is closed.</div><button class='btn gold sm' data-sx='pushon'>Turn on</button></div>`;
   const tg=(k,n,d)=>`<div class='card row' style='margin-bottom:6px'><div class='g'><div class='b'>${n}</div><div class='t'>${d}</div></div><button class='btn ${P[k]?"buy":"ghost"} sm' data-sx='p_${k}'>${P[k]?"ON":"OFF"}</button></div>`;
-  return h+tg("news","Big market news","Crash warnings, breaking news, and bull or bear markets starting")+tg("friends","Friends","Friend requests, messages, tips, and weekly competition results")+`<button class='btn ghost sm' style='width:100%' data-sx='pushoff'>Turn off on this device</button>`; }
+  return h+tg("news","Big market news","Crash warnings, breaking news, and bull or bear markets starting")+tg("friends","Friends","Friend requests, messages, tips, and weekly competition results")+`<button class='btn ghost sm' style='width:100%' data-sx='pushoff'>Turn off on this device</button>`+(DEVS.includes(UNAME)?`<button class='btn gold sm' style='width:100%;margin-top:6px' data-sx='pushtest'>🧪 Send a test push to this device</button><div class='t' style='margin-top:4px'>Developer only. Arrives in a few seconds if the push worker is running.</div>`:""); }
+// developer accounts: can send themselves a test push (the push worker checks the same list)
+const DEVS=["rytheguy18","rytheguy"];
 async function pushOn(){ try{ if(await Notification.requestPermission()!=="granted"){ toast("Notifications weren't allowed"); return openSettings(); }
     const reg=await navigator.serviceWorker.ready; let sub=await reg.pushManager.getSubscription();
     if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(window.NET.vapid)});
     const j=sub.toJSON(); pushSet({uid:UID,sid:await sidOf(j.endpoint),news:1,friends:1}); await pushSave(j); S.st.notif=1; save(); toast("🔔 Notifications are on","good"); sfx('unlock'); }
   catch(e){ console.warn(e); toast("Couldn't turn on notifications"); } openSettings(); }
-async function pushSave(j){ const P=pushGet(); if(!P||!DB||P.uid!==UID) return;
+async function pushSave(j,test){ const P=pushGet(); if(!P||!DB||P.uid!==UID) return;
   try{ if(!j){ const reg=await navigator.serviceWorker.ready, sub=await reg.pushManager.getSubscription(); if(!sub){ pushSet(null); return; } j=sub.toJSON(); const sid=await sidOf(j.endpoint); if(sid!==P.sid){ DB.doc(`push/${UID}/subs/${P.sid}`).del().catch(()=>{}); P.sid=sid; pushSet(P); } }
-    await DB.doc(`push/${UID}/subs/${P.sid}`).set({ep:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,news:P.news?1:0,friends:P.friends?1:0,at:Date.now()}); }catch(e){ console.warn("push save",e); } }
+    await DB.doc(`push/${UID}/subs/${P.sid}`).set({ep:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,news:P.news?1:0,friends:P.friends?1:0,at:Date.now(),...(test?{test:Date.now()}:{})}); return true; }catch(e){ console.warn("push save",e); } }
 async function pushOff(){ const P=pushGet(); pushSet(null);
   try{ if(P&&DB&&P.uid===UID) await DB.doc(`push/${UID}/subs/${P.sid}`).del(); const reg=await navigator.serviceWorker.ready, sub=await reg.pushManager.getSubscription(); if(sub) await sub.unsubscribe(); }catch(_){}
   toast("Notifications are off on this device"); openSettings(); }
@@ -2329,6 +2331,7 @@ function sx(x){
   if(x==="logout"){ closeModal(); S.authSkip=0; csave().finally(()=>window.NET&&window.NET.signOut()); return; }
   if(x==="pw"){ const v=($("newpw")||{}).value||""; if(v.length<6) return toast("Password needs at least 6 characters"); window.NET.changePassword(v).then(()=>{ toast("Password changed","good"); closeModal(); },e=>toast(e.message)); return; }
   if(x==="pushon") return pushOn();
+  if(x==="pushtest"){ if(!DEVS.includes(UNAME)) return; pushSave(null,true).then(ok=>toast(ok?"🧪 Test requested. Lock your phone to see it arrive.":"Couldn't request a test push")); return; }
   if(x==="pushoff") return pushOff();
   if(x==="p_news"||x==="p_friends") return pushToggle(x.slice(2));
   if(x==="snd"){ S.set=S.set||{}; S.set.snd=snd()?0:1; save(); if(snd()){ sfx('ping'); musWake(); } else musStop(); return openSettings(); }

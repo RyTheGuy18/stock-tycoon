@@ -71,6 +71,24 @@ async function send(cat, uids, msg, key, ttl) {
   }));
 }
 
+// ---------- developer test push: a dev account marks its own subscription with test:<time>, we send just to that device ----------
+const DEVS = ["rytheguy18", "rytheguy"]; // usernames (same list as the game)
+let DEVUIDS = null;
+async function devUids() {
+  if (DEVUIDS) return DEVUIDS; DEVUIDS = new Set();
+  for (const n of DEVS) { try { const d = (await db.doc("usernames/" + n).get()).data(); if (d && d.uid) DEVUIDS.add(d.uid); } catch (_) {} }
+  return DEVUIDS;
+}
+async function onTest(path, uid, t) {
+  if (!(await devUids()).has(uid)) return log("test push ignored: not a developer account");
+  if (!(await once("test_" + uid + "_" + t))) return;
+  const s = SUBS.get(path); if (!s) return;
+  const msg = { title: "🧪 Test notification", body: "Push notifications are working on this device. " + new Date().toLocaleTimeString("en-US", { timeZone: "America/Chicago" }), tag: "test", tab: "" };
+  log("send [test] →", path); if (DRY) return;
+  try { await webpush.sendNotification({ endpoint: s.ep, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 120, urgency: "high" }); }
+  catch (e) { log("test push failed", e.statusCode || "", (e.body || e.message || "").toString().slice(0, 120)); }
+}
+
 // ---------- names ----------
 const NAMES = new Map();
 async function nameOf(uid) {
@@ -176,6 +194,7 @@ async function main() {
         const p = c.doc.ref.path; if (!p.startsWith("push/")) return;
         if (c.type === "removed") return SUBS.delete(p);
         const d = c.doc.data(); SUBS.set(p, { uid: c.doc.ref.parent.parent.id, ep: d.ep, p256dh: d.p256dh, auth: d.auth, news: !!d.news, friends: !!d.friends, at: +d.at || 0 });
+        if (d.test && Date.now() - d.test < 180000) onTest(p, c.doc.ref.parent.parent.id, +d.test).catch((e) => log("test err", e.message));
       });
       log(`devices subscribed: ${SUBS.size}`);
     }, (e) => log("subs listener error", e.message)));

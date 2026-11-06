@@ -1,6 +1,8 @@
 # Sends Stock Tycoon push notifications (see push/worker.js).
-# Each run is a ~105-minute shift. A new run is queued every hour and waits for the current one to finish,
-# so there's always a worker on duty. GitHub Actions minutes are free for public repos.
+# Each run is a ~105-minute shift. At the end of every shift the run starts the next one itself (workflow_dispatch),
+# so a worker is always on duty. The hourly schedule is only a backup in case the chain ever breaks: GitHub's
+# scheduled runs are often delayed or skipped, so they can't be relied on alone.
+# GitHub Actions minutes are free for public repos.
 name: Push worker
 on:
   schedule:
@@ -9,6 +11,9 @@ on:
 concurrency:
   group: push-worker
   cancel-in-progress: false
+permissions:
+  contents: read
+  actions: write
 jobs:
   shift:
     runs-on: ubuntu-latest
@@ -30,3 +35,9 @@ jobs:
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
           RUN_MINUTES: "105"
           CHROME: /usr/bin/google-chrome
+      # hand over to the next shift (runs even if this shift crashed)
+      - name: Start the next shift
+        if: always()
+        run: gh workflow run push-worker.yml --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}

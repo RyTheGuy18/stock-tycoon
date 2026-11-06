@@ -1,5 +1,5 @@
 // Stock Tycoon service worker: the game loads and runs offline; online features need a connection.
-const C = "tt-v43";
+const C = "tt-v44";
 const SHELL = ["./", "index.html", "net.js", "config.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 self.addEventListener("install", (e) => {
@@ -12,6 +12,8 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   const u = new URL(e.request.url);
   // Game files: always check the server first (skipping the 10-minute browser cache) so updates show up right away, fall back to the saved copy offline.
+  // Music streams straight from the server (the browser fetches it in pieces, which a cached copy would break on iPhone).
+  if (u.origin === location.origin && u.pathname.includes("/music/")) return;
   if (u.origin === location.origin) {
     e.respondWith(
       fetch(e.request, { cache: "no-cache" }).then((r) => { const cp = r.clone(); caches.open(C).then((c) => c.put(e.request, cp)); return r; })

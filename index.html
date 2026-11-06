@@ -697,7 +697,7 @@ function achTrade(sym,side,pl,pct){ const st=S.st, f=AF(), win=pl>0;
 let ACHQ=[];
 function achCheck(){ S.ach=S.ach||{}; const f=AF(); if(S.st.broke>=1&&f.bk==null) f.bk=netWorth()<1000?1:0; if(f.bk&&netWorth()>=1000) f.back=1;
   let n=0; ACH.forEach(a=>{ if(S.ach[a.id]) return; let ok=false; try{ ok=a.u(); }catch(_){} if(!ok) return; S.ach[a.id]=NOW; n++; ACHQ.push(a); life(`${a.g} Achievement: ${a.n}`); });
-  if(n){ save(); pubProfile(); if(!SIM){ const q=ACHQ; ACHQ=[]; if(q.length===1){ toast(`${q[0].g} Achievement unlocked: ${q[0].n}`,"good"); sfx('unlock'); } else { toast(`🎖️ ${q.length} achievements unlocked! See them on your Profile.`,"good"); sfx('unlock'); } if(tab==="me") buildMe(); } } }
+  if(n){ save(); pubProfile(); if(!SIM){ const q=ACHQ; ACHQ=[]; if(q.length===1){ toast(`${q[0].g} Achievement unlocked: ${q[0].n}`,"good"); sfx('achieve'); } else { toast(`🎖️ ${q.length} achievements unlocked! See them on your Profile.`,"good"); sfx('unlock'); } if(tab==="me") buildMe(); } } }
 const achTop=()=>ACH.filter(a=>S.ach&&S.ach[a.id]).slice(-3).map(a=>a.id);
 const achStr=p=>Array.isArray(p.ab)&&p.ab.length?` <span class="achs" title="${+p.ach||0} achievements">${p.ab.filter(id=>ACHBY[id]).slice(0,3).map(id=>ACHBY[id].g).join("")}</span>`:"";
 function achHTML(){ S.ach=S.ach||{}; const n=ACH.filter(a=>S.ach[a.id]).length;
@@ -792,7 +792,7 @@ function trade(act,q){
   if(act==="short"){ const b=fillSell(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*b*(1+SALES_TAX)>S.cash+1e-9) return toast("Not enough cash to back "+q+" share"+(q>1?"s":"")+" plus sales tax");
     p.se=(p.se*p.s+q*b)/(p.s+q); p.s+=q; S.cash-=q*b; const tx=salesTax(q*b); flowPush(sym,-1,q*b); autoStops(sym); mark(sym,"X",sp(sym)); toast(`Shorted ${q} ${sym} at ${px(b)} (${money(q*b)} held as collateral, ${money(tx)} sales tax)`); }
   if(act==="cover"){ cover(sym,Math.min(q,p.s)); }
-  if((act==="buy"||act==="short")&&(p.l||p.s)){ preStops(sym); sfx('open'); tipTag(sym,act==="buy"?1:-1); }
+  if((act==="buy"||act==="short")&&(p.l||p.s)){ preStops(sym); sfx(act==="short"?'short':'open'); tipTag(sym,act==="buy"?1:-1); }
   resetPeak(); chips(); build(true);
 }
 // line icons for stop loss and take profit
@@ -909,7 +909,7 @@ function cover(sym,q,why){ const p=P(sym); if(q<1) return; const a=fillBuy(sym,q
 
 // ---------- mom's practice trades ----------
 const PQ=2; // Mom's practice rounds count as 2 shares
-function paper(dir){ const sym=S.sel; S.paper={sym,dir,en:dir==="L"?ask(sym):bid(sym),t:NOW}; sfx('open'); toast(`📝 Practice ${dir==="L"?"buy":"short"}: ${PQ} ${sym} at ${px(S.paper.en)}`); build(true); }
+function paper(dir){ const sym=S.sel; S.paper={sym,dir,en:dir==="L"?ask(sym):bid(sym),t:NOW}; sfx(dir==="S"?'short':'open'); toast(`📝 Practice ${dir==="L"?"buy":"short"}: ${PQ} ${sym} at ${px(S.paper.en)}`); build(true); }
 function paperClose(){ const c=S.paper; if(NOW-c.t<15) return toast("Hold it at least 15 seconds");
   const ex=c.dir==="L"?bid(c.sym):ask(c.sym), pl=(c.dir==="L"?ex-c.en:c.en-ex)*PQ; S.paper=null; S.st.paper++;
   if(pl>0){ const pay=Math.round(pl*5*100)/100; S.streak++; S.cash+=pay; txInc(pay); S.st.paperWon++; S.st.paperPay+=pay; sfx('win'); toast(`✅ Practice profit ${sg(pl)}. Mom pays you ${money(pay)}!`,"good"); life(`📝 Practice trade won · Mom paid ${money(pay)}`); }
@@ -1005,7 +1005,7 @@ function tick(){
   for(const id in S.profs){ const s=S.profs[id]; if(s.momFix&&NOW>=s.momFix){ s.momFix=0; s.br[0]=false; } }
   runAutos(); checkOrders(); bills(); taxDay(); solvency();
   const nw=netWorth();
-  if(nw>S.bestNW){ const b=new Set(STOCKS.filter(unlocked).map(d=>d.s)); S.bestNW=nw; const nu=STOCKS.filter(d=>unlocked(d)&&!b.has(d.s)); if(nu.length){ const d=nu[nu.length-1]; life("🔓 Unlocked "+d.s); toast("🔓 You can now trade "+d.n,"good"); sfx('unlock'); } }
+  if(nw>S.bestNW){ const b=new Set(STOCKS.filter(unlocked).map(d=>d.s)); S.bestNW=nw; const nu=STOCKS.filter(d=>unlocked(d)&&!b.has(d.s)); if(nu.length){ const d=nu[nu.length-1]; life("🔓 Unlocked "+d.s); toast("🔓 You can now trade "+d.n,"good"); sfx('achieve'); } }
   if(!S.momDone&&S.bestNW>=15){ S.momDone=true; S.paper=null; if(!SIM) modal("Mom has something to say",`<div class="mom">"You've got real money now. No more practice rounds from me. You're on your own, kiddo."</div>`,[["Thanks, Mom","gold"]]); life("👩 Mom ended the practice rounds"); }
   if(S.fu>0&&(!S.fh.length||NOW-S.fh[S.fh.length-1][0]>=600)){ S.fh.push([NOW,fundVal()]); if(S.fh.length>300) S.fh.shift(); }
 }
@@ -1258,7 +1258,7 @@ function stats_html(){ const s=S.st; return `<div class="card kv">
 function SAVEHTML(){ return `<h3>Save</h3><div class="card"><div class="t">☁️ ${cloudSt}</div><div class="g2" style="margin-top:8px"><button class="btn ghost sm" data-sx="exp">Copy save code</button><button class="btn ghost sm" data-sx="imp">Load code</button></div>
   <input id="sbox" class="inp" style="margin-top:6px" placeholder="Paste save code"><button class="btn sell sm" style="width:100%;margin-top:6px" data-sx="wipe">Wipe save</button><button class="btn ghost sm" style="width:100%;margin-top:6px" data-sx="replay">Replay intro & tutorial</button></div>`; }
 function openSettings(){ const s=S.st;
-  modal("⚙︎ Settings",acctHTML()+notifHTML()+`<h3>Work</h3><button class="btn ghost" style="width:100%" id="chprof">${prof()?prof().i+" ":""}Change your profession</button><h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div><h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
+  modal("⚙︎ Settings",acctHTML()+notifHTML()+`<h3>Work</h3><button class="btn ghost" style="width:100%" id="chprof">${prof()?prof().i+" ":""}Change your profession</button><h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div><div class="card row"><div class="g"><div class="b">Music</div><div class="t" id="muslbl"></div></div>${mus()&&MUS.on?`<button class="btn ghost sm" data-sx="mskip">Skip ⏭</button>`:""}<button class="btn ${mus()?"buy":"ghost"} sm" data-sx="mus">${mus()?"ON":"OFF"}</button></div><h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); musLbl(); const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
 function fitHdr(){ for(const id of ["cash","fund","nw"]){ const e=$(id); if(!e) continue; e.style.fontSize="";
   const w=e.parentElement.clientWidth, base=parseFloat(getComputedStyle(e).fontSize); let f=base;
@@ -1271,16 +1271,17 @@ function hdr(){ applyCos(); const c=$("cash"); c.textContent=money(S.cash); c.cl
   main.querySelectorAll("[data-cost]").forEach(x=>x.disabled=S.cash<+x.dataset.cost); }
 
 // ---------- modals ----------
-function modal(t,body,btns,cb){ const m=$("modal"); m.innerHTML=`<div class="box"><h2>${t}</h2>${body}${btns&&btns.length?`<div class="row" style="margin-top:12px">${btns.map((b,i)=>`<button class="btn g ${b[1]||""}" data-i="${i}">${b[0]}</button>`).join("")}</div>`:""}</div>`;
+function modal(t,body,btns,cb){ const m=$("modal"); if(m.classList.contains("hide")) sfx("whoosh"); m.innerHTML=`<div class="box"><h2>${t}</h2>${body}${btns&&btns.length?`<div class="row" style="margin-top:12px">${btns.map((b,i)=>`<button class="btn g ${b[1]||""}" data-i="${i}">${b[0]}</button>`).join("")}</div>`:""}</div>`;
   m.classList.remove("hide"); m.onclick=e=>{ const sxb=e.target.closest("[data-sx]"); if(sxb) return sx(sxb.dataset.sx); const jl=e.target.closest("[data-jl]"); if(jl&&!jl.disabled) return learnJob(+jl.dataset.jl); const o=e.target.closest("[data-pp],[data-jb],[data-op]"); if(o&&!o.disabled){ o.dataset.op?setOrder(o.dataset.op):o.dataset.pp?chooseProf(o.dataset.pp):startJob(+o.dataset.jb); return; }
     const b=e.target.closest("[data-i]"); if(!b&&(e.target!==m||m.dataset.lock)) return; closeModal(); if(b&&btns[+b.dataset.i][2]) btns[+b.dataset.i][2](); }; }
 function closeModal(){ const m=$("modal"); m.classList.add("hide"); delete m.dataset.lock; }
-let tt; function toast(t,k){ if(SIM) return; const e=$("toast"); e.textContent=t; e.className="show "+(k||""); clearTimeout(tt); tt=setTimeout(()=>e.className="",/^(📱 Mom|👩)/.test(t)?4600:2600); }
+let tt; const ERRT=/^(Enter |Not enough|Can't|Couldn't|Bad code|You need|You can't|Need |That's your own|Codes are|No cash|Message didn't|Password needs|Wrong )/;
+function toast(t,k){ if(SIM) return; if(ERRT.test(t)) sfx('err'); const e=$("toast"); e.textContent=t; e.className="show "+(k||""); clearTimeout(tt); tt=setTimeout(()=>e.className="",/^(📱 Mom|👩)/.test(t)?4600:2600); }
 function profPicker(first){ modal(first?"Get a job":"Pick a profession",(first?`<div class="mom">"You're 19 and living in my basement. Pick something and get out there. You can borrow my old stuff, but don't break it."</div>`:"")+
   PROFS.map(x=>`<button class="opt" data-pp="${x.id}"><b>${x.i} ${x.n}</b><div class="t">Borrow: ${x.gear[0]} · "${x.jobs[0].n}" pays ${money(x.jobs[0].pay)}</div></button>`).join(""),first?[]:[["Cancel","ghost"]]);
   if(first) $("modal").dataset.lock=1; }
 function lunchMoney(){ if(S.lunch) return; S.lunch=1; S.cash+=2; resetPeak&&resetPeak(); life("📱 Mom: proud of you, +$2 lunch money");
-  setTimeout(()=>{ toast("📱 Mom: I'm so proud of you for getting out there! Here's $2 for lunch. 💛","good"); sfx('pay'); hdr(); },1500); }
+  setTimeout(()=>{ toast("📱 Mom: I'm so proud of you for getting out there! Here's $2 for lunch. 💛","good"); sfx('text'); setTimeout(()=>sfx('coin'),350); hdr(); },1500); }
 function delistCheck(){ jobMig(); S.pre=null; if(S.know&&S.know.vol&&!S.volRef){ S.volRef=1; delete S.know.vol; S.cash+=10; setTimeout(()=>toast("📘 'Read the volume bars' is now the free tip at the end of the tutorial, so here's your $10 back","good"),2500); } STOCKS.forEach(d=>{ if(!d.gone) return; const p=S.pos[d.s], pr=price(d.i,NOW);
     if(p&&(p.l||p.s)){ let pl=0; if(p.l){ pl=p.l*(pr-p.lc); S.cash+=p.l*pr; } if(p.s){ pl=Math.max(p.s*(p.se-pr),-p.s*p.se); S.cash+=p.s*p.se+pl; } S.pos[d.s]={l:0,lc:0,s:0,se:0}; life(`📉 ${d.s} was delisted. Your trade closed at ${px(pr)} (${sg(pl)})`); }
     if(S.ord) delete S.ord[d.s]; const c=S.comp; if(c&&c.pos&&c.pos[d.s]){ const q=c.pos[d.s]; if(q.l) c.cash+=q.l*pr; if(q.s) c.cash+=q.s*q.se+Math.max(q.s*(q.se-pr),-q.s*q.se); delete c.pos[d.s]; } });
@@ -1323,8 +1324,8 @@ main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||
     case "jobs": return jobPicker();
     case "pL": return paper("L"); case "pS": return paper("S"); case "pclose": return paperClose();
     case "fill": { const cap=FUSE[tier()]*4, a=Math.min(cap-s.fuel,Math.max(0,S.cash)/supP(p)); S.cash-=a*supP(p); s.fuel+=a; resetPeak(); break; }
-    case "dep": { const a=Math.min(+$("famt").value||0,S.cash); if(a<=0||inDebt()) return toast("Enter an amount you have"); const ip=price(II,NOW); S.cash-=a; S.fu+=a/ip; S.fbasis+=a; S.fh.push([NOW,fundVal()]); resetPeak(); toast("🏦 Invested "+money(a)+" in the index"); fundCard(); break; }
-    case "wd": { const v=fundVal(), a=Math.min(+$("famt").value||0,v); if(a<=0) return toast("Enter an amount"); const ip=price(II,NOW); S.fbasis=Math.max(0,S.fbasis*(1-a/v)); S.fu-=a/ip; if(S.fu<1e-9) S.fu=0; S.cash+=a; S.fh.push([NOW,fundVal()]); toast("🏦 Withdrew "+money(a)); fundCard(); break; }
+    case "dep": { const a=Math.min(+$("famt").value||0,S.cash); if(a<=0||inDebt()) return toast("Enter an amount you have"); const ip=price(II,NOW); S.cash-=a; S.fu+=a/ip; S.fbasis+=a; S.fh.push([NOW,fundVal()]); resetPeak(); sfx('coin'); toast("🏦 Invested "+money(a)+" in the index"); fundCard(); break; }
+    case "wd": { const v=fundVal(), a=Math.min(+$("famt").value||0,v); if(a<=0) return toast("Enter an amount"); const ip=price(II,NOW); S.fbasis=Math.max(0,S.fbasis*(1-a/v)); S.fu-=a/ip; if(S.fu<1e-9) S.fu=0; S.cash+=a; S.fh.push([NOW,fundVal()]); sfx('coin'); toast("🏦 Withdrew "+money(a)); fundCard(); break; }
     case "exp": { const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); $("sbox").value=code; try{navigator.clipboard.writeText(code).then(()=>toast("Copied"));}catch(_){} return; }
     case "imp": try{ S=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); save(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return;
     case "replay": S.tut=0; return storyIntro();
@@ -1376,10 +1377,10 @@ async function csave(force){ if(!cref) return; if(!ACT&&!force) return; if(cbusy
   cbusy=false; }
 let lastSave=0;
 function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catchUp(); build(); return; }
-  advance(t); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); achCheck(); } compPub(); if(t%600===0) compSettle();
+  advance(t); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; sfx('tax'); modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); achCheck(); } compPub(); if(t%600===0) compSettle();
   if(t-lastSave>5){ save(); lastSave=t; if(ACT&&!cbusy) csave(); }
   const nw=newsSince(S.lastNews,t); S.lastNews=t;
-  nw.forEach(x=>{ const p=S.pos[x.s]; if(x.s==="*"||x.s===S.sel||(p&&(p.l||p.s))){ toast(x.t); sfx(x.big?'unlock':'ping'); if(x.big&&tab==="trade") newsCard(); } }); }
+  nw.forEach(x=>{ const p=S.pos[x.s]; if(x.s==="*"||x.s===S.sel||(p&&(p.l||p.s))){ toast(x.t); sfx(/Market crash/.test(x.t)?'crash':x.tell?'alert':x.big?'news':'ping'); if(x.big&&tab==="trade") newsCard(); } }); }
 function intro(){ if(!S.prof){ if(!S.introSeen) storyIntro(); else profPicker(true); } }
 document.addEventListener("visibilitychange",()=>{ if(document.hidden){ save(); if(ACT) csave(); } else { loop(); cpull(); } });
 // ---------- set stop loss / take profit right on the chart ----------
@@ -1587,7 +1588,7 @@ function socialStart(N,uid){ socialStop(); FS.first=true;
     if(!FS.first) list.forEach(f=>{ const old=FS.list.find(x=>x.id===f.id), p=FS.prof[f.other]||{};
       if(!old&&f.status==='pending'&&f.from!==uid){ sfx('ping'); toast(`👥 ${esc(p.name)} sent you a friend request`); }
       if(old&&old.status==='pending'&&f.status==='accepted'&&f.from===uid){ sfx('unlock'); toast(`👥 ${esc(p.name)} accepted your friend request`,'good'); }
-      if(f.last&&f.last.from!==uid&&(!old||!old.last||old.last.at!==f.last.at)&&FS.chat!==f.id){ sfx('ping'); toast(`💬 ${esc(p.name)}: ${String(f.last.text||'').replace(/</g,'').slice(0,60)}`); } });
+      if(f.last&&f.last.from!==uid&&(!old||!old.last||old.last.at!==f.last.at)&&FS.chat!==f.id){ sfx('text'); toast(`💬 ${esc(p.name)}: ${String(f.last.text||'').replace(/</g,'').slice(0,60)}`); } });
     FS.first=false; FS.list=list;
     const acc=list.filter(f=>f.status==='accepted'); FRUIDS=new Set(acc.map(f=>f.other)); S.friends=acc.map(f=>(FS.prof[f.other]||{}).code).filter(Boolean);
     navDot(); if(tab==='friends'&&!FS.chat) buildFriends(); }); }
@@ -1639,7 +1640,7 @@ function compTrade(act){ const c=compCur(); if(!c) return; const sym=compSym(), 
     else if(p.s){ pl=Math.max(p.s*(p.se-pr),-p.s*p.se); c.cash+=p.s*p.se+pl; toast(`🏆 Covered ${p.s} ${sym}: ${sg(pl)}`,pl>=0?'good':'bad'); p.s=0; p.se=0; }
     else return; winFx(pl); }
   else { if(p.l||p.s) return toast('Close your competition trade first'); const q=Math.max(1,S.cq||1); if(q*pr>c.cash+1e-9) return toast('Not enough competition cash');
-    c.cash-=q*pr; if(act==='buy'){ p.l=q; p.lc=pr; } else { p.s=q; p.se=pr; } c.tr++; sfx('open'); toast(`🏆 ${act==='buy'?'Bought':'Shorted'} ${q} ${sym} at ${px(pr)} (competition)`); }
+    c.cash-=q*pr; if(act==='buy'){ p.l=q; p.lc=pr; } else { p.s=q; p.se=pr; } c.tr++; sfx(act==='buy'?'open':'short'); toast(`🏆 ${act==='buy'?'Bought':'Shorted'} ${q} ${sym} at ${px(pr)} (competition)`); }
   save(); compPub(true); compCard(true); }
 function compTick(){ if(!$('compw')) return; compCard(); STOCKS.forEach(d=>{ const e=$('cc-'+d.s); if(e) e.textContent=px(sp(d.s)); }); }
 function compSym(){ const s=S.csel; return s&&BYSYM[s]&&!BYSYM[s].gone&&unlocked(BYSYM[s])?s:"PNNY"; }
@@ -1856,8 +1857,8 @@ const TEXTS=[
  ["nw1m",()=>S.bestNW>=1e6,"A MILLION?? I had to sit down. I'm still sitting down."]];
 const FLAVOR=["Did you eat today? Real food, not chips.","Leftovers are in the fridge. The blue container, not the green one.","Don't forget to call your grandma this week.","Proud of you. That's all. Go back to work.","The dog keeps sitting by your door.","Take a break and go outside for 10 minutes.","Found your old piggy bank. It had $3.40 in it. Want it?","Church potluck Sunday. You're bringing something. Not chips.","Make sure you're sleeping. Money isn't everything.","Your sister got a new job! Text her congrats."];
 function momTexts(){ if(SIM||!S.prof) return; S.mt=S.mt||{};
-  for(const [id,c,t] of TEXTS){ if(!S.mt[id]&&c()){ S.mt[id]=1; toast("📱 Mom: "+t); sfx('ping'); life("📱 Mom: "+t); return; } }
-  if(NOW-(S.lastFl||0)>1200&&Math.random()<1/900&&$("modal").classList.contains("hide")){ S.lastFl=NOW; sfx('ping'); toast("📱 Mom: "+FLAVOR[Math.floor(Math.random()*FLAVOR.length)]); } }
+  for(const [id,c,t] of TEXTS){ if(!S.mt[id]&&c()){ S.mt[id]=1; toast("📱 Mom: "+t); sfx('text'); life("📱 Mom: "+t); return; } }
+  if(NOW-(S.lastFl||0)>1200&&Math.random()<1/900&&$("modal").classList.contains("hide")){ S.lastFl=NOW; sfx('text'); toast("📱 Mom: "+FLAVOR[Math.floor(Math.random()*FLAVOR.length)]); } }
 
 // ---------- profile photos: cropped to a square, shrunk to 112px JPEG (~5-15 KB) so it fits in the profile doc ----------
 const okImg=s=>typeof s==='string'&&s.length<40000&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(s);
@@ -1985,7 +1986,7 @@ const saveLines=()=>{ try{ localStorage.setItem("st.lines",JSON.stringify(LINES)
 const lineAt=(ln,t)=>{ const [ta,pa]=ln.a,[tb,pb]=ln.b; return tb===ta?pb:pa+(pb-pa)*(t-ta)/(tb-ta); };
 function lineAlerts(){ const sym=S.sel, ls=myLines(sym); if(!ls.length) return; const p=sp(sym);
   ls.forEach(ln=>{ const v=lineAt(ln,NOW), side=p>=v?1:-1, near=Math.abs(p/v-1)<.0015;
-    if(ln.side&&side!==ln.side){ ln.hot=Date.now(); toast(`📏 ${sym} crossed your line at ${px(v)} (${side>0?"up":"down"})`); sfx&&sfx('ping'); }
+    if(ln.side&&side!==ln.side){ ln.hot=Date.now(); toast(`📏 ${sym} crossed your line at ${px(v)} (${side>0?"up":"down"})`); sfx('alert'); }
     else if(near&&!(ln.tch>NOW-60)){ ln.tch=NOW; ln.hot=Date.now(); toast(`📏 ${sym} is touching your line at ${px(v)}`); }
     ln.side=side; }); }
 function drawCandles(c,data,X,Y,H,vh,vm){ const cp=CPAL(), st=cosGet('candle').id, bg=TH().bg, bw=Math.max(1,ZCW*.72), hb=bw/2;
@@ -2028,27 +2029,83 @@ function burst(pl){ const n=Math.min(26,8+Math.round(Math.log10(1+pl)*4)), cx=in
     const an=s.animate([{transform:`translate(${cx}px,${cy}px) scale(.4)`,opacity:1},{transform:`translate(${dx}px,${dy}px) scale(1.1) rotate(${Math.random()*360-180}deg)`,opacity:0}],{duration:900+Math.random()*500,easing:'cubic-bezier(.2,.7,.3,1)',fill:'forwards'});
     an.onfinish=()=>s.remove(); } }
 // ---------- sound effects: synthesized with WebAudio, no files. Audio unlocks on the first tap (browser rule) ----------
-let AC=null, SNDU=false;
+// Why sounds used to drop out: iPhone pauses ("suspends"/"interrupts") the audio engine when the app goes to the
+// background, a call comes in, or another app plays sound, and it only starts again after a tap. Sounds that fired
+// in the meantime (news, job pay, bills) went nowhere. Now: we wake the engine on every tap and when the app comes
+// back, a sound that fires while it's asleep waits for it to wake (up to 1.5 s) instead of vanishing, and a dead
+// engine is rebuilt.
+let AC=null, SNDU=false, SFXB=null, MUSB=null;
 const snd=()=>!S.set||S.set.snd!==0;
-function actx(){ if(!AC){ try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(_){} AC=new (window.AudioContext||window.webkitAudioContext)(); } if(AC.state==='suspended') AC.resume(); return AC; }
-document.addEventListener('pointerdown',()=>{ try{ actx(); if(!SNDU){ SNDU=true; const b=AC.createBuffer(1,1,22050), s=AC.createBufferSource(); s.buffer=b; s.connect(AC.destination); s.start(0); } }catch(_){} },true);
-document.addEventListener('click',e=>{ if(e.target.closest('button,label')) sfx('tap'); },true);
+const SFXVOL=1.7; // all effects run through one bus, a bit louder than before, with a limiter so stacked sounds don't crackle
+function actx(){
+  if(AC&&AC.state==='closed'){ AC=null; SFXB=null; MUSB=null; if(MUS.el) MUS.el.pause(); MUS.el=null; MUS.src=null; MUS.cur=-1; }
+  if(!AC){ try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(_){} AC=new (window.AudioContext||window.webkitAudioContext)();
+    const lim=AC.createDynamicsCompressor(); lim.threshold.value=-10; lim.knee.value=6; lim.ratio.value=12; lim.attack.value=.002; lim.release.value=.15; lim.connect(AC.destination);
+    SFXB=AC.createGain(); SFXB.gain.value=SFXVOL; SFXB.connect(lim);
+    MUSB=AC.createGain(); MUSB.gain.value=0; MUSB.connect(AC.destination); }
+  if(AC.state!=='running'){ try{ const p=AC.resume(); p&&p.catch&&p.catch(()=>{}); }catch(_){} }
+  return AC; }
+function wake(){ try{ actx(); if(!SNDU){ SNDU=true; const b=AC.createBuffer(1,1,22050), s=AC.createBufferSource(); s.buffer=b; s.connect(AC.destination); s.start(0); } musWake(); }catch(_){} }
+// iPhone only lets audio start from certain touch events, and which ones changed between iOS versions, so listen to all of them
+['pointerdown','touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,wake,true));
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) musPause(); else if(AC) wake(); });
+window.addEventListener('pageshow',()=>{ if(AC) wake(); });
+document.addEventListener('click',e=>{ const b=e.target.closest('button,label'); if(!b) return;
+  sfx(b.closest('nav')?'tab':b.dataset.tf||b.closest('[data-sym],.tf')?'tick':'tap'); },true);
 function tone(f,d,dur,type,vol,f2){ const c=AC, t=c.currentTime+d, o=c.createOscillator(), g=c.createGain(); o.type=type||'sine'; o.frequency.setValueAtTime(f,t); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t+dur);
-  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol||.12,t+.008); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+.03); }
-const SFX={tap:()=>tone(1100,0,.04,'sine',.04),
- open:()=>{ tone(660,0,.08,'triangle',.11); tone(990,.07,.1,'triangle',.11); },
- win:()=>{ [1047,1319,1568].forEach((f,i)=>tone(f,i*.07,.2,'triangle',.11)); },
- loss:()=>tone(200,0,.32,'sine',.2,90),
- pay:()=>{ tone(1568,0,.12,'square',.045); tone(2093,.08,.22,'square',.045); },
- bill:()=>{ tone(320,0,.15,'sawtooth',.05,230); tone(230,.12,.24,'sawtooth',.05,160); },
- ping:()=>{ tone(1200,0,.12,'sine',.09); tone(1600,.1,.18,'sine',.08); },
- unlock:()=>{ [784,988,1175,1568].forEach((f,i)=>tone(f,i*.09,.32,'triangle',.09)); },
- buyItem:()=>{ tone(523,0,.1,'triangle',.11); tone(784,.08,.18,'triangle',.11); },
- broke:()=>{ [392,330,262,196].forEach((f,i)=>tone(f,i*.17,.38,'sawtooth',.05)); }};
-function sfx(k){ if(SIM||!snd()||!AC) return; try{ actx(); SFX[k]&&SFX[k](); }catch(_){} }
-function chaChing(){ try{ if(!snd()) return; actx(); const t=AC.currentTime;
-  [[1318,0],[1760,.09]].forEach(([f,d])=>{ const o=AC.createOscillator(), g=AC.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(.0001,t+d); g.gain.exponentialRampToValueAtTime(.18,t+d+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d+.35); o.connect(g); g.connect(AC.destination); o.start(t+d); o.stop(t+d+.4); }); }catch(_){} }
-function winFx(pl){ if(SIM) return; if(!(pl>0)){ if(pl<0) sfx('loss'); return; } const C=COSS(); if(C.fxb&&cosOk(FX[0])) burst(pl); if(C.fxs&&cosOk(FX[1])) chaChing(); else sfx('win'); }
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol||.12,t+.008); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g); g.connect(SFXB); o.start(t); o.stop(t+dur+.03); }
+// short burst of filtered noise: whooshes, rumbles, register clicks
+function noise(d,dur,vol,freq,q,type,f2){ const c=AC, t=c.currentTime+d, n=Math.ceil(c.sampleRate*(dur+.05)), b=c.createBuffer(1,n,c.sampleRate), x=b.getChannelData(0);
+  for(let i=0;i<n;i++) x[i]=Math.random()*2-1; const s=c.createBufferSource(), f=c.createBiquadFilter(), g=c.createGain(); s.buffer=b; f.type=type||'bandpass'; f.frequency.setValueAtTime(freq,t); if(f2) f.frequency.exponentialRampToValueAtTime(f2,t+dur); f.Q.value=q||1;
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+Math.min(.03,dur/3)); g.gain.exponentialRampToValueAtTime(.0001,t+dur); s.connect(f); f.connect(g); g.connect(SFXB); s.start(t); s.stop(t+dur+.05); }
+const SFX={tap:()=>tone(1100,0,.04,'sine',.05),
+ tab:()=>{ tone(700,0,.05,'sine',.06); tone(1050,.035,.06,'sine',.05); },
+ tick:()=>{ tone(1800,0,.025,'square',.025); noise(0,.03,.05,4000,2); },
+ open:()=>{ tone(660,0,.08,'triangle',.12); tone(990,.07,.1,'triangle',.12); },
+ short:()=>{ tone(880,0,.08,'triangle',.12); tone(587,.07,.12,'triangle',.12); },
+ win:()=>{ [1047,1319,1568].forEach((f,i)=>tone(f,i*.07,.2,'triangle',.12)); },
+ bigwin:()=>{ [1047,1319,1568,2093].forEach((f,i)=>tone(f,i*.06,.26,'triangle',.12)); [2637,3136].forEach((f,i)=>tone(f,.3+i*.05,.3,'sine',.05)); noise(.24,.35,.05,6000,.7,'highpass'); },
+ loss:()=>tone(200,0,.32,'sine',.22,90),
+ bigloss:()=>{ tone(220,0,.45,'sawtooth',.06,70); tone(110,.05,.5,'sine',.2,55); },
+ pay:()=>{ tone(1568,0,.12,'square',.05); tone(2093,.08,.22,'square',.05); },
+ coin:()=>{ tone(1976,0,.07,'square',.04); tone(2637,.06,.18,'square',.04); noise(0,.05,.04,5000,3); },
+ bill:()=>{ tone(320,0,.15,'sawtooth',.055,230); tone(230,.12,.24,'sawtooth',.055,160); },
+ ping:()=>{ tone(1200,0,.12,'sine',.1); tone(1600,.1,.18,'sine',.09); },
+ text:()=>{ tone(1397,0,.09,'sine',.1); tone(1865,.11,.13,'sine',.1); },  // a text from Mom or a friend
+ news:()=>{ [988,988,1319].forEach((f,i)=>tone(f,i*.11,.1,'square',.04)); tone(1319,.33,.25,'triangle',.08); },
+ alert:()=>{ for(let i=0;i<3;i++){ tone(1480,i*.16,.08,'square',.05); tone(1110,i*.16+.08,.08,'square',.05); } },
+ crash:()=>{ noise(0,1.1,.22,900,.8,'lowpass',90); tone(160,0,1,'sawtooth',.05,45); [523,440,349,262].forEach((f,i)=>tone(f,.15+i*.14,.3,'triangle',.07)); },
+ unlock:()=>{ [784,988,1175,1568].forEach((f,i)=>tone(f,i*.09,.32,'triangle',.1)); },
+ achieve:()=>{ [523,659,784].forEach((f,i)=>tone(f,i*.08,.14,'square',.045)); [1047,1319,1568].forEach(f=>tone(f,.26,.6,'triangle',.07)); noise(.26,.5,.04,7000,.7,'highpass'); },
+ buyItem:()=>{ tone(523,0,.1,'triangle',.12); tone(784,.08,.18,'triangle',.12); noise(0,.06,.05,3000,2); },
+ whoosh:()=>noise(0,.22,.07,500,1.2,'bandpass',2400),
+ err:()=>{ tone(180,0,.09,'square',.05); tone(150,.1,.14,'square',.05); },
+ tax:()=>{ noise(0,.04,.08,2500,3); tone(1046,.05,.1,'square',.04); tone(784,.16,.25,'sawtooth',.05,520); },
+ broke:()=>{ [392,330,262,196].forEach((f,i)=>tone(f,i*.17,.38,'sawtooth',.055)); }};
+function sfx(k){ if(SIM||!snd()||!SNDU||!SFX[k]) return; try{ actx(); if(AC.state==='running') return SFX[k]();
+  // engine still waking up: play once it's running instead of losing the sound
+  const t0=Date.now(), w=()=>{ if(!AC) return; if(AC.state==='running') { try{ SFX[k](); }catch(_){} } else if(Date.now()-t0<1500) setTimeout(w,60); }; setTimeout(w,30); }catch(_){} }
+function chaChing(){ try{ if(!snd()||!SNDU) return; actx(); const t=AC.currentTime;
+  [[1318,0],[1760,.09]].forEach(([f,d])=>{ const o=AC.createOscillator(), g=AC.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(.0001,t+d); g.gain.exponentialRampToValueAtTime(.2,t+d+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d+.35); o.connect(g); g.connect(SFXB); o.start(t+d); o.stop(t+d+.4); }); noise(0,.06,.08,3500,2); }catch(_){} }
+// ---------- background music: your tracks in music/, shuffled, one after another, with fades. Settings → Music ----------
+// gain evens out how loud each track was mastered (measured average loudness)
+const SONGS=[{f:"lofi-tech-zephira",n:"Lofi Tech",a:"ZephiraMusic",g:1},{f:"feel-it",n:"Feel It",a:"Loksii",g:.62},{f:"hotel-elevator",n:"Hotel Elevator",a:"ikoliks_aj",g:1},
+  {f:"lofi-tech-mountain",n:"Lofi Tech",a:"The Mountain",g:.66},{f:"elevator-ikoliks",n:"Elevator Music",a:"ikoliks_aj",g:1},{f:"elevator-andriih",n:"Elevator Music",a:"AndriiH",g:1.28}];
+const MUSVOL=.32; // music sits under the effects
+const mus=()=>!S.set||S.set.mus!==0;
+const MUS={el:null,src:null,q:[],cur:-1,on:false};
+function musNext(){ if(!MUS.q.length){ const a=SONGS.map((_,i)=>i).filter(i=>i!==MUS.cur); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } MUS.q=a; } return MUS.q.shift(); }
+function musFade(v,sec){ if(!MUSB) return; const g=MUSB.gain, t=AC.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value,t); g.linearRampToValueAtTime(v,t+sec); }
+function musPlay(i){ if(!AC) return; if(!MUS.el){ const el=MUS.el=new Audio(); el.preload="auto"; el.setAttribute('playsinline',''); el.addEventListener('ended',()=>musPlay(musNext())); el.addEventListener('error',()=>{ if(MUS.on) setTimeout(()=>musPlay(musNext()),3000); }); }
+  if(!MUS.src){ try{ MUS.src=AC.createMediaElementSource(MUS.el); MUS.src.connect(MUSB); }catch(_){} }
+  MUS.cur=i; const s=SONGS[i]; MUS.el.src="music/"+s.f+".mp3"; MUSB.gain.value=0; const p=MUS.el.play(); p&&p.catch&&p.catch(()=>{}); musFade(MUSVOL*s.g,2.5); musLbl(); }
+function musWake(){ if(!mus()||!snd()||document.hidden){ return; } MUS.on=true; if(MUS.cur<0) return musPlay(musNext());
+  if(MUS.el&&MUS.el.paused){ const p=MUS.el.play(); p&&p.catch&&p.catch(()=>{}); musFade(MUSVOL*SONGS[MUS.cur].g,1.2); } }
+function musPause(){ if(MUS.el&&!MUS.el.paused){ MUS.el.pause(); if(MUSB) MUSB.gain.value=0; } }
+function musStop(){ MUS.on=false; if(!MUS.el) return; musFade(0,.6); setTimeout(()=>{ if(!MUS.on&&MUS.el) MUS.el.pause(); },650); }
+function musSkip(){ if(!MUS.el||MUS.cur<0) return musWake(); musFade(0,.4); setTimeout(()=>musPlay(musNext()),420); }
+function musLbl(){ const el=$("muslbl"); if(el) el.textContent=MUS.cur>=0&&MUS.on?`Now playing: ${SONGS[MUS.cur].n} · ${SONGS[MUS.cur].a}`:"Shuffles through 6 chill tracks while you play."; }
+function winFx(pl){ if(SIM) return; const big=Math.abs(pl)>Math.max(25,Math.abs(netWorth())*.1); if(!(pl>0)){ if(pl<0) sfx(big?'bigloss':'loss'); return; } const C=COSS(); if(C.fxb&&cosOk(FX[0])) burst(pl); if(C.fxs&&cosOk(FX[1])) chaChing(); else sfx(big?'bigwin':'win'); }
 main.addEventListener('click',e=>{ const a=e.target.closest('[data-cos],[data-cosfx]'); if(!a) return; const C=COSS();
   if(a.dataset.cos){ const [cat,id]=a.dataset.cos.split(':'); C[cat]=id; applyCos(); save(); if(cat==='title'||cat==='border') pubProfile(); }
   else { const k=a.dataset.cosfx; C[k]=C[k]?0:1; save(); if(C[k]) k==='fxb'?burst(100):chaChing(); }
@@ -2069,7 +2126,9 @@ function sx(x){
   if(x==="pushon") return pushOn();
   if(x==="pushoff") return pushOff();
   if(x==="p_news"||x==="p_friends") return pushToggle(x.slice(2));
-  if(x==="snd"){ S.set=S.set||{}; S.set.snd=snd()?0:1; save(); sfx('ping'); return openSettings(); }
+  if(x==="snd"){ S.set=S.set||{}; S.set.snd=snd()?0:1; save(); if(snd()){ sfx('ping'); musWake(); } else musStop(); return openSettings(); }
+  if(x==="mus"){ S.set=S.set||{}; S.set.mus=mus()?0:1; save(); if(mus()) musWake(); else musStop(); return setTimeout(openSettings,50); }
+  if(x==="mskip"){ musSkip(); return setTimeout(musLbl,500); }
   if(x==="exp"){ const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); $("sbox").value=code; try{navigator.clipboard.writeText(code).then(()=>toast("Copied"));}catch(_){} return; }
   if(x==="imp"){ try{ S=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); save(); closeModal(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return; }
   if(x==="replay"){ closeModal(); S.tut=0; return storyIntro(); }

@@ -2122,7 +2122,7 @@ function chaChing(){ try{ if(!snd()||!SNDU) return; actx(); const t=AC.currentTi
 // gain evens out how loud each track was mastered (measured average loudness)
 const SONGS=[{f:"lofi-tech-zephira",n:"Lofi Tech",a:"ZephiraMusic",g:1},{f:"feel-it",n:"Feel It",a:"Loksii",g:.62},{f:"hotel-elevator",n:"Hotel Elevator",a:"ikoliks_aj",g:1},
   {f:"lofi-tech-mountain",n:"Lofi Tech",a:"The Mountain",g:.66},{f:"elevator-ikoliks",n:"Elevator Music",a:"ikoliks_aj",g:1},{f:"elevator-andriih",n:"Elevator Music",a:"AndriiH",g:1.28}];
-const MUSVOL=.17; // music sits under the effects
+const MUSVOL=.1; // music sits under the effects
 const mus=()=>!S.set||S.set.mus!==0;
 const MUS={el:null,src:null,q:[],cur:-1,on:false};
 function musNext(){ if(!MUS.q.length){ const a=SONGS.map((_,i)=>i).filter(i=>i!==MUS.cur); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } MUS.q=a; } return MUS.q.shift(); }

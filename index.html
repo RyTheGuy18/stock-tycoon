@@ -1004,10 +1004,10 @@ function bills(){ const e=earned();
 // ---------- taxes ----------
 // In this game a "year" is one real week. Tax day is every Monday at midnight (your time).
 // Sales tax: a small cut on every stock you buy or sell. Tax day bills: income tax (real US brackets on
-// this week's job pay + trading profits), property tax on homes you own, and in war years every tax is ×3.
+// this week's job pay + trading profits) and property tax on homes you own; in war years both are ×3.
 const SALES_BASE=.005, WAR_X=3;
-// a war year (about 1 week in 6) triples every tax that week: income tax, property tax and the sales tax on every trade
-const STX=()=>SALES_BASE*(warYear(taxWk(NOW))?WAR_X:1);
+// a war year (about 1 week in 6) triples income tax and property tax on tax day; sales tax is never affected
+const STX=()=>SALES_BASE;
 const BRACKETS=[[11925,.10],[48475,.12],[103350,.22],[197300,.24],[250525,.32],[626350,.35],[Infinity,.37]]; // 2025 single filer
 const HOMES=[["apt",4000,"Apartment"],["condo",100000,"Condo"],["cabin",1.2e6,"Lake cabin"],["house",3e6,"Dream house"],["island",1e8,"Private island"]];
 const taxWk=t=>Math.floor((t-new Date(t*1000).getTimezoneOffset()*60-345600)/604800);   // weeks since Mon Jan 5 1970, local time
@@ -1027,21 +1027,21 @@ function taxBill(tx,war){ const base=Math.max(0,tx.inc+Math.max(0,tx.gain)), acc
   return {base,it,pt,wt,homes,war,acct:acct<1,total:Math.round((it+pt+wt)*100)/100}; }
 function taxDay(){ const tx=TX(), w=taxWk(NOW); if(w===tx.w) return;
   const b=taxBill(tx,warYear(tx.w)); S.tx={w,inc:0,gain:0,sales:0};
-  if(warYear(w)&&!SIM){ toast("⚔️ War year! All taxes are ×3 this week: income, property and sales tax","bad"); }
+  if(warYear(w)&&!SIM){ toast("⚔️ War year! Income and property taxes are ×3 on this tax day","bad"); }
   if(b.total<=0) return;
   bill("🧾 Taxes",b.total); S.st.taxes=(S.st.taxes||0)+b.total;
   const row=(l,v)=>`<div class="li"><span>${l}</span><b class="m dn">-${money(v)}</b></div>`;
   S.taxPend=`<p>It's tax day. Here's the bill for the week ("year") that just ended.</p>`+
     (b.it>0?row(`Income tax on ${money(b.base)} earned`,b.it):"")+
     (b.pt>0?row(`Property tax: ${b.homes.map(h=>h[2]).join(", ")}`,b.pt):"")+
-    (b.war?`<p class="t" style="margin:6px 0">⚔️ It was a war year, so these taxes were ×3.</p>`:"")+
+    (b.war?`<p class="t" style="margin:6px 0">⚔️ It was a war year, so income and property tax were ×3.</p>`:"")+
     `<div class="li"><b>Total</b><b class="m dn">-${money(b.total)}</b></div>`+
     (b.acct?`<p class="t">Your accountant saved you 15%.</p>`:"")+(inDebt()?`<p class="dn">You can't cover it all. Pay off the debt within 24 hours or you go broke.</p>`:""); }
 function taxCard(){ const el=$("taxc"); if(!el) return; const tx=TX(), w=tx.w, b=taxBill(tx,warYear(w)), left=taxDayAt(w)-NOW;
   { const fs=$("fs-tax"); if(fs) fs.innerHTML=`in ${dur(left)} · <b class="dn">≈ -${money(b.total)}</b>`; }
   el.innerHTML=`<div class="row"><div class="g"><div class="b">🧾 Tax day in ${dur(left)}${warYear(w)?' <span class="pill bad">⚔️ War year</span>':''}</div>
    <div class="t">Earned this year: ${money(b.base)} · sales tax paid: ${money(tx.sales)}</div></div><b class="m dn">≈ -${money(b.total)}</b></div>
-   <div class="t" style="margin-top:4px">Income tax ${money(b.it)}${b.pt?` · property ${money(b.pt)}`:""}${b.war?` · <b class="dn">⚔️ war year: all taxes ×3</b>`:""} · ${(STX()*100).toFixed(1)}% sales tax on every stock buy and sell</div>`; }
+   <div class="t" style="margin-top:4px">Income tax ${money(b.it)}${b.pt?` · property ${money(b.pt)}`:""}${b.war?` · <b class="dn">⚔️ war year: income & property tax ×3</b>`:""} · ${(STX()*100).toFixed(1)}% sales tax on every stock buy and sell</div>`; }
 function broke(why){
   for(const k in S.pos) S.pos[k]={l:0,lc:0,s:0,se:0};
   S.cash=0; S.job=null; S.debtDue=0; S.liqPeak=0; S.st.broke++; AF().bk=1;
@@ -1883,7 +1883,7 @@ const TUT=[
  ["#chart","Stop loss and take profit","Once you're in a trade, tap <b>Stop loss</b> or <b>Take profit</b> on your position card, then <b>tap the chart</b> where you want it. Drag the handle on the right edge to move it. When the price gets there, your trade closes by itself, even while you're away.","trade"],
  ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed. Learn better jobs in the job list as you build reputation.","trade"],
  ["#momw","Practice with Mom","No money yet? Practice on Mom's dime. Close a practice trade in profit and she pays you for it, until you've got $15.","trade"],
- ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which triples every tax that week (income, property and sales tax). Can't pay? It turns into debt, and you have 24 hours.","trade"],
+ ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which triples your income tax and property tax that week. Can't pay? It turns into debt, and you have 24 hours.","trade"],
  ["#bell","News","The bell gets a red dot when there's big news: breaking stories, market crashes, collapses, huge spikes and rumors. Many big moves have a warning headline first, so check it often.","trade"],
  ['[data-tab="store"]',"The Store","Better gear for your job, and lessons that teach you the patterns the market repeats. That's where the real money is.","trade"],
  ['[data-tab="auto"]',"Automations","Later on, you can buy bots that trade for you while the app is closed (as long as you don't have a trade of your own open), and tools that keep your jobs running.","trade"],
@@ -2411,7 +2411,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="81";
+const APPV="82";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

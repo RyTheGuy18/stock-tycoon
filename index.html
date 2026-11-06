@@ -142,7 +142,7 @@ header{position:relative}
 .aexp{background:none;border:0;padding:6px 0 0;color:var(--gold);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}.axd{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}.axl{margin:0;padding-left:18px;font-size:13px;line-height:1.5;color:#c9d3de}.axl li{margin:3px 0}.axl b{color:var(--text)}
 .achg{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}.ach{background:#121922;border:1px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center}.ach .ag{font-size:24px;line-height:1.2}.ach b{display:block;font-size:12px;margin-top:2px}.ach .t{font-size:10.5px;line-height:1.3;margin-top:2px}.ach.off{opacity:.38}.ach.off .ag{filter:grayscale(1)}.achs{font-size:12px;margin-left:3px;letter-spacing:1px}
 .pmeta{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px} .pmeta span{background:rgba(0,0,0,.28);border-radius:99px;padding:3px 9px;font-size:11.5px}
-.phero{position:relative;border-radius:16px;overflow:hidden;height:190px;border:1px solid var(--line);margin-bottom:12px}
+.phero{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);margin-bottom:12px}
 .phero>svg{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
 .phero .tint{position:absolute;inset:0} .phero .pin{position:absolute;left:0;right:0;bottom:0;padding:40px 14px 12px;background:linear-gradient(transparent,rgba(5,8,12,.92));display:flex;align-items:flex-end;gap:12px}
 .pavt{position:relative;flex:none;cursor:pointer} .pavt .pav{width:74px;height:74px;font-size:40px;border-width:3px;background-color:#0d1219}
@@ -1284,8 +1284,8 @@ let pseg="profile";
 function buildMe(){ const m=myCard(); m.col=m.col==null?0:m.col;
   let h=`<div class="pad"><div class="seg"><button data-ps="profile" class="${pseg==="profile"?"on":""}">Profile</button><button data-ps="story" class="${pseg==="story"?"on":""}">Story</button></div>`;
   if(pseg==="profile"){ const c=COLS[m.col]||COLS[0], ci=chapIdx(), done=MS.filter(x=>S.ms[x.id]).length, p=prof();
-    // hero in the Story tab's style: this chapter's scene, tinted with your card color; tap the picture to change it
-    h+=`<div class="phero${bdCls()}"><div class="tint" style="background:linear-gradient(135deg,${c[0]},#0d1219 90%)"></div>${SCENES[ci]}<div class="pin">
+    // hero card: plain card-color background (no scene); tap the picture to change it
+    h+=`<div class="phero${bdCls()}"><div class="tint" style="background:linear-gradient(135deg,${c[0]},#0d1219 95%)"></div><div class="pin" style="background:none;position:relative;padding:16px 14px 14px;align-items:center">
       <div class="pavt" data-pavtap="1"><div class="pav" style="border-color:${c[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><span class="cam">📷</span></div>
       <div class="g" style="min-width:0"><div class="pname">${(m.name||"").replace(/</g,"")}</div><div class="ptag">${(m.tag||"Just getting started.").replace(/</g,"")}</div>${ttl()}
       <div class="t" style="color:#cfd8e3;margin-top:5px">${homeName()} · Chapter ${ci+1} of ${CHAP.length}</div><div class="pbar" style="margin-top:4px"><i style="width:${done/MS.length*100}%;background:${c[1]}"></i></div></div></div></div>

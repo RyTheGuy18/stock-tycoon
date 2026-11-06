@@ -2181,13 +2181,17 @@ function rebuildAudio(){ const cur=MUS.cur, pos=MUS.el?MUS.el.currentTime:0;
   try{ if(MUS.el){ MUS.el.pause(); MUS.el.removeAttribute('src'); MUS.el.load(); } }catch(_){}
   MUS.el=null; MUS.src=null; MUS.cur=-1; try{ AC.close(); }catch(_){} AC=null; SFXB=null; MUSB=null; SNDU=false;
   actx(); if(cur>=0&&mus()&&snd()) MUS.resume={i:cur,at:pos}; }
-function wake(e){ try{ if(e&&e.isTrusted&&AC&&AC.state!=='running'&&Date.now()-(AC._born||0)>1000) rebuildAudio();
+// After the screen is locked (or the app sits in the background), iPhone can leave the engine saying "running" while
+// it's actually silent, so the state can't be trusted: the first tap after coming back always builds fresh audio.
+let HID_AT=0, STALE=false;
+function wake(e){ try{ if(e&&e.isTrusted&&AC&&(STALE||AC.state!=='running')&&Date.now()-(AC._born||0)>1000){ STALE=false; rebuildAudio(); }
   actx(); if(!SNDU){ SNDU=true; const b=AC.createBuffer(1,1,22050), s=AC.createBufferSource(); s.buffer=b; s.connect(AC.destination); s.start(0); } musWake(); }catch(_){} }
 // iPhone only lets audio start from certain touch events, and which ones changed between iOS versions, so listen to all of them
 ['pointerdown','touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,wake,true));
 // coming back to the app: try to restart audio straight away (works on some iPhones); if it can't, the first tap will
-document.addEventListener('visibilitychange',()=>{ if(document.hidden) musPause(); else if(AC) wake(); });
-window.addEventListener('pageshow',()=>{ if(AC) wake(); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ HID_AT=Date.now(); musPause(); } else { if(HID_AT&&Date.now()-HID_AT>1500) STALE=true; if(AC) wake(); } });
+window.addEventListener('pagehide',()=>{ HID_AT=Date.now(); musPause(); });
+window.addEventListener('pageshow',e=>{ if(e.persisted||(HID_AT&&Date.now()-HID_AT>1500)) STALE=true; if(AC) wake(); });
 window.addEventListener('focus',()=>{ if(AC) wake(); });
 document.addEventListener('click',e=>{ const b=e.target.closest('button,label'); if(!b) return;
   sfx(b.closest('nav')?'tab':b.dataset.tf||b.closest('[data-sym],.tf')?'tick':'tap'); },true);

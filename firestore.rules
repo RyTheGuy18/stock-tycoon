@@ -56,6 +56,10 @@ service cloud.firestore {
         && request.resource.data.text.size() <= 500;
     }
 
+    // Push notification subscriptions, one doc per device. Only you can read or write yours.
+    // The push worker (GitHub Actions, admin access) reads all of them to send notifications.
+    match /push/{uid}/subs/{sid} { allow read, delete: if me(uid); allow create, update: if me(uid) && request.resource.data.size() <= 8; }
+
     // Weekly competition standings: one entry per player per week.
     match /comps/{week}/entries/{uid} { allow read: if signedIn(); allow write: if me(uid); }
   }

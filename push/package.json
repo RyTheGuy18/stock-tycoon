@@ -1,0 +1,12 @@
+{
+  "name": "stock-tycoon-push-worker",
+  "private": true,
+  "description": "Sends Stock Tycoon push notifications. Runs on GitHub Actions (.github/workflows/push-worker.yml).",
+  "type": "commonjs",
+  "scripts": { "start": "node worker.js" },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "playwright-core": "^1.48.0",
+    "web-push": "^3.6.7"
+  }
+}

@@ -135,6 +135,7 @@ header{position:relative}
 .pcard{border-radius:16px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
 .pav{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;background:rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.35);flex:none}
 .pname{font-size:20px;font-weight:800} .ptag{font-size:13px;opacity:.85;margin-top:2px;font-style:italic}
+.achg{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}.ach{background:#121922;border:1px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center}.ach .ag{font-size:24px;line-height:1.2}.ach b{display:block;font-size:12px;margin-top:2px}.ach .t{font-size:10.5px;line-height:1.3;margin-top:2px}.ach.off{opacity:.38}.ach.off .ag{filter:grayscale(1)}.achs{font-size:12px;margin-left:3px;letter-spacing:1px}
 .pmeta{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px} .pmeta span{background:rgba(0,0,0,.28);border-radius:99px;padding:3px 9px;font-size:11.5px}
 .avgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px} .avgrid button{font-size:22px;padding:6px 0;border-radius:10px;background:var(--c2);border:1px solid var(--line)} .avgrid button.on{border-color:var(--gold);background:#2a2410}
 .swat{display:flex;gap:8px;flex-wrap:wrap} .swat button{width:34px;height:34px;border-radius:50%;border:2px solid transparent} .swat button.on{border-color:#fff}
@@ -584,6 +585,68 @@ const LONG=[
  {id:"snap",ch:"1h chart",n:"The hourly snap-back",c:6000,t:"Jumpy stocks overshoot during the hour, then drift back.",d:()=>`On the <b>1h chart</b> at <b>:30 past the hour</b>, check how far the current candle has moved from its open. If it's past the stock's number below, bet on it coming back: <b>short</b> if it's up, <b>buy</b> if it's down. Close at <b>:59</b>. Won about <b>90%</b> on these jumpy stocks; steady ones only win about 70%, so skip them.<br><br>${JUMPY.map(s=>`<b>${s}</b> ±${snapPct(BYSYM[s])}%`).join(" · ")}`},
  {id:"wreck",ch:"1h chart",n:"Buy the wreckage",c:20000,t:"What a stock does in the hours after it collapses.",d:()=>`A collapse overshoots, and the stock spends the next several hours crawling back. After the <b>“auditor resigns”</b> headline and the huge red candle, wait until the volume calms down, about <b>3 to 4 minutes after the drop ends</b>. Then <b>buy and hold for 6 hours</b>. It usually wins, averaging about +70%, but part of the crash never comes back.`}];
 const ALLK=KNOW.concat(SK,LONG);
+// ---------- achievements ----------
+// u() = unlocked? Checked every 5 s and after each closed trade. Listed roughly easiest to hardest:
+// your 3 hardest show next to your name on the leaderboard and friends list.
+// Pattern achievements (rumor, pump, crash…) look at what the engine was doing while your trade was open.
+const ACH=[
+ {id:"t1",g:"🎬",n:"First trade",d:"Close your first trade",u:()=>S.st.trades>=1},
+ {id:"pr",g:"📝",n:"Mom's student",d:"Win a practice trade with Mom",u:()=>S.st.paperWon>=1},
+ {id:"w1",g:"💵",n:"In the green",d:"Win a trade",u:()=>S.st.wins>=1},
+ {id:"lsn",g:"📘",n:"Student",d:"Buy your first lesson",u:()=>Object.keys(S.know||{}).length>=1},
+ {id:"fr",g:"🤝",n:"Made a friend",d:"Add a friend",u:()=>(S.friends||[]).length>=1},
+ {id:"ntf",g:"🔔",n:"Stay tuned",d:"Turn on notifications",u:()=>!!S.st.notif},
+ {id:"job",g:"💼",n:"Clocked in",d:"Finish 25 jobs",u:()=>S.st.jobs>=25},
+ {id:"sh",g:"🐻",n:"Bear mode",d:"Win a short",u:()=>(S.st.shortWins||0)>=1},
+ {id:"oops",g:"🙃",n:"Bought the rumor",d:"Lose money buying a stock during a rumor",u:()=>!!AF().oops},
+ {id:"broke",g:"🪦",n:"Rock bottom",d:"Go broke",u:()=>S.st.broke>=1},
+ {id:"tip",g:"💡",n:"Tipster",d:"Send 10 tips to friends",u:()=>(S.st.tipsSent||0)>=10},
+ {id:"comp",g:"🏁",n:"Competitor",d:"Join a weekly competition",u:()=>!!S.comp},
+ {id:"rmr",g:"🕵️",n:"Saw through it",d:"Win a short during a rumor",u:()=>!!AF().rmr},
+ {id:"w25",g:"🎯",n:"Sharpshooter",d:"Win 25 trades",u:()=>S.st.wins>=25},
+ {id:"st5",g:"🔥",n:"On fire",d:"Win 5 trades in a row",u:()=>(S.st.wsMax||0)>=5},
+ {id:"nw1k",g:"🏦",n:"Four figures",d:"Reach $1,000 net worth",u:()=>S.bestNW>=1000},
+ {id:"car",g:"🚗",n:"Wheels",d:"Buy a car",u:()=>!!S.ms.car},
+ {id:"pump",g:"🎈",n:"Pump rider",d:"Win a trade during a pump and dump",u:()=>!!AF().pump},
+ {id:"crash",g:"🌪️",n:"Crash survivor",d:"Win a trade that was open during a market crash",u:()=>!!AF().crash},
+ {id:"tipw",g:"🎁",n:"Good call",d:"A friend wins a trade on your tip",u:()=>(S.st.tipWins||0)>=1},
+ {id:"back",g:"🔄",n:"Comeback kid",d:"Go broke, then get back to $1,000 net worth",u:()=>!!AF().back},
+ {id:"x2",g:"🚀",n:"Doubled up",d:"Make +100% on one trade",u:()=>!!AF().x2},
+ {id:"big",g:"💰",n:"Big score",d:"Make $1,000 on one trade",u:()=>S.st.best>=1000},
+ {id:"apt",g:"🔑",n:"Moved out",d:"Move into your own apartment",u:()=>!!S.ms.apt},
+ {id:"l10",g:"🎓",n:"Scholar",d:"Own 10 lessons",u:()=>Object.keys(S.know||{}).length>=10},
+ {id:"w100",g:"🏹",n:"Centurion",d:"Win 100 trades",u:()=>S.st.wins>=100},
+ {id:"sq",g:"🩳",n:"Squeeze rider",d:"Win a buy during a short squeeze",u:()=>!!AF().sq},
+ {id:"col",g:"💥",n:"Called the collapse",d:"Win a short during a collapse",u:()=>!!AF().col},
+ {id:"pod",g:"🏆",n:"Podium",d:"Finish top 3 in a weekly competition",u:()=>{ const t=S.st.tro; return !!(t&&(t.g||t.s||t.b)); }},
+ {id:"nw100k",g:"💎",n:"Six figures",d:"Reach $100,000 net worth",u:()=>S.bestNW>=1e5},
+ {id:"champ",g:"🥇",n:"Champion",d:"Win a weekly competition",u:()=>!!(S.st.tro&&S.st.tro.g)},
+ {id:"nw1m",g:"👑",n:"Millionaire",d:"Reach $1,000,000 net worth",u:()=>S.bestNW>=1e6},
+ {id:"isl",g:"🏝️",n:"Island life",d:"Retire to the private island",u:()=>!!S.ms.island}];
+const ACHBY=Object.fromEntries(ACH.map(a=>[a.id,a]));
+const AF=()=>S.af=S.af||{}; // flags set by trades
+// what the engine was doing to stock i between t0 and t1: episode types, plus "crash"
+function epsIn(i,t0,t1){ const out=new Set(); t0=Math.max(t0,t1-6*3600);
+  for(let h=Math.floor(t0/HN)-1;h<=Math.floor(t1/HN);h++){ const sc=sched(i,h); sc.eps.forEach(e=>{ const a=h*HN+e.st, b=a+epLen(e); if(a<=t1&&b>=t0) out.add(e.ty); });
+    const c=sched(0,h).cr; if(c!=null){ const a=h*HN+c; if(a<=t1&&a+90>=t0) out.add("crash"); } }
+  return out; }
+function achTrade(sym,side,pl,pct){ const st=S.st, f=AF(), win=pl>0;
+  st.ws=win?(st.ws||0)+1:0; st.wsMax=Math.max(st.wsMax||0,st.ws); if(win&&side==="S") st.shortWins=(st.shortWins||0)+1; if(win&&pct>=100) f.x2=1;
+  try{ const m=(S.mk[sym]||[]).filter(x=>x.k==="B"||x.k==="X").pop(), t0=m?m.t:NOW-60, ep=epsIn(BYSYM[sym].i,t0,NOW);
+    if(ep.has("rumor")){ if(side==="L"&&pl<0) f.oops=1; if(side==="S"&&win) f.rmr=1; }
+    if(win&&ep.has("pump")) f.pump=1; if(win&&ep.has("crash")) f.crash=1;
+    if(win&&side==="L"&&ep.has("squeeze")) f.sq=1; if(win&&side==="S"&&ep.has("collapse")) f.col=1; }catch(_){}
+  achCheck(); }
+let ACHQ=[];
+function achCheck(){ S.ach=S.ach||{}; const f=AF(); if(S.st.broke>=1&&f.bk==null) f.bk=netWorth()<1000?1:0; if(f.bk&&netWorth()>=1000) f.back=1;
+  let n=0; ACH.forEach(a=>{ if(S.ach[a.id]) return; let ok=false; try{ ok=a.u(); }catch(_){} if(!ok) return; S.ach[a.id]=NOW; n++; ACHQ.push(a); life(`${a.g} Achievement: ${a.n}`); });
+  if(n){ save(); pubProfile(); if(!SIM){ const q=ACHQ; ACHQ=[]; if(q.length===1){ toast(`${q[0].g} Achievement unlocked: ${q[0].n}`,"good"); sfx('unlock'); } else { toast(`🎖️ ${q.length} achievements unlocked! See them on your Profile.`,"good"); sfx('unlock'); } if(tab==="me") buildMe(); } } }
+const achTop=()=>ACH.filter(a=>S.ach&&S.ach[a.id]).slice(-3).map(a=>a.id);
+const achStr=p=>Array.isArray(p.ab)&&p.ab.length?` <span class="achs" title="${+p.ach||0} achievements">${p.ab.filter(id=>ACHBY[id]).slice(0,3).map(id=>ACHBY[id].g).join("")}</span>`:"";
+function achHTML(){ S.ach=S.ach||{}; const n=ACH.filter(a=>S.ach[a.id]).length;
+  return `<h3>Achievements · ${n}/${ACH.length}</h3><div class="t" style="margin:-2px 2px 8px">Your 3 hardest show next to your name for friends.</div><div class="achg">${ACH.map(a=>{ const on=!!S.ach[a.id];
+    return `<div class="ach${on?"":" off"}"><div class="ag">${a.g}</div><b>${a.n}</b><div class="t">${a.d}</div></div>`; }).join("")}</div>`; }
+
 // ---------- story milestones (permanent perks) ----------
 const MS=[
  {id:"laptop",n:"Buy a decent used laptop",c:300,p:"Offline progress +4h",e:{off:4},mom:"Is that for homework or for those stock games?"},
@@ -661,7 +724,7 @@ function life(t){ S.life.unshift({t,at:NOW}); if(S.life.length>40) S.life.length
 // ---------- trading: whole shares, P/L = shares × (exit − entry) ----------
 function mark(sym,k,p,pl){ const a=S.mk[sym]||(S.mk[sym]=[]); a.push({t:NOW,k,p,pl}); if(a.length>30) a.shift(); }
 function rec(sym,side,q,en,ex,pl){ S.hist.unshift({sym,side,q,en,ex,pl,pct:(side==="L"?ex/en-1:1-ex/en)*100,t:NOW}); if(S.hist.length>50) S.hist.length=50;
-  txGain(pl); const s=S.st; s.trades++; s.realized+=pl; if(pl>0) s.wins++; s.best=Math.max(s.best,pl); s.worst=Math.min(s.worst,pl); }
+  txGain(pl); const s=S.st; s.trades++; s.realized+=pl; if(pl>0) s.wins++; s.best=Math.max(s.best,pl); s.worst=Math.min(s.worst,pl);  achTrade(sym,side,pl,(side==="L"?ex/en-1:1-ex/en)*100); }
 function trade(act,q){
   const sym=S.sel, p=P(sym); q=Math.floor(q);
   if((act==="buy"||act==="short")&&(p.l||p.s)) return toast("You already have a trade open in "+sym+". Close it first.");
@@ -831,7 +894,7 @@ function taxCard(){ const el=$("taxc"); if(!el) return; const tx=TX(), w=tx.w, b
    <div class="t" style="margin-top:4px">Income tax ${money(b.it)}${b.pt?` · property ${money(b.pt)}`:""}${b.wt?` · war ${money(b.wt)}`:""} · ${(SALES_TAX*100).toFixed(1)}% sales tax on every stock buy and sell</div>`; }
 function broke(why){
   for(const k in S.pos) S.pos[k]={l:0,lc:0,s:0,se:0};
-  S.cash=0; S.job=null; S.debtDue=0; S.liqPeak=0; S.st.broke++;
+  S.cash=0; S.job=null; S.debtDue=0; S.liqPeak=0; S.st.broke++; AF().bk=1;
   for(const id in S.profs){ const s=S.profs[id]; S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:s.rep,sk:s.sk||0,up:{}}; }
   S.auto={}; S.ord={}; S.vb={};
   life("💀 Went broke: "+why); sfx('broke');
@@ -1056,14 +1119,14 @@ function buildMe(){ const m=myCard(); m.col=m.col==null?0:m.col;
   let h=`<div class="pad"><div class="seg"><button data-ps="profile" class="${pseg==="profile"?"on":""}">Profile</button><button data-ps="story" class="${pseg==="story"?"on":""}">Story</button></div>`;
   if(pseg==="profile"){ const c=COLS[m.col]||COLS[0];
     h+=`<div class="pcard${bdCls()}" style="background:linear-gradient(135deg,${c[0]},#0d1219 85%)"><div class="row"><div class="pav" style="border-color:${c[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><div class="g"><div class="pname">${(m.name||"").replace(/</g,"")}</div><div class="ptag">${(m.tag||"Just getting started.").replace(/</g,"")}</div>${ttl()}</div></div>
-      <div class="pmeta"><span>${homeName()}</span><span>${prof()?prof().i+" "+prof().n:"No job"}</span><span>${money(netWorth())}</span><span>📘 ${Object.keys(S.know||{}).length}</span>${myCode()?`<span>Code ${myCode()}</span>`:""}</div></div>
+      <div class="pmeta"><span>${homeName()}</span><span>${prof()?prof().i+" "+prof().n:"No job"}</span><span>${money(netWorth())}</span><span>📘 ${Object.keys(S.know||{}).length}</span><span>🎖️ ${Object.keys(S.ach||{}).length}/${ACH.length}</span>${myCode()?`<span>Code ${myCode()}</span>`:""}</div></div>
       <div class="lbl2">Name</div><input id="pname" class="inp" maxlength="20" value="${(m.name||"").replace(/"/g,"")}">
       <div class="lbl2">Tagline</div><input id="ptag" class="inp" maxlength="40" placeholder="Something about you" value="${(m.tag||"").replace(/"/g,"")}">
       <div class="lbl2">Profile photo</div><div class="row"><label class="btn ghost sm" style="flex:1;text-align:center;cursor:pointer">📷 ${okImg(m.img)?"Change photo":"Upload a photo"}<input type="file" accept="image/*" id="pimg" style="display:none"></label>${okImg(m.img)&&LASTIMG?`<button class="btn ghost sm" data-pcrop="1">Adjust crop</button>`:""}${okImg(m.img)?`<button class="btn sell sm" data-pimgx="1">Remove</button>`:""}</div>
       <div class="lbl2">${okImg(m.img)?"Or switch back to an emoji":"Or pick an emoji"}</div><div class="avgrid">${AVS.map(a=>`<button data-pav="${a}" class="${a===m.av&&!okImg(m.img)?"on":""}">${a}</button>`).join("")}</div>
       <div class="lbl2">Card color</div><div class="swat">${COLS.map((c,k)=>`<button data-pcol="${k}" class="${k===m.col?"on":""}" style="background:linear-gradient(135deg,${c[1]},${c[0]})"></button>`).join("")}</div>
       <button class="btn gold" style="width:100%;margin-top:14px" data-psave="1">Save profile</button>
-      <div class="t" style="margin:8px 2px">Friends see this card on the leaderboard. Unlock titles, borders and themes in Store → Style.</div></div>`;
+      <div class="t" style="margin:8px 2px">Friends see this card on the leaderboard. Unlock titles, borders and themes in Store → Style.</div>${achHTML()}</div>`;
     main.innerHTML=h; return; }
   const ci=chapIdx(), c=CHAP[ci], nx=MS.findIndex(x=>!S.ms[x.id]), done=MS.filter(x=>S.ms[x.id]).length;
   h+=`<div class="scene">${SCENES[ci]}<div class="scap"><div class="t" style="color:#cfd8e3">Chapter ${ci+1} of ${CHAP.length} · ${done}/${MS.length} done</div><b>${c.n.split(" · ")[1]}</b><div class="sd">${c.d}</div></div></div>`;
@@ -1082,7 +1145,7 @@ function stats_html(){ const s=S.st; return `<div class="card kv">
 function SAVEHTML(){ return `<h3>Save</h3><div class="card"><div class="t">☁️ ${cloudSt}</div><div class="g2" style="margin-top:8px"><button class="btn ghost sm" data-sx="exp">Copy save code</button><button class="btn ghost sm" data-sx="imp">Load code</button></div>
   <input id="sbox" class="inp" style="margin-top:6px" placeholder="Paste save code"><button class="btn sell sm" style="width:100%;margin-top:6px" data-sx="wipe">Wipe save</button><button class="btn ghost sm" style="width:100%;margin-top:6px" data-sx="replay">Replay intro & tutorial</button></div>`; }
 function openSettings(){ const s=S.st;
-  modal("⚙︎ Settings",acctHTML()+`<h3>Work</h3><button class="btn ghost" style="width:100%" id="chprof">${prof()?prof().i+" ":""}Change your profession</button><h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div><h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
+  modal("⚙︎ Settings",acctHTML()+notifHTML()+`<h3>Work</h3><button class="btn ghost" style="width:100%" id="chprof">${prof()?prof().i+" ":""}Change your profession</button><h3>Sound</h3><div class="card row"><div class="g"><div class="b">Sound effects</div><div class="t">On iPhone, also check the volume and the silent switch.</div></div><button class="btn ${snd()?"buy":"ghost"} sm" data-sx="snd">${snd()?"ON":"OFF"}</button></div><h3>Stats</h3>`+stats_html()+SAVEHTML(),[["Close","ghost"]]); const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
 // shrink a header number only when it's too long for its column
 function fitHdr(){ for(const id of ["cash","fund","nw"]){ const e=$(id); if(!e) continue; e.style.fontSize="";
   const w=e.parentElement.clientWidth, base=parseFloat(getComputedStyle(e).fontSize); let f=base;
@@ -1182,7 +1245,7 @@ async function csave(){ if(!cref||cbusy) return; save(); const j=JSON.stringify(
   try{ await cref.set({save:j,savedAt:S.savedAt,dev:DEV}); clast=j; SYNC=S.savedAt; }catch(e){ if(["invalid_argument","revoked","quota_exceeded","not_granted"].includes(e&&e.code)) cref=null; } cbusy=false; }
 let lastSave=0;
 function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catchUp(); build(); return; }
-  advance(t); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); } compPub(); if(t%600===0) compSettle();
+  advance(t); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); achCheck(); } compPub(); if(t%600===0) compSettle();
   if(t-lastSave>5){ save(); lastSave=t; }
   const nw=newsSince(S.lastNews,t); S.lastNews=t;
   nw.forEach(x=>{ const p=S.pos[x.s]; if(x.s==="*"||x.s===S.sel||(p&&(p.l||p.s))){ toast(x.t); sfx(x.big?'unlock':'ping'); if(x.big&&tab==="trade") newsCard(); } }); }
@@ -1254,7 +1317,7 @@ function myCard(){ S.me=S.me||{name:"Trader"+Math.floor(1000+Math.random()*9000)
 function homeName(){ return S.ms.island?"🏝 Private island":S.ms.house?"🏡 Dream house":S.ms.condo?"🏙 Condo":S.ms.apt?"🏢 Apartment":"🏠 Mom's basement"; }
 async function pubProfile(){ if(!DB||!UID) return; const m=myCard();
   const doc={name:m.name.slice(0,20),av:m.av,img:okImg(m.img)?m.img:"",tag:(m.tag||"").slice(0,40),col:m.col||0,code:myCode(),nw:Math.round(netWorth()*100)/100,best:Math.round(S.bestNW),pl:Math.round(S.st.realized*100)/100,home:homeName(),
-    stories:MS.filter(x=>S.ms[x.id]).length,lessons:Object.keys(S.know||{}).length,broke:S.st.broke,prof:S.prof?PB[S.prof].n:"",title:cosGet("title").id,bd:cosGet("border").id,uname:UNAME,tro:S.st.tro||null,at:Date.now()};
+    stories:MS.filter(x=>S.ms[x.id]).length,lessons:Object.keys(S.know||{}).length,broke:S.st.broke,prof:S.prof?PB[S.prof].n:"",title:cosGet("title").id,bd:cosGet("border").id,uname:UNAME,tro:S.st.tro||null,ach:Object.keys(S.ach||{}).length,ab:achTop(),at:Date.now()};
   const j=JSON.stringify(Object.assign({},doc,{at:0})); if(j===FR.last) return;
   try{ await DB.doc("profiles/"+UID).set(doc); FR.last=j; }catch(_){} }
 async function loadBoard(){ if(!DB||FR.busy) return; FR.busy=true; try{ const q=await DB.collection("profiles").orderBy("nw","desc").limit(100).get(); FR.list=q.docs.map(d=>Object.assign({id:d.id},d.data())); }catch(_){ FR.list=[]; } FR.busy=false; if(tab==="friends") buildFriends(); }
@@ -1267,7 +1330,7 @@ function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[];
   <h3>Leaderboard</h3><div class="seg"><button data-fv="friends" class="${FR.view==="friends"?"on":""}">Friends (${fr.length})</button><button data-fv="all" class="${FR.view==="all"?"on":""}">Everyone</button></div>`;
   if(FR.list===null){ h+=`<div class="t">Loading the leaderboard…</div>`; loadBoard(); }
   else { const rows=FR.list.filter(p=>FR.view==="all"||fr.includes(p.code)||p.id===UID);
-    h+=`<div class="card">${rows.length?rows.map((p,i)=>`<div class="li"><div class="row g"><b class="m" style="width:22px">${i+1}</b><span class="pav${["silver","gold","dia"].includes(p.bd)?" bd-"+p.bd:""}" style="width:34px;height:34px;font-size:19px;border-width:2px;border-color:${(COLS[p.col||0]||COLS[0])[1]}${pavBg(p.img)}">${okImg(p.img)?"":p.av||"🧑"}</span><div class="g"><b>${String(p.name||"Trader").replace(/</g,"")}${troStr(p.tro)}${p.id===UID?' <span class="pill ok">you</span>':""}</b>${p.title&&p.title!=="none"&&TBY[p.title]?`<div class="ptitle" style="margin:2px 0 3px">🏅 ${TBY[p.title].n}</div>`:""}<div class="t">${p.tag?`<i>${String(p.tag).replace(/</g,"")}</i><br>`:""}${p.uname?"@"+esc(p.uname)+" · ":""}${p.home||""} · ${p.prof||"no job"} · ${p.lessons||0} lessons${p.broke?` · broke ${p.broke}×`:""}</div></div></div><b class="m">${money(p.nw||0)}</b></div>`).join(""):`<div class="t">${FR.view==="friends"?"No friends added yet. Share your code and ask for theirs.":"Nobody here yet."}</div>`}</div>
+    h+=`<div class="card">${rows.length?rows.map((p,i)=>`<div class="li"><div class="row g"><b class="m" style="width:22px">${i+1}</b><span class="pav${["silver","gold","dia"].includes(p.bd)?" bd-"+p.bd:""}" style="width:34px;height:34px;font-size:19px;border-width:2px;border-color:${(COLS[p.col||0]||COLS[0])[1]}${pavBg(p.img)}">${okImg(p.img)?"":p.av||"🧑"}</span><div class="g"><b>${String(p.name||"Trader").replace(/</g,"")}${troStr(p.tro)}${achStr(p)}${p.id===UID?' <span class="pill ok">you</span>':""}</b>${p.title&&p.title!=="none"&&TBY[p.title]?`<div class="ptitle" style="margin:2px 0 3px">🏅 ${TBY[p.title].n}</div>`:""}<div class="t">${p.tag?`<i>${String(p.tag).replace(/</g,"")}</i><br>`:""}${p.uname?"@"+esc(p.uname)+" · ":""}${p.home||""} · ${p.prof||"no job"} · ${p.lessons||0} lessons${p.broke?` · broke ${p.broke}×`:""}</div></div></div><b class="m">${money(p.nw||0)}</b></div>`).join(""):`<div class="t">${FR.view==="friends"?"No friends added yet. Share your code and ask for theirs.":"Nobody here yet."}</div>`}</div>
     <button class="btn ghost sm" style="width:100%" data-fx="ref">↻ Refresh</button>`; }
   h+=`<div class="t" style="margin:12px 3px">Other players can see your card, net worth and trophies.</div>`;
   main.innerHTML=h+"</div>"; compTick(); }
@@ -1300,7 +1363,7 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
       save(); DB=N.db; UID=u.uid; cref=ref; clast="";
       cloudSt="Signed in as @"+u.username+" · progress saves to your account";
       if(!NETON){ NETON=true; setInterval(pubProfile,300000); setInterval(flowSync,15000); setInterval(tipSync,15000); }
-      pubProfile(); flowSync(); tipSync(); csave(); watchSave(ref); socialStart(N,u.uid); compSettle(); build();
+      pubProfile(); flowSync(); tipSync(); csave(); watchSave(ref); socialStart(N,u.uid); compSettle(); build(); pushSave();
       if(!S.prof&&$("modal").classList.contains("hide")&&!$("intro")) intro();
     }catch(e){ console.warn(e); toast("Couldn't reach the server. Playing offline."); } }); }
 function showAuth(){ if($('auth')||!window.NET) return; const el=document.createElement('div'); el.id='auth'; document.body.appendChild(el); let mode='in', un='';
@@ -1325,6 +1388,40 @@ function showAuth(){ if($('auth')||!window.NET) return; const el=document.create
 function hideAuth(){ const el=$('auth'); if(el) el.remove(); }
 const isIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const standalone=()=>!!(navigator.standalone||matchMedia('(display-mode: standalone)').matches);
+// ---------- push notifications ----------
+// One Firestore doc per device: push/<uid>/subs/<sid>. The push worker (push/worker.js, on GitHub Actions) reads them and sends
+// big market news and friend alerts. Which device is subscribed is kept in this device's own storage, not in the save
+// (the save syncs between devices through the cloud).
+const PUSHK="stockTycoon.push";
+const pushGet=()=>{ try{ return JSON.parse(localStorage.getItem(PUSHK)||"null"); }catch(_){ return null; } };
+const pushSet=v=>{ try{ v?localStorage.setItem(PUSHK,JSON.stringify(v)):localStorage.removeItem(PUSHK); }catch(_){} };
+const pushOK=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+function b64u(s){ const b=atob((s+"=".repeat((4-s.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from(b,c=>c.charCodeAt(0)); }
+async function sidOf(ep){ const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(ep)); return Array.from(new Uint8Array(h)).slice(0,12).map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function notifHTML(){ let h=`<h3>Notifications</h3>`; const P=pushGet();
+  if(!window.NET||!window.NET.vapid) return h+`<div class='card t'>Notifications aren't set up for this copy of the game.</div>`;
+  if(!UID) return h+`<div class='card t'>Sign in to get notifications about big market news and your friends.</div>`;
+  if(!pushOK()) return h+`<div class='card t'>${isIOS()&&!standalone()?"On iPhone, add Stock Tycoon to your Home Screen first (<b>Share → Add to Home Screen</b>), then open it from there to turn on notifications.":"This browser can't show notifications."}</div>`;
+  if(Notification.permission==="denied") return h+`<div class='card t'>Notifications are blocked. Turn them on for Stock Tycoon in your phone's Settings → Notifications.</div>`;
+  if(!P||P.uid!==UID) return h+`<div class='card row'><div class='g t'>Get notified about big market news (crashes, breaking news, bull and bear markets) and your friends, even when the app is closed.</div><button class='btn gold sm' data-sx='pushon'>Turn on</button></div>`;
+  const tg=(k,n,d)=>`<div class='card row' style='margin-bottom:6px'><div class='g'><div class='b'>${n}</div><div class='t'>${d}</div></div><button class='btn ${P[k]?"buy":"ghost"} sm' data-sx='p_${k}'>${P[k]?"ON":"OFF"}</button></div>`;
+  return h+tg("news","Big market news","Crash warnings, breaking news, and bull or bear markets starting")+tg("friends","Friends","Friend requests, messages, tips, and weekly competition results")+`<button class='btn ghost sm' style='width:100%' data-sx='pushoff'>Turn off on this device</button>`; }
+async function pushOn(){ try{ if(await Notification.requestPermission()!=="granted"){ toast("Notifications weren't allowed"); return openSettings(); }
+    const reg=await navigator.serviceWorker.ready; let sub=await reg.pushManager.getSubscription();
+    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(window.NET.vapid)});
+    const j=sub.toJSON(); pushSet({uid:UID,sid:await sidOf(j.endpoint),news:1,friends:1}); await pushSave(j); S.st.notif=1; save(); toast("🔔 Notifications are on","good"); sfx('unlock'); }
+  catch(e){ console.warn(e); toast("Couldn't turn on notifications"); } openSettings(); }
+async function pushSave(j){ const P=pushGet(); if(!P||!DB||P.uid!==UID) return;
+  try{ if(!j){ const reg=await navigator.serviceWorker.ready, sub=await reg.pushManager.getSubscription(); if(!sub){ pushSet(null); return; } j=sub.toJSON(); const sid=await sidOf(j.endpoint); if(sid!==P.sid){ DB.doc(`push/${UID}/subs/${P.sid}`).del().catch(()=>{}); P.sid=sid; pushSet(P); } }
+    await DB.doc(`push/${UID}/subs/${P.sid}`).set({ep:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,news:P.news?1:0,friends:P.friends?1:0,at:Date.now()}); }catch(e){ console.warn("push save",e); } }
+async function pushOff(){ const P=pushGet(); pushSet(null);
+  try{ if(P&&DB&&P.uid===UID) await DB.doc(`push/${UID}/subs/${P.sid}`).del(); const reg=await navigator.serviceWorker.ready, sub=await reg.pushManager.getSubscription(); if(sub) await sub.unsubscribe(); }catch(_){}
+  toast("Notifications are off on this device"); openSettings(); }
+async function pushToggle(k){ const P=pushGet(); if(!P) return; P[k]=P[k]?0:1; pushSet(P); openSettings(); await pushSave(); }
+// tapping a notification opens its tab
+const TABS=["trade","store","auto","friends","me"];
+if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message",e=>{ const d=e.data||{}; if(d.type==="open-tab"&&TABS.includes(d.tab)&&!$("tut")) setTab(d.tab); });
+
 function acctHTML(){ let h=`<h3>Account</h3>`;
   if(!window.NET) h+=`<div class='card t'>Offline mode. Online features aren't set up for this copy of the game.</div>`;
   else if(!UID) h+=`<div class='card row'><div class='g t'>Not signed in. Your game saves on this device only.</div><button class='btn gold sm' data-sx='login'>Sign in</button></div>`;
@@ -1357,7 +1454,7 @@ function socialHTML(){ const uid=UID, pn=f=>Object.assign({},FS.prof[f.other]||{
   let h=`<h3>Add a friend</h3><div class='card row'><input id='funame' class='inp g' maxlength='17' placeholder='Their username' autocapitalize='none' autocorrect='off' spellcheck='false'><button class='btn buy sm' data-freq='1'>Send request</button></div><div class='t' style='margin:-2px 3px 10px'>Your username is <b style='color:var(--text)'>@${UNAME}</b>. Share it so friends can add you.</div>`;
   if(inc.length) h+=`<h3>Friend requests · ${inc.length}</h3><div class='card'>${inc.map(f=>{ const p=pn(f); return `<div class='li'><div class='row g'>${avh(p,34)}<div class='g'><b>${esc(p.name)}</b><div class='t'>@${esc(p.uname||'')}</div></div></div><button class='btn buy sm' data-facc='${f.id}'>Accept</button><button class='btn ghost sm' data-frem='${f.id}'>Decline</button></div>`; }).join('')}</div>`;
   h+=`<h3>Friends · ${acc.length}</h3><div class='card'>${acc.length?acc.map(f=>{ const p=pn(f), un=unread(f);
-     return `<div class='li' data-fchat='${f.id}' style='cursor:pointer'><div class='row g' style='min-width:0'>${avh(p,38)}<div class='g' style='min-width:0'><b>${esc(p.name)}</b>${troStr(p.tro)}${un?` <span class='dot' style='background:var(--gold)'></span>`:''}<div class='t' style='white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>${f.last?(f.last.from===uid?'You: ':'')+String(f.last.text||'').replace(/</g,''):'@'+esc(p.uname||'')+' · '+money(p.nw||0)}</div></div></div><span style='font-size:18px'>💬</span></div>`; }).join(''):`<div class='t'>No friends yet. Send a request using their username.</div>`}</div>`;
+     return `<div class='li' data-fchat='${f.id}' style='cursor:pointer'><div class='row g' style='min-width:0'>${avh(p,38)}<div class='g' style='min-width:0'><b>${esc(p.name)}</b>${troStr(p.tro)}${achStr(p)}${un?` <span class='dot' style='background:var(--gold)'></span>`:''}<div class='t' style='white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>${f.last?(f.last.from===uid?'You: ':'')+String(f.last.text||'').replace(/</g,''):'@'+esc(p.uname||'')+' · '+money(p.nw||0)}</div></div></div><span style='font-size:18px'>💬</span></div>`; }).join(''):`<div class='t'>No friends yet. Send a request using their username.</div>`}</div>`;
   if(out.length) h+=`<div class='t' style='margin:-2px 3px 10px'>Waiting on: ${out.map(f=>`${esc(pn(f).name)} (<button class='t' style='text-decoration:underline;padding:0' data-frem='${f.id}'>cancel</button>)`).join(' · ')}</div>`;
   return h; }
 function openChat(pid){ const N=window.NET, f=FS.list.find(x=>x.id===pid); if(!N||!f) return; closeChat(true); FS.chat=pid; const p=Object.assign({},FS.prof[f.other]||{});
@@ -1811,6 +1908,9 @@ function sx(x){
   if(x==="login"){ closeModal(); S.authSkip=0; return showAuth(); }
   if(x==="logout"){ closeModal(); S.authSkip=0; csave().finally(()=>window.NET&&window.NET.signOut()); return; }
   if(x==="pw"){ const v=($("newpw")||{}).value||""; if(v.length<6) return toast("Password needs at least 6 characters"); window.NET.changePassword(v).then(()=>{ toast("Password changed","good"); closeModal(); },e=>toast(e.message)); return; }
+  if(x==="pushon") return pushOn();
+  if(x==="pushoff") return pushOff();
+  if(x==="p_news"||x==="p_friends") return pushToggle(x.slice(2));
   if(x==="snd"){ S.set=S.set||{}; S.set.snd=snd()?0:1; save(); sfx('ping'); return openSettings(); }
   if(x==="exp"){ const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); $("sbox").value=code; try{navigator.clipboard.writeText(code).then(()=>toast("Copied"));}catch(_){} return; }
   if(x==="imp"){ try{ S=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); save(); closeModal(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return; }
@@ -1825,6 +1925,7 @@ if(!S.mt&&S.prof){ S.mt={}; TEXTS.forEach(([id,c])=>{ if(c()) S.mt[id]=1; }); }
 save(); build(); if($("modal").classList.contains("hide")) intro();
 setInterval(loop,250); setInterval(()=>{ if(Date.now()-lastTap<120000) csave(); },30000); setTimeout(cinit,0); setInterval(installHint,30000);
 if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+{ const h=location.hash.slice(1); if(TABS.includes(h)&&h!==tab){ history.replaceState(null,"",location.pathname+location.search); setTimeout(()=>{ if(!$("tut")) setTab(h); },600); } }
 // auto-update: when the app comes back to the screen (or every 5 min), check if index.html changed on the server; if so, save and reload
 let APPTAG=null;
 async function appTag(){ try{ const r=await fetch("index.html",{method:"HEAD",cache:"no-store"}); return r.headers.get("etag")||r.headers.get("last-modified"); }catch(_){ return null; } }

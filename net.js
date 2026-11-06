@@ -1,6 +1,6 @@
 // Stock Tycoon online layer: Firebase sign-in, cloud data, friends and chat.
 // The game script talks to this through window.NET (set once Firebase is ready).
-import { firebaseConfig } from "./config.js";
+import { firebaseConfig, vapidPublicKey } from "./config.js";
 
 const V = "10.12.2";
 const ready = (net) => { window.NET = net; window.dispatchEvent(new Event("net-ready")); };
@@ -32,6 +32,7 @@ if (!firebaseConfig || !firebaseConfig.apiKey) {
       doc: (p) => ({
         get: async () => wrap(await F.getDoc(F.doc(fs, p))),
         set: (o) => F.setDoc(F.doc(fs, p), o),
+        del: () => F.deleteDoc(F.doc(fs, p)),
         watch: (cb) => F.onSnapshot(F.doc(fs, p), (x) => cb(x.exists() ? x.data() : null), () => {}),
       }),
       collection: (p) => {
@@ -63,6 +64,7 @@ if (!firebaseConfig || !firebaseConfig.apiKey) {
       pairId,
       okName,
       norm,
+      vapid: vapidPublicKey || "",
       onUser(cb) {
         return A.onAuthStateChanged(auth, (u) => cb(u ? { uid: u.uid, username: nameOf(u) } : null));
       },
@@ -109,7 +111,7 @@ if (!firebaseConfig || !firebaseConfig.apiKey) {
         const m = [me, them].sort();
         return F.setDoc(F.doc(fs, "friendships/" + m.join("_")), { members: m, from: me, status: "pending", at: Date.now() });
       },
-      accept: (pid) => F.updateDoc(F.doc(fs, "friendships/" + pid), { status: "accepted" }),
+      accept: (pid) => F.updateDoc(F.doc(fs, "friendships/" + pid), { status: "accepted", acc: Date.now() }), // acc: lets the push worker tell a fresh accept from an old one
       remove: (pid) => F.deleteDoc(F.doc(fs, "friendships/" + pid)),
       // ---- chat: chats/<pairId>/msgs/<auto> {from, text, at}
       watchChat(pid, cb) {

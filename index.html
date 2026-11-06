@@ -1457,7 +1457,7 @@ const TUT=[
  ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed. Learn better jobs in the job list as you build reputation.","trade"],
  ["#momw","Practice with Mom","No money yet? Practice on Mom's dime. Close a practice trade in profit and she pays you for it, until you've got $15.","trade"],
  ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which adds a 2% war tax on your net worth. Can't pay? It turns into debt, and you have 24 hours.","trade"],
- ["#bell","News","The bell gets a red dot when there's big news: breaking stories, market crashes, collapses and huge spikes. Many big moves have a warning headline first, so check it often.","trade"],
+ ["#bell","News","The bell gets a red dot when there's big news: breaking stories, market crashes, collapses, huge spikes and rumors. Many big moves have a warning headline first, so check it often.","trade"],
  ['[data-tab="store"]',"The Store","Better gear for your job, and lessons that teach you the patterns the market repeats. That's where the real money is.","trade"],
  ['[data-tab="auto"]',"Automations","Later on, you can buy bots and tools that keep working while you're away.","trade"],
  ['[data-tab="friends"]',"Friends","Add friends by username, chat, and send them tips on a stock. Their trades show up on your chart. Join the <b>weekly competition</b> with $1,000 of competition money. Your real cash is never touched.","trade"],
@@ -1564,10 +1564,10 @@ addEventListener("resize",()=>{ try{ tbarUpd(); }catch(_){} });
 
 // ---------- news: bell next to settings, red dot when there's something new ----------
 // Long-term stories (breaking news, bull/bear markets), market crashes, and the big single-stock moves:
-// collapses, short squeezes and pump spikes. Stock news only for stocks you've unlocked.
+// collapses, short squeezes, pump spikes and rumors. Stock news only for stocks you've unlocked.
 function newsFeed(t0,t1){ const out=[];
   newsSince(t0,t1).forEach(x=>{ if(x.big||x.s==="*") out.push(Object.assign({k:x.ev?"big":"mkt"},x));
-    else if(BYSYM[x.s]&&unlocked(BYSYM[x.s])&&/auditor|Short interest|trending on social/.test(x.t)) out.push(Object.assign({k:"warn"},x)); });
+    else if(BYSYM[x.s]&&unlocked(BYSYM[x.s])&&/auditor|Short interest|trending on social|Rumor:/.test(x.t)) out.push(Object.assign({k:"warn"},x)); });
   for(let h=Math.floor(t0/HN);h<=Math.floor(t1/HN);h++) SER.forEach((d,i)=>{ const st=BYSYM[d.s]; if(d.gone||!st||st.i!==i||!unlocked(st)) return;
     sched(i,h).eps.forEach(e=>{ let at=null, t=null;
       if(e.ty==="collapse"){ at=h*HN+e.st+e.ph[0][0]; t=`💥 ${d.n} collapses about ${Math.round((1-Math.exp(e.ph[1][1]*60))*100)}%`; }

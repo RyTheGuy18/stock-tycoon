@@ -1573,6 +1573,7 @@ function lbRow(p,i,me){ const st=+p.stories||0, col=(COLS[p.col||0]||COLS[0])[1]
 function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[], cc=COLS[m.col||0]||COLS[0];
   // top of the tab: your own leaderboard row, drawn exactly the way friends see it
   const meP={name:m.name,av:m.av,img:okImg(m.img)?m.img:"",col:m.col||0,nw:netWorth(),stories:MS.filter(x=>S.ms[x.id]).length,home:homeName(),uname:UNAME,tro:S.st.tro||null};
+  if(DB&&FR.list===null&&!FR.busy) loadBoard(); // your rank medal needs the leaderboard, so fetch it as soon as the tab opens
   const myRank=FR.list?FR.list.findIndex(p=>p.id===UID):-1;
   let h=`<div class="pad"><div class="row" style="margin:0 3px 6px"><div class="g t">How friends see you</div><button class="btn ghost sm" data-fx="edit" style="padding:5px 12px">Edit</button></div><div class="card" style="padding:4px 10px;margin-bottom:12px">${lbRow(meP,myRank>=0?myRank:null,false)}</div>`;
   if(!DB){ h+=window.NET?`<div class="card"><div class="t">Sign in to add friends, chat, join weekly competitions and see the leaderboard.</div><button class="btn gold" style="width:100%;margin-top:8px" data-sx2="login">Sign in or create an account</button></div>`:`<div class="card t">Online features aren't set up for this copy of the game. Single-player works the same.</div>`; main.dataset.h=main.innerHTML=h+"</div>"; return; }

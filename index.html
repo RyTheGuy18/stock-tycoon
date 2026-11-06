@@ -101,6 +101,7 @@ h3{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.07
 .li:last-child{border:0}
 .seg{display:flex;background:var(--c2);border-radius:9px;padding:3px;margin-bottom:8px}
 .seg button{flex:1;padding:7px;border-radius:7px;font-size:13px;color:var(--mut)} .seg button.on{background:var(--line);color:var(--text)}
+.optp{display:flex!important;align-items:center;gap:11px} .optp:disabled{opacity:.55}
 .opt{display:block;width:100%;text-align:left;background:var(--c2);border:1px solid var(--line);border-radius:11px;padding:9px 11px;margin-bottom:6px}
 .opt:disabled{opacity:.4}
 .inp{width:100%;background:var(--c2);border:1px solid var(--line);border-radius:9px;padding:9px;font-family:"JetBrains Mono"}
@@ -1398,7 +1399,7 @@ function buildStore(){
   setMain(h+"</div>"); }
 // Settings → Change your profession
 function profSwitch(){ modal("Change your profession",`<div class="t" style="margin-bottom:6px">Ones you've done before keep your gear, reputation and job skills. New ones start with borrowed gear.${S.job?" <b>Finish your current job first.</b>":""}</div>`+
-  PROFS.map(x=>{ const k=S.profs[x.id], cur=S.prof===x.id; return `<button class="opt" data-pfs="${x.id}" ${cur||S.job?"disabled":""}><b>${x.i} ${x.n}</b> ${cur?'<span class="pill ok">Current</span>':k?'<span class="pill">Resume</span>':""}<div class="t">${k?x.gear[k.own]+" · ★"+k.rep:"Borrow: "+x.gear[0]}</div></button>`; }).join(""),[["Close","ghost"]]);
+  PROFS.map(x=>{ const k=S.profs[x.id], cur=S.prof===x.id; return `<button class="opt optp" data-pfs="${x.id}" ${cur||S.job?"disabled":""}>${ICOB(x.id,PCOL[x.id],22)}<div class="g"><b>${x.n}</b> ${cur?'<span class="pill ok">Current</span>':k?'<span class="pill">Resume</span>':""}<div class="t">${k?x.gear[k.own]+" · ★"+k.rep:"Borrow: "+x.gear[0]}</div></div></button>`; }).join(""),[["Close","ghost"]]);
   $("modal").querySelectorAll("[data-pfs]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); if(b.disabled) return; const id=b.dataset.pfs;
     modal("Switch to "+PB[id].n+"?",`<p>${S.profs[id]?"You'll pick up with your old gear and reputation.":"You've never done this. You start with borrowed gear."}</p>`,[["Cancel","ghost"],["Switch","gold",()=>chooseProf(id)]]); }); }
 
@@ -1468,7 +1469,7 @@ function openSettings(v){ if(v) SETV=v; const p=prof();
   if(SETV==="gen") h+=acctHTML()+notifHTML()
     +sgrp("Sound",[srow("🔊","Sound effects","On iPhone, also check the volume and silent switch",tgl(snd(),"snd")),volRow("sv",svol()),
       srow("🎵","Music",`<span id="muslbl"></span>`,(mus()&&MUS.on?`<button class='btn ghost sm' data-sx='mskip'>Skip ⏭</button>`:"")+tgl(mus(),"mus")),volRow("mv",mvol())])
-    +sgrp("Work",[`<button class="srow" id="chprof"><span class="ic">${p?p.i:"💼"}</span><div class="g"><div class="tt">Profession</div><div class="st">${p?p.n:"None yet"}</div></div><span class="t">Change</span><span class="chev">›</span></button>`])
+    +sgrp("Work",[`<button class="srow" id="chprof">${p?`<span class="ic" style="background:${PCOL[p.id]}22">${ICO(p.id,PCOL[p.id],17)}</span>`:`<span class="ic">💼</span>`}<div class="g"><div class="tt">Profession</div><div class="st">${p?p.n:"None yet"}</div></div><span class="t">Change</span><span class="chev">›</span></button>`])
     +sgrp("App",[UPD.ready?`<div class="srow" id="updrow"><span class="ic">⬆️</span><div class="g"><div class="tt">Update ready${UPD.ver?`: version ${UPD.ver}`:""}</div><div class="st">You're on version ${APPV}. Your game is saved first.</div></div><button class="btn gold sm" data-sx="updgo">Update now</button></div>`:srow("ℹ️",`Version ${APPV}`,"Updates only install when you choose to",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
   else if(SETV==="save") h+=SAVEHTML();
   else h+=stats_html();
@@ -1496,7 +1497,7 @@ function closeModal(){ const m=$("modal"); m.classList.add("hide"); delete m.dat
 let tt; const ERRT=/^(Enter |Not enough|Can't|Couldn't|Bad code|You need|You can't|Need |That's your own|Codes are|No cash|Message didn't|Password needs|Wrong )/;
 function toast(t,k){ if(SIM) return; if(ERRT.test(t)) sfx('err'); const e=$("toast"); e.textContent=t; e.className="show "+(k||""); clearTimeout(tt); tt=setTimeout(()=>e.className="",/^(📱 Mom|👩)/.test(t)?4600:2600); }
 function profPicker(first){ modal(first?"Get a job":"Pick a profession",(first?`<div class="mom">"You're 19 and living in my basement. Pick something and get out there. You can borrow my old stuff, but don't break it."</div>`:"")+
-  PROFS.map(x=>`<button class="opt" data-pp="${x.id}"><b>${x.i} ${x.n}</b><div class="t">Borrow: ${x.gear[0]} · "${x.jobs[0].n}" pays ${money(x.jobs[0].pay)}</div></button>`).join(""),first?[]:[["Cancel","ghost"]]);
+  PROFS.map(x=>`<button class="opt optp" data-pp="${x.id}">${ICOB(x.id,PCOL[x.id],22)}<div class="g"><b>${x.n}</b><div class="t">Borrow: ${x.gear[0]} · "${x.jobs[0].n}" pays ${money(x.jobs[0].pay)}</div></div></button>`).join(""),first?[]:[["Cancel","ghost"]]);
   if(first) $("modal").dataset.lock=1; }
 function lunchMoney(){ if(S.lunch) return; S.lunch=1; S.cash+=2; resetPeak&&resetPeak(); life("📱 Mom: proud of you, +$2 lunch money");
   setTimeout(()=>{ toast("📱 Mom: I'm so proud of you for getting out there! Here's $2 for lunch. 💛","good"); sfx('text'); setTimeout(()=>sfx('coin'),350); hdr(); },1500); }
@@ -2538,7 +2539,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="91";
+const APPV="92";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

@@ -322,8 +322,8 @@ const STOCKS=[
  {s:"AIQ",n:"Synapse AI",p:140,vol:.003,beta:1.6,spr:.003,un:15000}];
 STOCKS.forEach((d,i)=>{ d.sid=i<16?i:i+1; });
 // delisted in v6.2: they stay in the list (so stock numbers and saves don't break) but can't be seen or traded
-// RAMX/ROBO/SKYD removed in v7.6 (they overlapped CHIP and AIQ); BREW/SHOP/SOLR in v7.6b (overlapped BRGR, MEDX, EVCO/ORBT)
-const GONE=["HODL","MEGA","SODA","WAVE","RAIL","AURM","RAMX","ROBO","SKYD","BREW","SHOP","SOLR"]; STOCKS.forEach(d=>{ if(GONE.includes(d.s)) d.gone=1; }); // random seeds per stock; 16 belongs to the index fund
+// RAMX/ROBO/SKYD removed in v7.6 (they overlapped CHIP and AIQ); SHOP/SOLR/BANK in v7.6b (overlapped BRGR/MEDX, EVCO/ORBT, BREW/OILX)
+const GONE=["HODL","MEGA","SODA","WAVE","RAIL","AURM","RAMX","ROBO","SKYD","SHOP","SOLR","BANK"]; STOCKS.forEach(d=>{ if(GONE.includes(d.s)) d.gone=1; }); // random seeds per stock; 16 belongs to the index fund
 const SECN={PNNY:"Pawn shops",BRGR:"Restaurants",SODA:"Drinks",BREW:"Coffee",WAVE:"Telecom",SOLR:"Solar energy",EVCO:"Electric cars",BANK:"Banking",RAIL:"Freight rail",FLYR:"Airlines",MEDX:"Pharma",HODL:"Crypto",OILX:"Oil",AURM:"Gold mining",ORBT:"Space",CHIP:"Chips",RAMX:"Memory chips",ROBO:"Robotics",AIQ:"AI",SKYD:"Cloud",MEGA:"Conglomerate",SHOP:"Retail",GAME:"Video games"};
 STOCKS.forEach(d=>{d.tr=1.2e-7;d.ar=.97;d.sdh=d.vol*36;});
 // ---- personalities (from H6 = 4pm Central Nov 6 2026; prices before that are unchanged) ----
@@ -1408,7 +1408,7 @@ function delistCheck(){ jobMig(); S.pre=null; if(S.know&&S.know.vol&&!S.volRef){
     if(p&&(p.l||p.s)){ let pl=0; if(p.l){ pl=p.l*(pr-p.lc); S.cash+=p.l*pr; } if(p.s){ pl=Math.max(p.s*(p.se-pr),-p.s*p.se); S.cash+=p.s*p.se+pl; } S.pos[d.s]={l:0,lc:0,s:0,se:0}; life(`📉 ${d.s} was delisted. Your trade closed at ${px(pr)} (${sg(pl)})`); }
     if(S.ord) delete S.ord[d.s]; const c=S.comp; if(c&&c.pos&&c.pos[d.s]){ const q=c.pos[d.s]; if(q.l) c.cash+=q.l*pr; if(q.s) c.cash+=q.s*q.se+Math.max(q.s*(q.se-pr),-q.s*q.se); delete c.pos[d.s]; } });
   // refund lessons bought for stocks delisted in v7.6, once per batch
-  for(const [flag,syms] of [["delRef76",["RAMX","ROBO","SKYD"]],["delRef76b",["BREW","SHOP","SOLR"]]]){ if(S[flag]) continue; S[flag]=1; let back=0;
+  for(const [flag,syms] of [["delRef76",["RAMX","ROBO","SKYD"]],["delRef76b",["SHOP","SOLR"]],["delRef76c",["BANK"]]]){ if(S[flag]) continue; S[flag]=1; let back=0;
     SK.forEach(k=>{ if(syms.includes(k.sym)&&S.know[k.id]){ back+=k.c; delete S.know[k.id]; } });
     if(back>0){ S.cash+=back; life(`📘 Refund for lessons on delisted stocks: +${money(back)}`); setTimeout(()=>toast(`📉 ${syms.join(", ")} were delisted. Your lessons on them were refunded: +${money(back)}`,"good"),2500); } }
   if(!BYSYM[S.sel]||BYSYM[S.sel].gone) S.sel="PNNY"; }
@@ -2437,7 +2437,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="84";
+const APPV="85";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

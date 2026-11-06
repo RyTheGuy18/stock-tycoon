@@ -1998,8 +1998,14 @@ addEventListener("resize",()=>{ try{ tbarUpd(); }catch(_){} });
 // Long-term stories (breaking news, bull/bear markets), market crashes, and the big single-stock moves:
 // collapses, short squeezes, pump spikes and rumors. Stock news only for stocks you've unlocked.
 function newsFeed(t0,t1){ const out=[];
-  newsSince(t0,t1).forEach(x=>{ if(x.big||x.s==="*") out.push(Object.assign({k:x.ev?"big":"mkt"},x));
-    else if(BYSYM[x.s]&&unlocked(BYSYM[x.s])&&/auditor|Short interest|trending on social|Rumor:/.test(x.t)) out.push(Object.assign({k:"warn"},x)); });
+  // Market-wide events always. Stock news only for stocks you've unlocked: rumors/warnings always, everyday headlines
+  // only until you've unlocked every stock (after that: big moves, auditor / short interest / viral warnings, market events).
+  const allUnl=STOCKS.filter(d=>!d.gone).every(unlocked);
+  newsSince(t0,t1).forEach(x=>{ if(x.big||x.s==="*") return out.push(Object.assign({k:x.ev?"big":"mkt"},x));
+    if(!BYSYM[x.s]||!unlocked(BYSYM[x.s])||x.minor) return;
+    // with everything unlocked, the everyday "Rumor:" headlines go too (they come constantly); the dramatic ones stay
+    if(allUnl?/auditor|Short interest|trending on social/.test(x.t):/auditor|Short interest|trending on social|Rumor:/.test(x.t)) out.push(Object.assign({k:"warn"},x));
+    else if(!allUnl) out.push(Object.assign({k:"stock"},x)); });
   for(let h=Math.floor(t0/HN);h<=Math.floor(t1/HN);h++) SER.forEach((d,i)=>{ const st=BYSYM[d.s]; if(d.gone||!st||st.i!==i||!unlocked(st)) return;
     sched(i,h).eps.forEach(e=>{ let at=null, t=null;
       if(e.ty==="collapse"){ at=h*HN+e.st+e.ph[0][0]; t=`💥 ${d.n} collapses about ${Math.round((1-Math.exp(e.ph[1][1]*60))*100)}%`; }
@@ -2405,7 +2411,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="80";
+const APPV="81";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

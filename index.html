@@ -1271,7 +1271,7 @@ function hdr(){ applyCos(); const c=$("cash"); c.textContent=money(S.cash); c.cl
   main.querySelectorAll("[data-cost]").forEach(x=>x.disabled=S.cash<+x.dataset.cost); }
 
 // ---------- modals ----------
-function modal(t,body,btns,cb){ const m=$("modal"); if(m.classList.contains("hide")) sfx("whoosh"); m.innerHTML=`<div class="box"><h2>${t}</h2>${body}${btns&&btns.length?`<div class="row" style="margin-top:12px">${btns.map((b,i)=>`<button class="btn g ${b[1]||""}" data-i="${i}">${b[0]}</button>`).join("")}</div>`:""}</div>`;
+function modal(t,body,btns,cb){ const m=$("modal"); m.innerHTML=`<div class="box"><h2>${t}</h2>${body}${btns&&btns.length?`<div class="row" style="margin-top:12px">${btns.map((b,i)=>`<button class="btn g ${b[1]||""}" data-i="${i}">${b[0]}</button>`).join("")}</div>`:""}</div>`;
   m.classList.remove("hide"); m.onclick=e=>{ const sxb=e.target.closest("[data-sx]"); if(sxb) return sx(sxb.dataset.sx); const jl=e.target.closest("[data-jl]"); if(jl&&!jl.disabled) return learnJob(+jl.dataset.jl); const o=e.target.closest("[data-pp],[data-jb],[data-op]"); if(o&&!o.disabled){ o.dataset.op?setOrder(o.dataset.op):o.dataset.pp?chooseProf(o.dataset.pp):startJob(+o.dataset.jb); return; }
     const b=e.target.closest("[data-i]"); if(!b&&(e.target!==m||m.dataset.lock)) return; closeModal(); if(b&&btns[+b.dataset.i][2]) btns[+b.dataset.i][2](); }; }
 function closeModal(){ const m=$("modal"); m.classList.add("hide"); delete m.dataset.lock; }
@@ -2091,7 +2091,7 @@ function chaChing(){ try{ if(!snd()||!SNDU) return; actx(); const t=AC.currentTi
 // gain evens out how loud each track was mastered (measured average loudness)
 const SONGS=[{f:"lofi-tech-zephira",n:"Lofi Tech",a:"ZephiraMusic",g:1},{f:"feel-it",n:"Feel It",a:"Loksii",g:.62},{f:"hotel-elevator",n:"Hotel Elevator",a:"ikoliks_aj",g:1},
   {f:"lofi-tech-mountain",n:"Lofi Tech",a:"The Mountain",g:.66},{f:"elevator-ikoliks",n:"Elevator Music",a:"ikoliks_aj",g:1},{f:"elevator-andriih",n:"Elevator Music",a:"AndriiH",g:1.28}];
-const MUSVOL=.26; // music sits under the effects
+const MUSVOL=.17; // music sits under the effects
 const mus=()=>!S.set||S.set.mus!==0;
 const MUS={el:null,src:null,q:[],cur:-1,on:false};
 function musNext(){ if(!MUS.q.length){ const a=SONGS.map((_,i)=>i).filter(i=>i!==MUS.cur); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } MUS.q=a; } return MUS.q.shift(); }

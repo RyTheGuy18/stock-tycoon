@@ -1344,14 +1344,13 @@ document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.datase
 document.addEventListener("change",e=>{ const k=e.target.dataset&&e.target.dataset.vol; if(!k) return; save(); act(); if(k==="sv") sfx('ping'); });
 let SETV="gen";
 function openSettings(v){ if(v) SETV=v; const p=prof();
-  let h=`<div class="seg"><button data-setv="gen" class="${SETV==="gen"?"on":""}">⚙️ General</button><button data-setv="save" class="${SETV==="save"?"on":""}">💾 Save</button><button data-setv="stats" class="${SETV==="stats"?"on":""}">📊 Stats</button></div>`;
+  let h=`<div class="seg"><button data-setv="gen" class="${SETV==="gen"?"on":""}">⚙️ General</button><button data-setv="save" class="${SETV==="save"?"on":""}">💾 Save</button></div>`;
   if(SETV==="gen") h+=acctHTML()+notifHTML()
     +sgrp("Sound",[srow("🔊","Sound effects","On iPhone, also check the volume and silent switch",tgl(snd(),"snd")),volRow("sv",svol()),
       srow("🎵","Music",`<span id="muslbl"></span>`,(mus()&&MUS.on?`<button class='btn ghost sm' data-sx='mskip'>Skip ⏭</button>`:"")+tgl(mus(),"mus")),volRow("mv",mvol())])
     +sgrp("Work",[`<button class="srow" id="chprof"><span class="ic">${p?p.i:"💼"}</span><div class="g"><div class="tt">Profession</div><div class="st">${p?p.n:"None yet"}</div></div><span class="t">Change</span><span class="chev">›</span></button>`])
     +sgrp("App",[srow("ℹ️",`Version ${APPV}`,"Updates install automatically when you open the app",`<button class="btn ghost sm" data-sx="upd">Check</button>`)]);
-  else if(SETV==="save") h+=SAVEHTML();
-  else h+=stats_html();
+  else h+=SAVEHTML();
   modal("✕|⚙︎ Settings",h,[]); musLbl();
   $("modal").querySelectorAll("[data-setv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); openSettings(b.dataset.setv); });
   const cp=$("chprof"); if(cp) cp.onclick=e=>{ e.stopPropagation(); profSwitch(); }; }
@@ -2386,7 +2385,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:") navigator.service
 // APPV is bumped with every release (same number as the service worker cache). The app downloads the live index.html,
 // reads its APPV, and if it's different saves your game and reloads into the new version. Runs on its own when the app
 // comes back to the screen and every 5 minutes, and on demand from Settings → Check for updates.
-const APPV="71";
+const APPV="72";
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }
 async function checkUpdate(manual){ if(location.protocol!=="https:"&&!manual) return; const v=await liveVer();
   if(!v){ if(manual) toast("Couldn't check for updates. Are you online?"); return; }

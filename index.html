@@ -1176,7 +1176,7 @@ const PLV=[{cap:25,mx:75},{cap:40,mx:80},{cap:80,mx:85},{cap:150,mx:90},{cap:300
 const PEXTRA={pscalp:{2:"+ shorts buyout rumors",3:"+ shorts insider selling",4:"+ buys earnings beats"},
   pflush:{2:"+ shorts the dip itself (:00 to :02)"}, ppump:{}, pswing:{3:"+ holds breakouts 4 min instead of 3"}};
 const pLv=id=>A(id).lv||1, pCap=id=>PLV[pLv(id)-1].cap, pMx=id=>PLV[pLv(id)-1].mx, pUpC=id=>{ const l=pLv(id); return l>=5?0:AUTOS.find(x=>x.id===id).c*PBUPX[l-1]; };
-function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; const pr=price(0,NOW), h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
+function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; if(!S.botV2){ S.botV2=1; for(const id of PNB){ const a=S.auto[id]; if(a&&a.v===10) a.v=75; } } /* v8.0: old 10% default -> new 75% default, only if never moved */ const pr=price(0,NOW), h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
   // key = one trade slot (a bot can hold one trade per play); id = the bot
   const open=(key,id,dir)=>{ if(!SIM||!aOn(id)||S.vb[key]||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } const q=Math.floor(Math.min(Math.max(0,S.cash)*Math.min(aV(id),pMx(id))/100,pCap(id))/pr); if(q<1) return; S.cash-=q*pr; S.vb[key]={dir,q,en:pr,id}; resetPeak(); };
   const close=key=>{ const v=S.vb[key]; if(!v) return; delete S.vb[key]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; botLog(v.id||key,pl); resetPeak(); };

@@ -160,8 +160,8 @@ canvas.sp{width:100%;height:46px;display:block;margin:6px 0}
 #gear.upd{position:relative} #gear.upd:after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--dn);box-shadow:0 0 0 2px var(--panel)}
 #gear{background:none;color:var(--mut);line-height:1;padding:4px;display:flex;align-items:center} #gear svg{width:20px;height:20px;display:block}
 header{position:relative}
-#bell{position:relative;color:var(--mut);padding:4px;display:flex;align-items:center}
-#bell svg{width:20px;height:20px;display:block} #bell i{display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--dn);box-shadow:0 0 0 2px var(--panel)} #bell.new i{display:block}
+#bell,#newsb{position:relative;color:var(--mut);padding:4px;display:flex;align-items:center}
+#bell svg,#newsb svg{width:20px;height:20px;display:block} #bell i,#newsb i{display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--dn);box-shadow:0 0 0 2px var(--panel)} #bell.new i,#newsb.new i{display:block}
 #tbar{display:none;background:var(--panel);border-top:1px solid var(--line);padding:8px 10px 6px}
 #tbar.on{display:block} #tbar .tr{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12.5px} #tbar .tr b{font-family:"JetBrains Mono",monospace}
 #tbar #tbpl{font-size:22px;line-height:1;margin:-5px 0 -3px;letter-spacing:-.02em} /* big P/L without making the bar taller */
@@ -274,7 +274,7 @@ html.phone #job{padding:10px 12px}
 /* ---------- desktop / laptop layout: wide screen + mouse. Phones and tablets keep the mobile layout ---------- */
 @media (min-width:1000px) and (pointer:fine){
   #app{max-width:none;display:grid;grid-template-columns:92px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"nav header" "nav main"}
-  header{grid-area:header;padding:14px 22px 10px} main{grid-area:main} #tbar{display:none!important} #hbtns{right:16px;top:12px} #bell svg{width:22px;height:22px} 
+  header{grid-area:header;padding:14px 22px 10px} main{grid-area:main} #tbar{display:none!important} #hbtns{right:16px;top:12px} #bell svg,#newsb svg{width:22px;height:22px} 
   .hr{grid-template-columns:repeat(3,minmax(0,220px))} #cash{font-size:26px} .hv{font-size:18px} #gear svg{width:22px;height:22px}
   nav{grid-area:nav;flex-direction:column;justify-content:flex-start;gap:4px;border-top:0;border-right:1px solid var(--line);padding:14px 0 0}
   nav button{flex:none;padding:12px 0;font-size:11.5px} nav button span svg{width:26px;height:26px}
@@ -322,7 +322,7 @@ html.phone #job{padding:10px 12px}
     <div><div class="l">Index fund</div><div id="fund" class="m hv">$0.00</div></div>
     <div><div class="l">Net worth</div><div id="nw" class="m hv">$0.00</div></div>
   </div>
-  <div id="home"></div><div id="hbtns"><button id="bell" aria-label="News"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><i></i></button><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div id="debt"></div>
+  <div id="home"></div><div id="hbtns"><button id="newsb" aria-label="News"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h13v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v10a2 2 0 0 1-2 2"/><path d="M8 9h5M8 13h5M8 17h3"/></svg><i></i></button><button id="bell" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><i></i></button><button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div id="debt"></div>
 </header>
 <main id="main"></main>
 <div id="tbar"></div>
@@ -2399,7 +2399,7 @@ const TUT=[
  ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed. Learn better jobs in the job list as you build reputation.","trade"],
  ["#momw","Practice with Mom","No money yet? Practice on Mom's dime. Close a practice trade in profit and she pays you for it, until you've got $15.","trade"],
  ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which triples your income tax and property tax that week. Can't pay? It turns into debt, and you have 24 hours.","trade"],
- ["#bell","News","The bell gets a red dot when there's big news: breaking stories, market crashes, collapses, huge spikes and rumors. Many big moves have a warning headline first, so check it often.","trade"],
+ ["#newsb","News","The newspaper button gets a red dot when there's news: market-wide stories, industry news and news about your stocks. Many big moves have a warning headline first, so check it often. The bell next to it is for friend requests and messages.","trade"],
  ['[data-tab="store"]',"The Store","Better gear for your job, and lessons that teach you the patterns the market repeats. That's where the real money is.","trade"],
  ['[data-tab="auto"]',"Automations","Later on, you can buy bots that trade for you while the app is closed (as long as you don't have a trade of your own open), and tools that keep your jobs running.","trade"],
  ['[data-tab="friends"]',"Friends","Add friends by username, chat, and send them tips on a stock. Their trades show up on your chart. Join the <b>weekly competition</b> with $1,000 of competition money. Your real cash is never touched.","trade"],
@@ -2534,7 +2534,7 @@ function alog(ic,t,go){ S.alog=S.alog||[]; if(go&&go.startsWith("chat:")) S.alog
 const actNew=()=>(S.alog||[]).filter(x=>x.at>(S.actSeen||0)).length+(FS.list||[]).filter(f=>f.status==='pending'&&f.from!==UID&&(f.at||0)/1000>(S.actSeen||0)).length;
 let NEWSCHK=0, NV=null;
 function bellUpd(force){ if(!force&&NOW-NEWSCHK<20) return; NEWSCHK=NOW; const b=$("bell"); if(!b) return;
-  if(!S.newsSeen) S.newsSeen=NOW-3600; b.classList.toggle("new",nNewCount()>0||actNew()>0); if(NOW%20===0) nxDraw(); }
+  if(!S.newsSeen) S.newsSeen=NOW-3600; b.classList.toggle("new",actNew()>0); { const nb=$("newsb"); if(nb) nb.classList.toggle("new",nNewCount()>0); } if(NOW%20===0) nxDraw(); }
 function nNewCount(){ const my=myStocks(); return nItems(Math.max(S.newsSeen||0,NOW-86400),NOW).filter(x=>x.lv==="mkt"||x.lv==="ind"||x.imp==="Major"||(x.s!=="*"&&my.has(x.s)&&x.lv!=="tell")).length; }
 // every news message that popped up on screen is also kept for the News tab (2 days), so nothing you saw goes missing
 function nlog(x){ S.nlog=(S.nlog||[]).filter(y=>NOW-y.at<172800); if(S.nlog.some(y=>y.at===x.at&&y.t===x.t)) return; S.nlog.unshift({at:x.at,s:x.s,t:x.t}); if(S.nlog.length>120) S.nlog.length=120; }
@@ -2589,14 +2589,14 @@ function nxDraw(){ const el=$("nx"); if(!el||el.style.display==="none") return; 
   const card=x=>{ const where=x.lv==="mkt"||x.lv==="sell"?"Market-wide":x.lv==="ind"?IND[x.ev.ik].n:x.s==="*"?"Market":(BYSYM[x.s]?BYSYM[x.s].n:x.s), imp=x.lv==="tell"?"":`<span class="nimp ${x.imp==="Major"?"mj":x.imp==="Moderate"?"md":"mi"}">${x.imp}</span>`;
     return `<div class="ncd${x.at>NXSEEN?" nnew":""}${x.fu?" nfu":""}"><div class="nmeta">${imp}<span>${where} · ${ago(NOW-x.at)}</span></div><div class="nhl">${x.t}</div>${x.b?`<div class="nbl">${x.b}</div>`:""}<div>${nChips(x)}</div></div>`; };
   const empty={top:"No market-wide news yet. These are rare (every few weeks), and when one hits, the whole market moves.",ind:"No industry news this week.",mine:"No news in the last 2 days for the stock you're viewing or the stocks you have a trade in.",all:"Quiet couple of days."}[NXT];
-  el.innerHTML=`<div class="chd"><b style="flex:1;font-size:18px">News</b><button id="nxact" class="btn ghost sm">👥 Activity${an?` · ${an}`:""}</button><button id="nxx" class="chb" aria-label="Close" style="font-size:26px;padding:0 4px">✕</button></div>
+  el.innerHTML=`<div class="chd"><b style="flex:1;font-size:18px">News</b><button id="nxx" class="chb" aria-label="Close" style="font-size:26px;padding:0 4px">✕</button></div>
    <div class="seg nxs">${NTABS.map(([k,n])=>{ const c=cnt(k); return `<button data-nt="${k}" class="${NXT===k?"on":""}">${n}${c?` <i class="ndot"></i>`:""}</button>`; }).join("")}</div>
    <div class="nxl" id="nxl">${rows.length?rows.map(card).join(""):`<div class="t" style="padding:18px 6px">${empty}</div>`}</div>`;
   $("nxl").scrollTop=y; }
 function openNews(view){ if(view!=="act"&&!(view==null&&actNew()>0&&!nNewCount())) return nxOpen(); const f=feedAll(NOW-86400*2,NOW).slice(0,80), seen=S.newsSeen||0, an=actNew(), nn=f.filter(x=>x.at>seen).length;
   view=view||NV||(an&&!nn?"act":"news"); NV=view;
   const segH=`<div class="seg"><button data-nv="news" class="${view==="news"?"on":""}">📰 News${nn?` · ${nn}`:""}</button><button data-nv="act" class="${view==="act"?"on":""}">👥 Activity${an?` · ${an}`:""}</button></div>`;
-  if(view==="act") return openAct(segH);
+  if(view==="act") return openAct(""); // the bell is only notifications now; News has its own button
   S.newsSeen=NOW; $("bell").classList.toggle("new",an>0);
   const g=regimeAt(Math.floor(NOW/3600)), day=Math.floor((NOW/3600-6)/24);
   const mood=!g||!g.type?`<span>😐 Calm market</span>`:`<span class="${g.type>0?"up":"dn"}">${g.type>0?"📈 Bull run":"📉 Bear market"} · day ${day-g.d0+1} of ${g.d1-g.d0}</span>`;
@@ -2624,7 +2624,7 @@ const EMO=/^(\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\
 const fixBox=()=>{ const b=$("modal").querySelector(".box"); if(b) b.style.height="min(86dvh,760px)"; };
 function nrow(o){ let ic=o.ic, t=o.t; if(!ic){ const m=t.match(EMO); if(m){ ic=m[1]; t=t.slice(m[0].length); } else ic="📰"; }
   return `<button class="ntf${o.nw?" new":""}" ${o.attr||""}><span class="ic">${ic}</span><span class="tx">${t}${o.meta?`<div class="mt">${o.meta}</div>`:""}</span><span class="tm">${o.tm}</span></button>`; }
-$("bell").onclick=()=>openNews();
+$("bell").onclick=()=>openNews("act"); $("newsb").onclick=()=>nxOpen();
 // ---------- texts from Mom (pop up, then gone) ----------
 const TEXTS=[
  ["job1",()=>S.st.jobs>=1,"First paycheck! Don't spend it all on gas station snacks."],

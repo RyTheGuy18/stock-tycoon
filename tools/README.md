@@ -35,3 +35,5 @@ Re-run it after any engine change. Engine changes alter the market for everyone,
 - PNNY bots: Lv 1 now uses up to 75% of cash per trade (ladder 75/80/85/90/95%); default slider = 75%. New plays: Penny Scalper also
   fades PNNY at :30 (PNNY always comes home) and shorts the midnight crash; Pump Sniper buys the trending tell at Lv 1; Breakout
   Rider also trades PNNY's chart shapes. Offline sim: `bots.py` style, advance() with SIM=true over 4 h windows.
+- v114 (same H9): patterns are placed back to back (at least 100 s apart, plus a random gap) instead of in slots; each stock has its
+  own pace (`PACE`, 0.65-1.35x). Fewer fakeouts, collapses/squeezes x0.3, breakouts 1.3x stronger, flush dip 1.6x deeper.

@@ -123,6 +123,7 @@ h3{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.07
 #modal p{color:var(--mut);font-size:14px;line-height:1.5;margin:6px 0} #modal p b{color:var(--text)}
 #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 70px);transform:translateX(-50%);background:#1d2835;border:1px solid var(--line);padding:8px 13px;border-radius:11px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:10;max-width:92%;text-align:center}
 #toast.show{opacity:1} #toast.good{border-color:var(--up);background:#0d2a1e} #toast.bad{border-color:var(--dn);background:#2c1014}
+.cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px} .ili{display:inline-flex;vertical-align:-3px;margin-right:4px} .ili svg{display:block}
 canvas.sp{width:100%;height:46px;display:block;margin:6px 0}
 .fhd{margin-bottom:8px} .ftiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px} .ftiles>div{background:var(--c2);border-radius:9px;padding:8px 10px} .ftiles b{font-size:17px;display:block}
 .fsg{margin:4px 0 6px} .fsg button{padding:5px 4px;font-size:12px}
@@ -1002,11 +1003,11 @@ function achCheck(){ S.ach=S.ach||{}; const f=AF(); if(S.st.broke>=1&&f.bk==null
   let n=0; ACH.forEach(a=>{ if(S.ach[a.id]) return; let ok=false; try{ ok=a.u(); }catch(_){} if(!ok) return; S.ach[a.id]=NOW; n++; ACHQ.push(a); life(`${a.g} Achievement: ${a.n}`); });
   if(n){ save(); pubProfile(); if(!SIM){ const q=ACHQ; ACHQ=[]; if(q.length===1){ toast(`${q[0].g} Achievement unlocked: ${q[0].n}`,"good"); sfx('achieve'); } else { toast(`🎖️ ${q.length} achievements unlocked! See them on your Profile.`,"good"); sfx('unlock'); } if(tab==="me") buildMe(); } } }
 const achTop=()=>ACH.filter(a=>S.ach&&S.ach[a.id]).slice(-3).map(a=>a.id);
-const achStr=p=>Array.isArray(p.ab)&&p.ab.length?` <span class="achs" title="${+p.ach||0} achievements">${p.ab.filter(id=>ACHBY[id]).slice(0,3).map(id=>ACHBY[id].g).join("")}</span>`:"";
+const achStr=p=>Array.isArray(p.ab)&&p.ab.length?` <span class="achs" title="${+p.ach||0} achievements">${p.ab.filter(id=>ACHBY[id]).slice(0,3).map(id=>ICO(AIC[id]||"medal","#f5b301",13)).join("")}</span>`:"";
 function achHTML(){ S.ach=S.ach||{}; const n=ACH.filter(a=>S.ach[a.id]).length;
   return `<h3>Achievements · ${n}/${ACH.length}</h3><div class="t" style="margin:-2px 2px 8px">Your 3 hardest show next to your name for friends.</div><div class="achg">${ACH.map(a=>{ const on=!!S.ach[a.id];
     const r=rarOf(ACH.indexOf(a),ACH.length), c=RAR[r].c;
-    return `<div class="ach${on?"":" off"}" style="${on?`box-shadow:inset 0 0 0 1px ${c}66`:""}"><div class="ag">${a.g}</div><b style="${on?`color:${c}`:""}">${a.n}</b><div class="t">${a.d}</div><div style="margin-top:4px">${rarPill(r)}</div></div>`; }).join("")}</div>`; }
+    return `<div class="ach${on?"":" off"}" style="${on?`box-shadow:inset 0 0 0 1px ${c}66`:""}"><div class="ag">${ICO(AIC[a.id]||"medal",on?c:"#5b6777",26)}</div><b style="${on?`color:${c}`:""}">${a.n}</b><div class="t">${a.d}</div><div style="margin-top:4px">${rarPill(r)}</div></div>`; }).join("")}</div>`; }
 
 // ---------- story milestones (permanent perks) ----------
 const MS=[
@@ -1042,7 +1043,7 @@ function fresh(){ return {v:4,cash:0,fu:0,fbasis:0,fh:[],prof:null,profs:{},job:
   st:{jobs:0,jobPay:0,paper:0,paperWon:0,paperPay:0,trades:0,wins:0,realized:0,best:0,worst:0,bills:0,broke:0,breaks:0,played:0,started:Date.now()}}; }
 let S, isNew=false;
 try{ const r=localStorage.getItem(SAVE_KEY); S=r?Object.assign(fresh(),JSON.parse(r)):null; }catch(e){ S=null; }
-if(!S){ S=fresh(); isNew=true; }
+if(!S){ S=fresh(); isNew=true; } else setTimeout(()=>{ try{ meRestore(); }catch(_){} },0);
 function jobMig(){ if(S.jobV===16) return; S.jobV=16; const OLD=[2,4,6,8,10,12,14,15];
   for(const id in S.profs){ const s=S.profs[id]; if(s.sk!=null) continue; let k=0; for(let i=0;i<16;i++) if(JT16[i]<=(s.own||0)&&RQ16[i]<=(s.rep||0)) k=i; s.sk=k; }
   if(S.job&&S.job.k<8&&!S.job.v16){ S.job.k=OLD[S.job.k]; S.job.v16=1; } }
@@ -1622,6 +1623,36 @@ function setMain(h){ h=costDis(h); if(main.dataset.h===h) return; main.dataset.h
   if(POP){ const el=POP==="gear"?main.querySelector(".card .icob"):main.querySelector(`[data-ul="${POP.slice(3)}"]`); POP=null; if(el){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); } } }
 // ---------- line-art icons (24×24 stroke paths) ----------
 const LI={
+ home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+ trophy:'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+ medal:'<path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/>',
+ refresh:'<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/>',
+ bulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+ wave:'<path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+ check:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+ lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+ cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+ crown:'<path d="m2 6 4 12h12l4-12-6 5-4-7-4 7-6-5z"/><path d="M6 21h12"/>',
+ play:'<circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4z"/>',
+ pencil:'<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+ dollar:'<path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+ tdown:'<path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/>',
+ tup:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+ alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
+ down:'<circle cx="12" cy="12" r="10"/><path d="m8 12 4 4 4-4M12 8v8"/>',
+ flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+ search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+ target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+ flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+ bank:'<path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2l9 5H3z"/>',
+ wind:'<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>',
+ gift:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+ rocket:'<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
+ coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18M7 6h1v4"/>',
+ grad:'<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>',
+ zap:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+ gem:'<path d="M6 3h12l4 6-10 13L2 9z"/><path d="M11 3 8 9l4 13 4-13-3-6M2 9h20"/>',
+ sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
  lawn:'<path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>',
  dog:'<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/>',
  car:'<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
@@ -1674,6 +1705,9 @@ const GRAR=[0,0,1,1,1,2,2,3,3,3,4,4]; // gear tiers 1-12
 const rarPill=r=>`<span class="rar" style="color:${RAR[r].c};background:${RAR[r].c}1f;box-shadow:inset 0 0 0 1px ${RAR[r].c}55">${RAR[r].n}</span>`;
 const tierBar=(N,own)=>`<div class="tiers">${Array.from({length:N},(_,i)=>`<i style="${i<=own?`background:${RAR[GRAR[i]||0].c}`:""}"></i>`).join("")}</div>`;
 const ICO=(k,col,sz)=>`<svg viewBox="0 0 24 24" width="${sz||22}" height="${sz||22}" fill="none" stroke="${col}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${LI[k]||""}</svg>`;
+const ILI=(k,sz,col)=>`<span class="ili">${ICO(k,col||"currentColor",sz||15)}</span>`, MEDC=["#f5b301","#cbd5e1","#d6884a"];
+// achievement icons (line art instead of emoji)
+const AIC={t1:"play",pr:"pencil",w1:"dollar",lsn:"book",fr:"crew",ntf:"bell",job:"brief",sh:"tdown",oops:"alert",broke:"down",tip:"bulb",comp:"flag",rmr:"search",w25:"target",st5:"flame",nw1k:"bank",car:"car",pump:"tup",crash:"wind",tipw:"gift",back:"refresh",x2:"rocket",big:"coins",apt:"key",l10:"grad",w100:"target",sq:"zap",col:"alert",pod:"trophy",nw100k:"gem",champ:"medal",nw1m:"crown",isl:"sun"};
 const ICOB=(k,col,sz)=>`<span class="icob" style="background:${col}22;box-shadow:inset 0 0 0 1px ${col}55">${ICO(k,col,sz)}</span>`;
 // ---------- business upgrades: 8 lines, 4 levels each ----------
 // v = the line's effect at levels 1-4 (not stacked within a line), c = cost of each level
@@ -1774,10 +1808,10 @@ function buildMe(){ const m=myCard(); m.col=m.col==null?0:m.col;
   if(pseg==="profile"){ const c=COLS[m.col]||COLS[0], ci=chapIdx(), done=MS.filter(x=>S.ms[x.id]).length, p=prof();
     // hero card: plain card-color background (no scene); tap the picture to change it
     h+=`<div class="phero${bdCls()}"><div class="tint" style="background:linear-gradient(135deg,${c[0]},#0d1219 95%)"></div><div class="pin" style="background:none;position:relative;padding:16px 14px 14px;align-items:center">
-      <div class="pavt" data-pavtap="1"><div class="pav" style="border-color:${c[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><span class="cam">📷</span></div>
+      <div class="pavt" data-pavtap="1"><div class="pav" style="border-color:${c[1]}${pavBg(m.img)}">${okImg(m.img)?"":m.av}</div><span class="cam">${ICO("photo","#fff",14)}</span></div>
       <div class="g" style="min-width:0"><div class="pname">${(m.name||"").replace(/</g,"")}</div><div class="ptag">${(m.tag||"Just getting started.").replace(/</g,"")}</div>${ttl()}
-      <div class="t" style="color:#cfd8e3;margin-top:5px">${homeName()} · Chapter ${ci+1} of ${CHAP.length}</div><div class="pbar" style="margin-top:4px"><i style="width:${done/MS.length*100}%;background:${c[1]}"></i></div></div></div></div>
-      <div class="pchips"><div><b>${money(netWorth())}</b><span>Net worth</span></div><div><b>${p?p.i:"—"}</b><span>${p?p.n.split(" ")[0]:"No job"}</span></div><div><b>📘 ${Object.keys(S.know||{}).length}</b><span>Lessons</span></div><div><b>🎖️ ${Object.keys(S.ach||{}).length}</b><span>of ${ACH.length}</span></div></div>
+      <div class="t" style="color:#cfd8e3;margin-top:5px">${ILI("home",13)}${homeName()} · Chapter ${ci+1} of ${CHAP.length}</div><div class="pbar" style="margin-top:4px"><i style="width:${done/MS.length*100}%;background:${c[1]}"></i></div></div></div></div>
+      <div class="pchips"><div><b>${money(netWorth())}</b><span>Net worth</span></div><div><b>${p?ICO(p.id,"currentColor",18):"—"}</b><span>${p?p.n.split(" ")[0]:"No job"}</span></div><div><b>${ILI("book",15)}${Object.keys(S.know||{}).length}</b><span>Lessons</span></div><div><b>${ILI("medal",15)}${Object.keys(S.ach||{}).length}</b><span>of ${ACH.length}</span></div></div>
       ${myCode()?`<div class="t" style="margin:4px 2px 0">Friend code <b class="m" style="color:var(--text)">${myCode()}</b></div>`:""}
       <h3>Your card</h3><div class="card">
       <div class="lbl2" style="margin-top:0">Name</div><input id="pname" class="inp" maxlength="20" value="${(m.name||"").replace(/"/g,"")}">
@@ -1915,7 +1949,7 @@ function catchUp(){ const away=nowSec()-S.lastT; if(away<=2){ advance(nowSec());
   if(AWAY_BROKE) return modal("💀 You went broke while you were away",AWAY_BROKE,[["Start over","gold"]]);
   const dn=netWorth()-nw0;
   modal("Welcome back",`<p>You were away <b>${dur(away)}</b>${away>offCap()?` (only the last ${dur(offCap())} counted)`:""}.</p><p>${S.st.realized!==bt0?`📈 Trades closed while away: <b class="${S.st.realized-bt0>=0?"up":"dn"}">${sg(S.st.realized-bt0)}</b><br>`:""}${BOTSKIP?`🤖 Your bots sat out ${BOTSKIP} trade${BOTSKIP>1?"s":""} because you had a trade of your own open.<br>`:""}${S.st.jobPay>j0?`💼 Jobs: <b class="up">+${money(S.st.jobPay-j0)}</b><br>`:""}${(S.st.botPay||0)!==bp0?`🪙 PNNY bots: <b class="${S.st.botPay-bp0>=0?"up":"dn"}">${sg(S.st.botPay-bp0)}</b><br>`:""}${S.st.bills>b0?`🧾 Bills: <b class="dn">-${money(S.st.bills-b0)}</b><br>`:""}Net worth: <b class="${dn>=0?"up":"dn"}">${sg(dn)}</b></p>`,[["OK","gold"]]); }
-function save(){ S.savedAt=Date.now(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} }
+function save(){ S.savedAt=Date.now(); meKeep(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} }
 let cref=null,cbusy=false,clast="";
 // ---------- progress guard + local backups ----------
 // A save "regresses" another if it has less than half the best net worth of the other (and the other is past $20),
@@ -1955,7 +1989,7 @@ function adoptCloud(d){ if(!d||typeof d.save!=="string"||d.dev===DEV) return fal
   if(regress(cs,S)){ if(r) setBase(r); backup(S,"kept over an older save"); ACT=true; setPend(1); csave(true); toast("🛡️ Kept your progress. Your other device had an older save, so this one replaced it."); return false; }
   if(ACT&&!regress(S,cs)){ csave(); return false; } // we have a fresh action of our own: push it instead of throwing it away
   backup(S,"before syncing from another device"); ACT=false; setPend(0);
-  const own=S.owner, vw=viewPrefs(); S=Object.assign(fresh(),cs); S.owner=own; Object.assign(S,vw); SYNC=d.savedAt||0; clast=d.save; if(r) setBase(r);
+  const own=S.owner, vw=viewPrefs(); S=Object.assign(fresh(),cs); S.owner=own; Object.assign(S,vw); meRestore(); SYNC=d.savedAt||0; clast=d.save; if(r) setBase(r);
   NOW=nowSec(); catchUp(); delistCheck(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} build(); hdr&&hdr(); return true; }
 function watchSave(ref){ if(unwatch) unwatch(); unwatch=ref.watch?ref.watch(d=>{ if(adoptCloud(d)) toast("🔄 Synced from your other device"); }):null; }
 async function cpull(){ if(!cref) return; try{ const sn=await cref.get(); if(sn.exists&&adoptCloud(sn.data())) toast("🔄 Synced from your other device"); }catch(_){} }
@@ -2047,8 +2081,16 @@ async function flowSync(){ if(!DB||!UID||flowBusy) return; flowBusy=true; const 
 // ---------- friends (first version: profile card, friend codes, leaderboard) ----------
 let DB=null, UID=null, FR={list:null,view:"friends",busy:false,last:""};
 const myCode=()=>UID?UID.replace(/[^a-zA-Z0-9]/g,"").slice(-6).toUpperCase():"";
-function myCard(){ S.me=S.me||{name:"Trader"+Math.floor(1000+Math.random()*9000),av:"👨"}; if(!AVS.includes(S.me.av)) S.me.av="👨"; return S.me; }
-function homeName(){ return S.ms.island?"🏝 Private island":S.ms.house?"🏡 Dream house":S.ms.condo?"🏙 Condo":S.ms.apt?"🏢 Apartment":"🏠 Mom's basement"; }
+// AVALL: every avatar emoji the game has ever offered, so older picks are never reset (the picker shrank to 4 in an earlier update)
+const AVALL=AVS.concat(["🧑","🧔","👱","🧑‍💼","🦊","🐻","🐸","🦁","🐼","🐺","🦉","🐢","🤖","👽","🎩"]);
+function myCard(){ S.me=S.me||{name:"Trader"+Math.floor(1000+Math.random()*9000),av:"👨"}; if(!AVALL.includes(S.me.av)) S.me.av="👨"; return S.me; }
+// Profile backup on this device: if a save from the cloud or another device has an older profile (name, picture, photo,
+// color), the newer one from this device is put back. S.me.at = when the profile last changed.
+const meStrip=m=>{ const o=Object.assign({},m||{}); delete o.at; return JSON.stringify(o); };
+function meRestore(){ try{ const b=JSON.parse(localStorage.getItem("st.me")||"null"); if(b&&(b.at||0)>((S.me&&S.me.at)||0)&&(!S.owner||!b.own||b.own===S.owner)){ const o=b.own; delete b.own; S.me=b; } }catch(_){} }
+function meKeep(){ try{ if(!S.me) return; const b=JSON.parse(localStorage.getItem("st.me")||"null"); if(b){ delete b.own; } if(!b||meStrip(b)!==meStrip(S.me)){ S.me.at=Date.now(); localStorage.setItem("st.me",JSON.stringify(Object.assign({},S.me,{own:S.owner||""}))); } }catch(_){} }
+function homeName(){ return S.ms.island?"Private island":S.ms.house?"Dream house":S.ms.condo?"Condo":S.ms.apt?"Apartment":"Mom's basement"; }
+const noEmo=t=>String(t||"").replace(/^[^A-Za-z0-9]+\s*/,""); // friends on older versions still send "🏠 Mom's basement"
 // what friends see under your name while you're online
 function doingNow(){ if(compCur()) return "In the weekly comp"; const o=STOCKS.find(d=>{ const p=S.pos[d.s]; return p&&(p.l||p.s); });
   if(o){ const p=S.pos[o.s]; return (p.l?"Holding ":"Shorting ")+o.s; } if(S.job){ const pb=PB[S.job.p], j=pb&&pb.jobs[S.job.k]; return j?"Working · "+j.n:"Working"; } return ""; }
@@ -2071,9 +2113,9 @@ let FSEG="friends";
 const chOf=n=>{ let c=0; CHAP.forEach((x,k)=>{ if((n||0)>=x.at) c=k; }); return c; };
 // one leaderboard row; used for the Ranks list and for "How friends see you"
 function lbRow(p,i,me){ const st=+p.stories||0, col=(COLS[p.col||0]||COLS[0])[1];
-  return `<div class="lbr${me?" me":""}"><div class="rk${i!=null&&i<3?" top":""}">${i==null?"–":i<3?["🥇","🥈","🥉"][i]:i+1}</div>${avh(p,40)}
+  return `<div class="lbr${me?" me":""}"><div class="rk${i!=null&&i<3?" top":""}">${i==null?"–":i<3?ICO("medal",MEDC[i],20):i+1}</div>${avh(p,40)}
     <div class="g" style="min-width:0"><div class="nm">${String(p.name||"Trader").replace(/</g,"")}${me?' <span class="pill ok">you</span>':""}${troStr(p.tro)}</div>
-    <div class="sub">${p.home||"🏠 Mom's basement"} · Ch ${chOf(st)+1}${p.uname?" · @"+esc(p.uname):""}</div>
+    <div class="sub">${ILI("home",13)}${esc(noEmo(p.home))||"Mom's basement"} · Ch ${chOf(st)+1}${p.uname?" · @"+esc(p.uname):""}</div>
     <div class="pbar"><i style="width:${Math.min(100,st/MS.length*100)}%;background:${col}"></i></div></div>
     <div class="lnw">${money(p.nw||0)}<small>${st}/${MS.length} story</small></div></div>`; }
 // small weekly-competition card at the top of Friends; tap it to open Compete
@@ -2086,19 +2128,19 @@ function buildFriends(){ const m=myCard(), fr=S.friends=S.friends||[], cc=COLS[m
   if(DB&&FR.list===null&&!FR.busy) loadBoard(); // your rank medal needs the leaderboard, so fetch it as soon as the tab opens
   const myRank=FR.list?FR.list.findIndex(p=>p.id===UID):-1;
   let h=`<div class="pad"><div class="card fme" style="border-color:${cc[1]}66"><div class="row" style="gap:12px">${avh(meP,48)}<div class="g" style="min-width:0"><div class="b" style="font-size:16px">${esc(meP.name)}${troStr(meP.tro)}</div><div class="t">How friends see you</div></div><button class="btn ghost sm" data-fx="edit" style="padding:5px 12px">Edit</button></div>
-    <div class="row" style="margin-top:10px;align-items:flex-end"><div class="g"><div class="t">Net worth</div><b class="m" style="font-size:22px;color:var(--gold)">${money(meP.nw)}</b></div><div class="t" style="text-align:right">${myRank>=0?`<b style="color:var(--text)">#${myRank+1}</b> overall<br>`:""}${meP.home} · Ch ${chOf(meP.stories)+1}</div></div></div>`;
+    <div class="row" style="margin-top:10px;align-items:flex-end"><div class="g"><div class="t">Net worth</div><b class="m" style="font-size:22px;color:var(--gold)">${money(meP.nw)}</b></div><div class="t" style="text-align:right">${myRank>=0?`<b style="color:var(--text)">#${myRank+1}</b> overall<br>`:""}${ILI("home",13)}${meP.home} · Ch ${chOf(meP.stories)+1}</div></div></div>`;
   if(DB&&FSEG!=="comp") h+=compMini();
   if(!DB){ h+=window.NET?`<div class="card"><div class="t">Sign in to add friends, chat, join weekly competitions and see the leaderboard.</div><button class="btn gold" style="width:100%;margin-top:8px" data-sx2="login">Sign in or create an account</button></div>`:`<div class="card t">Online features aren't set up for this copy of the game. Single-player works the same.</div>`; main.dataset.h=main.innerHTML=h+"</div>"; return; }
   const nreq=FS.list.filter(f=>f.status==='pending'&&f.from!==UID).length, nun=FS.list.filter(f=>unread(f)).length, c=compCur();
   const dot=n=>n?` <span class="pill bad" style="padding:0 6px">${n}</span>`:"";
-  h+=`<div class="seg"><button data-fseg="friends" class="${FSEG==="friends"?"on":""}">👥 Friends${dot(nreq+nun)}</button><button data-fseg="comp" class="${FSEG==="comp"?"on":""}">🏆 Compete${c?' <span class="dot" style="background:var(--up)"></span>':""}</button><button data-fseg="ranks" class="${FSEG==="ranks"?"on":""}">📊 Ranks</button></div>`;
-  if(FSEG==="comp") h+=compHTML().replace("<h3>🏆 Weekly competition</h3>","");
+  h+=`<div class="seg"><button data-fseg="friends" class="${FSEG==="friends"?"on":""}">${ILI("crew",15)}Friends${dot(nreq+nun)}</button><button data-fseg="comp" class="${FSEG==="comp"?"on":""}">${ILI("trophy",15)}Compete${c?' <span class="dot" style="background:var(--up)"></span>':""}</button><button data-fseg="ranks" class="${FSEG==="ranks"?"on":""}">${ILI("chart",15)}Ranks</button></div>`;
+  if(FSEG==="comp") h+=compHTML();
   else if(FSEG==="ranks"){
     h+=`<div class="seg" style="margin-top:-2px"><button data-fv="friends" class="${FR.view==="friends"?"on":""}">Friends</button><button data-fv="all" class="${FR.view==="all"?"on":""}">Everyone</button></div>`;
     if(FR.list===null){ h+=`<div class="t">Loading the leaderboard…</div>`; loadBoard(); }
     else { const rows=FR.list.filter(p=>FR.view==="all"||fr.includes(p.code)||p.id===UID);
       h+=`<div class="card" style="padding:4px 10px">${rows.length?rows.map((p,i)=>lbRow(p,i,p.id===UID)).join(""):`<div class="t" style="padding:10px 2px">${FR.view==="friends"?"No friends on the board yet. Add some in the Friends tab.":"Nobody here yet."}</div>`}</div>
-      <button class="btn ghost sm" style="width:100%" data-fx="ref">↻ Refresh</button>`; } }
+      <button class="btn ghost sm" style="width:100%" data-fx="ref">${ILI("refresh",14)}Refresh</button>`; } }
   else h+=socialHTML();
   h+="</div>"; const fi=$('funame'), keepV=fi?fi.value:"", typing=document.activeElement===fi; if(typing&&main.dataset.h!==h&&FSEG==="friends") return; // don't wipe what you're typing
   if(main.dataset.h!==h){ main.dataset.h=main.innerHTML=h; if(keepV&&$('funame')) $('funame').value=keepV; } compTick(); if(FSEG==="friends") frFresh(); }
@@ -2108,7 +2150,7 @@ main.addEventListener("click",e=>{ const b=e.target.closest("[data-fseg]"); if(!
 main.addEventListener("click",e=>{ const b=e.target.closest("[data-fx],[data-fv]"); if(!b) return; const m=myCard();
   if(b.dataset.fv){ FR.view=b.dataset.fv; return buildFriends(); }
   const x=b.dataset.fx;
-  if(x==="av"){ const A_=["🧑","👩","👨","🧔","👱","🧑‍💼","🤠","😎","🦊","🐻","🐸","🦁","🐼","🤖","👽","🎩"]; m.av=A_[(A_.indexOf(m.av)+1)%A_.length]; return buildFriends(); }
+  if(x==="av"){ const A_=AVS; m.av=A_[(A_.indexOf(m.av)+1)%A_.length]; delete m.img; return buildFriends(); }
   if(x==="edit"){ pseg="profile"; return setTab("me"); }
   if(x==="save"){ const n=$("fname").value.trim(); if(n) m.name=n.slice(0,20); toast("Card saved"); save(); pubProfile().then(loadBoard); return; }
   if(x==="add"){ const c=$("fcode").value.trim().toUpperCase(); if(c.length!==6) return toast("Codes are 6 characters"); if(c===myCode()) return toast("That's your own code"); S.friends=S.friends||[]; if(!S.friends.includes(c)) S.friends.push(c); save(); toast("Friend added"); FR.view="friends"; return loadBoard(); }
@@ -2134,7 +2176,7 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
         if(cs&&!take&&regress(cs,S)) pushMine=true;
         if(take){ backup(S,"before loading your account's save"); ACT=false; setPend(0); }
         SYNC=d.savedAt||0; if(r) setBase(Math.max(BASE,r));
-        if(take){ const vw=viewPrefs(); S=Object.assign(fresh(),cs); Object.assign(S,vw); clast=d.save; closeModal(); NOW=nowSec(); catchUp(); toast("Loaded your saved game"); }
+        if(take){ const vw=viewPrefs(); S=Object.assign(fresh(),cs); Object.assign(S,vw); meRestore(); clast=d.save; closeModal(); NOW=nowSec(); catchUp(); toast("Loaded your saved game"); }
         else if(!mine||wiped) pushMine=true; }
       else pushMine=true;
       
@@ -2222,8 +2264,8 @@ function installHint(){ if(!isIOS()||standalone()||S.instHint||!S.prof||!$('moda
 
 // ---------- friends: requests by username, friends list, private chat ----------
 let FS={list:[],prof:{},unsub:null,chatUnsub:null,chat:null,first:true}, FRUIDS=new Set();
-const troStr=t=>t?['g','s','b'].map((k,i)=>t[k]?` ${['🥇','🥈','🥉'][i]}${t[k]>1?'×'+t[k]:''}`:'').join(''):'';
-const avh=(p,s)=>`<span class='pav' style='width:${s}px;height:${s}px;font-size:${Math.round(s*.55)}px;border-width:2px;border-color:${(COLS[p.col||0]||COLS[0])[1]}${pavBg(p.img)}'>${okImg(p.img)?'':AVS.includes(p.av)?p.av:'👨'}</span>`;
+const troStr=t=>t?['g','s','b'].map((k,i)=>t[k]?` <span class='ili' style='margin:0 0 0 3px'>${ICO('medal',MEDC[i],14)}</span>${t[k]>1?'×'+t[k]:''}`:'').join(''):'';
+const avh=(p,s)=>`<span class='pav' style='width:${s}px;height:${s}px;font-size:${Math.round(s*.55)}px;border-width:2px;border-color:${(COLS[p.col||0]||COLS[0])[1]}${pavBg(p.img)}'>${okImg(p.img)?'':AVALL.includes(p.av)?p.av:'👨'}</span>`;
 function socialStop(){ if(FS.unsub) FS.unsub(); FS.unsub=null; FS.list=[]; FRUIDS=new Set(); closeChat(true); navDot(); }
 function socialStart(N,uid){ socialStop(); FS.first=true;
   FS.unsub=N.watchFriendships(uid,async list=>{
@@ -2260,7 +2302,7 @@ function socialHTML(){ const uid=UID, pn=f=>Object.assign({},(FR.list||[]).find(
   if(!acc.length) h+=`<div class='t' style='margin:-4px 3px 10px'>No friends yet. Add one below with their username.</div>`;
   h+=`<h3>Add a friend</h3><div class='addf'><input id='funame' class='inp' maxlength='17' placeholder='Their username' autocapitalize='none' autocorrect='off' spellcheck='false'><button class='btn buy sm' data-freq='1'>Add</button></div>
     <div class='t' style='margin:6px 3px 0'>You're <b style='color:var(--text)'>@${UNAME}</b>. Share it so friends can add you.${out.length?` Waiting on ${out.map(f=>`${esc(pn(f).name)} (<button class='t' style='text-decoration:underline;padding:0' data-frem='${f.id}'>cancel</button>)`).join(', ')}.`:''}</div>
-    <div class='t' style='margin:10px 3px 0'>💡 Tips: sent ${S.st.tipsSent||0} · paid off ${S.st.tipWins||0} · earned <b style='color:var(--text)'>${money(S.st.tipPay||0)}</b>. Send them from the Market tab.</div>`;
+    <div class='t' style='margin:10px 3px 0'>${ILI('bulb',14)}Tips: sent ${S.st.tipsSent||0} · paid off ${S.st.tipWins||0} · earned <b style='color:var(--text)'>${money(S.st.tipPay||0)}</b>. Send them from the Market tab.</div>`;
   return h; }
 function openChat(pid){ const N=window.NET, f=FS.list.find(x=>x.id===pid); if(!N||!f) return; closeChat(true); FS.chat=pid; const p=Object.assign({},FS.prof[f.other]||{});
   const el=document.createElement('div'); el.id='chat';
@@ -2271,7 +2313,7 @@ function openChat(pid){ const N=window.NET, f=FS.list.find(x=>x.id===pid); if(!N
     if(e.target.closest('[data-chrm]')) modal('Remove '+esc(p.name)+'?','<p>You can send a new friend request later.</p>',[['Cancel','ghost'],['Remove','sell',async()=>{ closeChat(); try{ await N.remove(pid); toast('Friend removed'); }catch(_){} }]]); };
   $('chin').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); send(); } });
   FS.chatUnsub=N.watchChat(pid,ms=>{ const box=$('chm'); if(!box) return; S.readAt=S.readAt||{}; S.readAt[pid]=Date.now(); navDot();
-    box.innerHTML=ms.length?ms.map(m=>`<div class='msg ${m.from===UID?'me':''}'><div>${String(m.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div><small>${new Date(m.at).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></div>`).join(''):`<div class='t' style='text-align:center;margin-top:20px'>Say hi to ${esc(p.name)} 👋</div>`;
+    box.innerHTML=ms.length?ms.map(m=>`<div class='msg ${m.from===UID?'me':''}'><div>${String(m.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div><small>${new Date(m.at).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</small></div>`).join(''):`<div class='t' style='text-align:center;margin-top:20px'>${ICO('wave','#77879a',28)}<br>Say hi to ${esc(p.name)}</div>`;
     box.scrollTop=box.scrollHeight; }); }
 function closeChat(quiet){ if(FS.chatUnsub) FS.chatUnsub(); FS.chatUnsub=null; FS.chat=null; const el=$('chat'); if(el) el.remove(); if(!quiet&&tab==='friends') buildFriends(); }
 main.addEventListener('click',async e=>{ const t=e.target, N=window.NET;
@@ -2309,7 +2351,7 @@ async function compReg(on){ const w=wkIdx(NOW)+1; if(!DB||!UID) return toast('Si
   try{ const ref=DB.doc('comps/'+w+'/regs/'+UID); if(on){ const m=myCard(); await ref.set({nw:Math.round(netWorth()*100)/100,name:m.name.slice(0,20),uname:UNAME,av:m.av,at:Date.now()}); sfx('unlock'); toast(`🏆 Registered for next week with a net worth of ${money(netWorth())}`,'good'); }
     else { await ref.del(); toast('Unregistered from next week'); }
     await regsLoad(w,true); }catch(e){ toast(/permission/i.test((e&&e.code)||'')?"Registration for that week is closed":"Couldn't reach the server"); } if(tab==='friends') buildFriends(); }
-function prizeBoxes(p){ return `<div class='row' style='gap:6px;margin:8px 0 6px'>${['🥇','🥈','🥉'].map((m,i)=>`<div class='g' style='background:var(--c2);border-radius:10px;padding:7px 4px;text-align:center'><div style='font-size:18px'>${m}</div><b class='m up' style='font-size:14px'>${p?money(p[i]):'—'}</b></div>`).join('')}</div>`; }
+function prizeBoxes(p){ return `<div class='row' style='gap:6px;margin:8px 0 6px'>${MEDC.map((m,i)=>`<div class='g' style='background:var(--c2);border-radius:10px;padding:7px 4px;text-align:center'><div style='display:flex;justify-content:center'>${ICO('medal',m,20)}</div><b class='m up' style='font-size:14px'>${p?money(p[i]):'—'}</b></div>`).join('')}</div>`; }
 const compCur=()=>{ const c=S.comp; return c&&c.w===wkIdx(NOW)?c:null; };
 function compVal(c){ let v=c.cash; for(const k in c.pos){ const p=c.pos[k]; if(!BYSYM[k]) continue; const pr=sp(k); if(p.l) v+=p.l*pr; if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-pr)); } return v; }
 function compJoin(){ if(!DB) return toast('Sign in to join'); if(compCur()) return; if(!isReg(wkIdx(NOW))) return toast("You didn't register for this week. Register for next week in Friends → Compete"); if(S.comp&&!S.comp.done&&S.comp.w<wkIdx(NOW)) compSettle();
@@ -2325,12 +2367,12 @@ function compTrade(act){ const c=compCur(); if(!c) return; const sym=compSym(), 
 function compTick(){ if(!$('compw')) return; compCard(); STOCKS.forEach(d=>{ const e=$('cc-'+d.s); if(e) e.textContent=px(sp(d.s)); }); }
 function compSym(){ const s=S.csel; return s&&BYSYM[s]&&!BYSYM[s].gone&&unlocked(BYSYM[s])?s:"PNNY"; }
 function compCard(force){ const el=$('compw'); if(!el) return; if(!DB){ el.innerHTML=''; el.dataset.k=''; return; } const c=compCur(), sym=compSym();
-  if(!c){ const w=wkIdx(NOW); if(!RG[w]) regsLoad(w); const k=isReg(w)?'reg':'no'; if(el.dataset.k!==k){ el.dataset.k=k; el.innerHTML=k==='reg'?`<div class='card row' style='margin-top:8px'><div class='g t'>🏆 You're registered and this week's competition has started. You get $1,000 of competition money; your real cash isn't touched.</div><button class='btn gold sm' data-cj='1'>Start</button></div>`:''; } return; }
+  if(!c){ const w=wkIdx(NOW); if(!RG[w]) regsLoad(w); const k=isReg(w)?'reg':'no'; if(el.dataset.k!==k){ el.dataset.k=k; el.innerHTML=k==='reg'?`<div class='card row' style='margin-top:8px'><div class='g t'>${ILI('trophy',14,'#f5b301')}You're registered and this week's competition has started. You get $1,000 of competition money; your real cash isn't touched.</div><button class='btn gold sm' data-cj='1'>Start</button></div>`:''; } return; }
   const p=c.pos[sym]||{}, open=p.l||p.s, k=sym+'|'+(open?1:0);
-  if(force||el.dataset.k!==k){ el.dataset.k=k; el.innerHTML=`<div class='card' style='margin-top:8px;border-color:#5a4a1a'><div class='row'><div class='g'><div class='b'>🏆 Competition wallet</div><div class='t' id='cpt'></div></div><b class='m' id='cpv'></b></div><div class='t' id='cpp' style='margin:6px 0'></div>${open?`<button class='btn ghost' style='width:100%' data-ct='close'>Close competition trade</button>`:`<div class='qty' style='margin:0 0 6px'><button data-cq='-1'>−</button><div class='mid'><b id='cpq'></b><span id='cpqc'></span></div><button data-cq='1'>+</button><button data-cq='max'>MAX</button></div><div class='g2'><button class='btn buy sm' data-ct='buy'>Comp BUY</button><button class='btn short sm' data-ct='short'>Comp SHORT</button></div>`}</div>`; }
+  if(force||el.dataset.k!==k){ el.dataset.k=k; el.innerHTML=`<div class='card' style='margin-top:8px;border-color:#5a4a1a'><div class='row'><div class='g'><div class='b'>${ILI('trophy',15,'#f5b301')}Competition wallet</div><div class='t' id='cpt'></div></div><b class='m' id='cpv'></b></div><div class='t' id='cpp' style='margin:6px 0'></div>${open?`<button class='btn ghost' style='width:100%' data-ct='close'>Close competition trade</button>`:`<div class='qty' style='margin:0 0 6px'><button data-cq='-1'>−</button><div class='mid'><b id='cpq'></b><span id='cpqc'></span></div><button data-cq='1'>+</button><button data-cq='max'>MAX</button></div><div class='g2'><button class='btn buy sm' data-ct='buy'>Comp BUY</button><button class='btn short sm' data-ct='short'>Comp SHORT</button></div>`}</div>`; }
   const v=compVal(c), r=(v/COMP_START-1)*100, pr=sp(sym);
   $('cpv').innerHTML=`${money(v)} <span class='${r>=0?'up':'dn'}' style='font-size:12px'>${r>=0?'+':''}${r.toFixed(1)}%</span>`; $('cpt').textContent=`Cash ${money(c.cash)} · ends in ${dur(wkStart(c.w+1)-NOW)}`;
-  if(open){ const pl=p.l?p.l*(pr-p.lc):Math.max(p.s*(p.se-pr),-p.s*p.se); $('cpp').innerHTML=`${p.l?'🟢 '+p.l+' sh bought at '+px(p.lc):'🟣 '+p.s+' sh shorted at '+px(p.se)} · <b class='${pl>=0?'up':'dn'}'>${sg(pl)}</b>`; }
+  if(open){ const pl=p.l?p.l*(pr-p.lc):Math.max(p.s*(p.se-pr),-p.s*p.se); $('cpp').innerHTML=`${p.l?'<i class="cdot" style="background:var(--up)"></i>'+p.l+' sh bought at '+px(p.lc):'<i class="cdot" style="background:var(--pur)"></i>'+p.s+' sh shorted at '+px(p.se)} · <b class='${pl>=0?'up':'dn'}'>${sg(pl)}</b>`; }
   else { S.cq=Math.max(1,S.cq||1); $('cpp').textContent=`No competition trade in ${sym}.`; $('cpq').textContent=S.cq+' share'+(S.cq>1?'s':''); $('cpqc').textContent=money(S.cq*pr); } }
 async function compPub(force){ const c=compCur(); if(!DB||!UID||!c) return; if(!force&&NOW-CPL<60) return; CPL=NOW; const m=myCard(), v=Math.round(compVal(c)*100)/100;
   try{ await DB.doc('comps/'+c.w+'/entries/'+UID).set({name:m.name.slice(0,20),uname:UNAME,av:m.av,value:v,tr:c.tr,at:Date.now()});
@@ -2341,7 +2383,7 @@ async function compSettle(){ const c=S.comp; if(!DB||!UID||!c||c.done||c.w>=wkId
     if(md) await regsLoad(c.w,true); const pz=md?prizeOf(c.w):null, won=md&&pz?pz[['g','s','b'].indexOf(md)]:0;
     if(won){ S.cash+=won; if(typeof txInc==='function') txInc(won); resetPeak(); life(`🏆 Competition prize: +${money(won)}`); }
     if(md) tro[md]++; alog('🏆',`Weekly competition: you finished <b>#${r>=0?r+1:'?'}</b> of ${rows.length}${md?' '+{g:'🥇',s:'🥈',b:'🥉'}[md]:''}${won?` · <span class=up>+${money(won)}</span>`:''}`,'friends'); save(); act(); pubProfile(); sfx(md?'unlock':'ping'); if(won) setTimeout(()=>sfx('coin'),500);
-    modal("🏆 Last week's competition",`<p>You finished <b>#${r>=0?r+1:'?'}</b> of ${rows.length} with <b>${money(fv)}</b> (${((fv/COMP_START-1)*100).toFixed(1)}%).</p>${md?`<p style='font-size:44px;text-align:center;margin:8px 0'>${{g:'🥇',s:'🥈',b:'🥉'}[md]}</p>${won?`<p style='text-align:center;font-size:22px;margin:4px 0 10px'><b class='m up'>+${money(won)}</b> cash</p>`:''}<p>You won ${won?'the prize and ':''}a trophy! It shows on your profile and the leaderboard.</p>`:`<p>No trophy this time${rows.length<2?' (trophies need at least 2 players)':''}. This week's competition is open now.</p>`}`,[['Nice','gold']]);
+    modal("Last week's competition",`<p>You finished <b>#${r>=0?r+1:'?'}</b> of ${rows.length} with <b>${money(fv)}</b> (${((fv/COMP_START-1)*100).toFixed(1)}%).</p>${md?`<p style='text-align:center;margin:8px 0'>${ICO('medal',{g:MEDC[0],s:MEDC[1],b:MEDC[2]}[md],48)}</p>${won?`<p style='text-align:center;font-size:22px;margin:4px 0 10px'><b class='m up'>+${money(won)}</b> cash</p>`:''}<p>You won ${won?'the prize and ':''}a trophy! It shows on your profile and the leaderboard.</p>`:`<p>No trophy this time${rows.length<2?' (trophies need at least 2 players)':''}. This week's competition is open now.</p>`}`,[['Nice','gold']]);
   }catch(_){} }
 async function loadComp(){ if(!DB||CB.busy) return; CB.busy=true; const w=wkIdx(nowSec());
   try{ const q=await DB.collection('comps/'+w+'/entries').orderBy('value','desc').limit(100).get(); CB.list=q.docs.map(d=>Object.assign({id:d.id},d.data())); }catch(_){ CB.list=[]; }
@@ -2349,14 +2391,14 @@ async function loadComp(){ if(!DB||CB.busy) return; CB.busy=true; const w=wkIdx(
 function compHTML(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW, nx=w+1;
   [w,nx].forEach(k=>{ const R=RG[k]; if(!R||(!R.busy&&Date.now()-R.at>30000)) regsLoad(k).then(()=>{ if(tab==='friends'&&FSEG==='comp') buildFriends(); }); });
   const Lw=(RG[w]||{}).list, Ln=(RG[nx]||{}).list, regW=isReg(w), regN=isReg(nx), meN=(Ln||[]).find(x=>x.id===UID);
-  const nextH=`<h3>📝 Next week · starts in ${dur(left)}</h3><div class='card'>
+  const nextH=`<h3>${ILI("cal",15)}Next week · starts in ${dur(left)}</h3><div class='card'>
     <div class='t'>Register to play next week. Your net worth is recorded when you register, and the cash prizes come from the <b style='color:var(--text)'>average net worth of everyone registered</b>. Unregister any time before it starts; then it locks.</div>
     ${prizeBoxes(prizeOf(nx))}<div class='t' style='margin-bottom:8px'>${Ln?`${Ln.length} registered${Ln.length?` · average ${money(regAvg(Ln))}`:''}${Ln.length<2?' · prizes need 2+ players':' · can still change until it starts'}`:'Loading…'}</div>
-    ${regN?`<div class='row'><div class='g t'>✅ You're registered${meN?` with ${money(meN.nw)}`:''}</div><button class='btn ghost sm' data-creg='0'>Unregister</button></div>`:`<button class='btn gold' style='width:100%' data-creg='1'>Register for next week</button>`}</div>`;
+    ${regN?`<div class='row'><div class='g t'>${ILI('check',14,'#16c784')}You're registered${meN?` with ${money(meN.nw)}`:''}</div><button class='btn ghost sm' data-creg='0'>Unregister</button></div>`:`<button class='btn gold' style='width:100%' data-creg='1'>Register for next week</button>`}</div>`;
   let h=``;
-  h+=`<h3>🏆 This week · ends in ${dur(left)}</h3><div class='card'>${prizeBoxes(prizeOf(w))}<div class='t' style='margin-bottom:6px'>${Lw?`${Lw.length} registered · prizes locked when it started`:'Loading…'}</div>`;
+  h+=`<h3>${ILI("trophy",15)}This week · ends in ${dur(left)}</h3><div class='card'>${prizeBoxes(prizeOf(w))}<div class='t' style='margin-bottom:6px'>${Lw?`${Lw.length} registered · prizes locked when it started`:'Loading…'}</div>`;
   if(!c&&regW) h+=`<button class='btn gold' style='width:100%;margin-top:4px' data-cj='1'>Start trading your $1,000</button>`;
-  else if(!c) h+=`<div class='t'>🔒 Registration for this week closed when it started. Register for next week above.</div>`;
+  else if(!c) h+=`<div class='t'>${ILI('lock',14)}Registration for this week closed when it started. Register for next week above.</div>`;
   else { const v=compVal(c), r=(v/COMP_START-1)*100; h+=`<div class='row'><div class='g'><div class='b'>You're in</div><div class='t'>Trade below · ends in ${dur(left)}</div></div><b class='m'>${money(v)} <span class='${r>=0?'up':'dn'}'>${r>=0?'+':''}${r.toFixed(1)}%</span></b></div>`;
     const cs=compSym(); h+=`<div id='chips' style='padding:10px 0 2px'>${STOCKS.filter(d=>!d.gone&&unlocked(d)).sort((a,b)=>a.un-b.un).map(d=>{ const pp=c.pos[d.s]||{}, dot=pp.l?'<span class="dot" style="background:#16c784"></span>':pp.s?'<span class="dot" style="background:#ea3943"></span>':''; return `<button class='chip ${cs===d.s?'on':''}' data-csym='${d.s}'><b>${d.s}${dot}</b><small id='cc-${d.s}'>${px(sp(d.s))}</small></button>`; }).join('')}</div><div id='compw'></div>`; }
   if(CB.list===null||CB.w!==w){ CB.list=null; loadComp(); h+=`<div class='t' style='margin-top:8px'>Loading standings…</div>`; }
@@ -2367,7 +2409,7 @@ function compHTML(){ const w=wkIdx(NOW), c=compCur(), left=wkStart(w+1)-NOW, nx=
 // gold, silver and bronze podium for the top 3 of this week's competition
 function podium(top,pz){ const C=[["#f5b301","#3a2f0a",76],["#cbd5e1","#1e2733",56],["#d6884a","#2a1a10",42]], ord=[1,0,2];
   return `<div class='pod'>`+ord.map(i=>{ const x=top[i], c=C[i]; if(!x) return `<div class='pc'></div>`; const p=Object.assign({},x,(FR.list||[]).find(y=>y.id===x.id)||{},FS.prof[x.id]||{}), r=(x.value/COMP_START-1)*100;
-    return `<div class='pc'>${i===0?`<div style='color:${c[0]};font-size:16px;line-height:1'>♛</div>`:""}<span class='pw' style='border-color:${c[0]}'>${avh(p,i?36:44)}</span><div class='b pn'>${esc(x.name)}${x.id===UID?" (you)":""}</div><div class='m ${r>=0?"up":"dn"}' style='font-size:12px'>${r>=0?"+":""}${r.toFixed(1)}%</div>
+    return `<div class='pc'>${i===0?`<div style='display:flex;justify-content:center;line-height:1'>${ICO('crown',c[0],18)}</div>`:""}<span class='pw' style='border-color:${c[0]}'>${avh(p,i?36:44)}</span><div class='b pn'>${esc(x.name)}${x.id===UID?" (you)":""}</div><div class='m ${r>=0?"up":"dn"}' style='font-size:12px'>${r>=0?"+":""}${r.toFixed(1)}%</div>
       <div class='pb' style='height:${c[2]}px;background:${c[1]};border-top:2px solid ${c[0]}'><b class='m' style='color:${c[0]};font-size:18px'>${i+1}</b></div></div>`; }).join('')+`</div>`; }
 main.addEventListener('click',e=>{ const t=e.target;
   if(t.closest('[data-cj]')) return compJoin();
@@ -2759,7 +2801,7 @@ const cosReq=it=>it.r||'Reach '+money(it.req)+' net worth';
 function cosGet(cat){ const L=COSCAT.find(x=>x[0]===cat)[2], it=L.find(x=>x.id===COSS()[cat]); return it&&cosOk(it)?it:L[0]; }
 const TH=()=>Object.assign({},TBASE,cosGet('theme').v), CPAL=()=>cosGet('pal');
 const bdCls=()=>{ const b=cosGet('border').id; return b==='none'?'':' bd-'+b; };
-const ttl=()=>{ const t=cosGet('title'); return t.id==='none'?'':`<div class='ptitle'>🏅 ${t.n}</div>`; };
+const ttl=()=>{ const t=cosGet('title'); return t.id==='none'?'':`<div class='ptitle'>${ILI('medal',13)}${t.n}</div>`; };
 const TBY={}; TITLES.forEach(t=>TBY[t.id]=t);
 let COSK='';
 function applyCos(){ const t=cosGet('theme'); if(t.id===COSK) return; COSK=t.id; const v=TH(), r=document.documentElement.style;

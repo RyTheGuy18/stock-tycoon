@@ -972,15 +972,27 @@ function botClose(sym,tag){ const p=P(sym); if(p.bot!==tag||(!p.l&&!p.s)) return
 // PNNY starter bots: open trades only while you're away; they use your real cash (the slider sets how much),
 // win most of the time, and bail out if a trade ever gets 20% against them
 const vbVal=v=>{ const pr=price(0,NOW); return v.dir>0?v.q*pr:Math.max(0,v.q*v.en+v.q*(v.en-pr)); };
+// PNNY bot levels (v7.7): each upgrade raises the bet cap and the most of your cash the bot may use, and some levels add new plays (more trades a day)
+const PLV=[{cap:25,mx:50},{cap:40,mx:60},{cap:80,mx:70},{cap:150,mx:80},{cap:300,mx:90}], PBUPX=[4,12,40,120], PNB=["pscalp","pflush","ppump","pswing"];
+const PEXTRA={pscalp:{2:"+ shorts buyout rumors",3:"+ shorts insider selling",4:"+ buys earnings beats"},
+  pflush:{2:"+ shorts the dip itself (:00 to :02)"}, ppump:{2:"+ rides the pump up before shorting the top"}, pswing:{3:"+ holds breakouts 4 min instead of 3"}};
+const pLv=id=>A(id).lv||1, pCap=id=>PLV[pLv(id)-1].cap, pMx=id=>PLV[pLv(id)-1].mx, pUpC=id=>{ const l=pLv(id); return l>=5?0:AUTOS.find(x=>x.id===id).c*PBUPX[l-1]; };
 function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; const pr=price(0,NOW), h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
-  const open=(id,dir)=>{ if(!SIM||!aOn(id)||S.vb[id]||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } const q=Math.floor(Math.min(Math.max(0,S.cash)*aV(id)/100,25)/pr); if(q<1) return; S.cash-=q*pr; S.vb[id]={dir,q,en:pr}; resetPeak(); };
-  const close=id=>{ const v=S.vb[id]; if(!v) return; delete S.vb[id]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; botLog(id,pl); resetPeak(); };
-  for(const id in S.vb){ const v=S.vb[id]; if(vbVal(v)<=v.q*v.en*.8) close(id); }   // never more than 20% wrong
-  d.rit.forEach(R=>{ const t0=R.h*3600+R.m; if(sod===t0) open("pscalp",R.dir); else if(sod===t0+R.L){ close("pscalp"); open("pscalp",-R.dir); } else if(sod===t0+2*R.L) close("pscalp"); });
-  if(h%3===0){ if(k===120) open("pflush",1); else if(k===300) close("pflush"); }
-  sched(0,h).eps.forEach(e=>{ const o=e.st+(e.sOff||0); // sOff: where the big move starts (after its tell)
-    if(e.ty==="pump"){ if(k===o+60) open("ppump",-1); else if(k===o+300) close("ppump"); }
-    if(e.ty==="breakout"){ const a=e.sOff?o+30:e.st+90; if(k===a) open("pswing",1); else if(k===a+180) close("pswing"); } }); }
+  // key = one trade slot (a bot can hold one trade per play); id = the bot
+  const open=(key,id,dir)=>{ if(!SIM||!aOn(id)||S.vb[key]||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } const q=Math.floor(Math.min(Math.max(0,S.cash)*Math.min(aV(id),pMx(id))/100,pCap(id))/pr); if(q<1) return; S.cash-=q*pr; S.vb[key]={dir,q,en:pr,id}; resetPeak(); };
+  const close=key=>{ const v=S.vb[key]; if(!v) return; delete S.vb[key]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; botLog(v.id||key,pl); resetPeak(); };
+  for(const key in S.vb){ const v=S.vb[key]; if(vbVal(v)<=v.q*v.en*.8) close(key); }   // never more than 20% wrong
+  const lv=id=>aOn(id)?pLv(id):0;
+  d.rit.forEach(R=>{ const t0=R.h*3600+R.m; if(sod===t0) open("pscalp","pscalp",R.dir); else if(sod===t0+R.L){ close("pscalp"); open("pscalp","pscalp",-R.dir); } else if(sod===t0+2*R.L) close("pscalp"); });
+  if(h%3===0){ if(k===0&&lv("pflush")>=2) open("pflush:s","pflush",-1); else if(k===120){ close("pflush:s"); open("pflush","pflush",1); } else if(k===300) close("pflush"); }
+  sched(0,h).eps.forEach(e=>{ const s=e.st, o=s+(e.sOff||0); // sOff: where the big move starts (after its tell)
+    if(e.ty==="pump"){ if(k===o+60) open("ppump","ppump",-1); else if(k===o+300) close("ppump");
+      if(lv("ppump")>=2&&e.sOff){ if(k===s+5) open("ppump:t","ppump",1); else if(k===s+170) close("ppump:t"); } }
+    if(e.ty==="breakout"){ const a=e.sOff?o+30:s+90, hold=lv("pswing")>=3?240:180; if(k===a) open("pswing","pswing",1); else if(k===a+hold) close("pswing"); }
+    if(e.ty==="rumor"&&lv("pscalp")>=2){ if(k===s+60) open("pscalp:r","pscalp",-1); else if(k===s+360) close("pscalp:r"); }
+    if(e.ty==="deadcat"&&e.sOff&&lv("pscalp")>=3){ if(k===s+5) open("pscalp:d","pscalp",-1); else if(k===o+300) close("pscalp:d"); }
+    if(e.ty==="beat"&&e.sOff&&lv("pscalp")>=4){ if(k===s+5) open("pscalp:b","pscalp",1); else if(k===o+300) close("pscalp:b"); } });
+  for(const key in S.vb){ const v=S.vb[key]; if(v.at==null) v.at=NOW; else if(NOW-v.at>1800) close(key); } } // safety: nothing stays open past 30 min
 function runAutos(){ if(!S.auto) return; pennyBots(); const sod=((NOW%86400)+86400)%86400;
   if(aOn("trail")) for(const sym in S.pos){ const p=S.pos[sym], o=ORD(sym), pr=sp(sym), tr=aV("trail")/100;
     if(p.l){ const v=pr*(1-tr); if(!o.lsl||v>o.lsl) o.lsl=v; } if(p.s){ const v=pr*(1+tr); if(!o.ssl||v<o.ssl) o.ssl=v; } }
@@ -994,8 +1006,11 @@ const AEXP=new Set();
 function nextSod(sod){ const b=NOW-(((NOW%86400)+86400)%86400); let t=b+sod; if(t<=NOW) t+=86400; return t; }
 const clk=t=>new Date(t*1000).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
 const inT=t=>t-NOW<3600?`in ${Math.max(1,Math.round((t-NOW)/60))} min`:`at ${clk(t)}`;
+function pLvInfo(id){ const l=A(id).own?pLv(id):0, ex=PEXTRA[id]||{};
+  return `<div class="t" style="margin:8px 0 2px"><b style="color:var(--text)">Levels</b> · bigger bets${Object.keys(ex).length?", and new plays (more trades a day)":""}</div><ul class="axl">${PLV.map((L,i)=>{ const n=i+1, on=n<=l;
+    return `<li style="${on?"":"opacity:.6"}">${on?"✅":"🔒"} <b>Lv ${n}</b>${n>1?` · ${money(AUTOS.find(x=>x.id===id).c*PBUPX[n-2])}`:""}: max ${money(L.cap)}, ${L.mx}% of cash${ex[n]?` <b>${ex[n]}</b>`:""}</li>`; }).join("")}</ul>`; }
 function autoInfo(x){ const a=A(x.id), v=a.own?a.v:(x.set||[])[3], li=arr=>`<ul class="axl">${arr.filter(Boolean).map(t=>`<li>${t}</li>`).join("")}</ul>`, P0=STOCKS[0];
-  const pnny=[`<b>Only trades while the app is closed.</b> With the app open, you're the trader.`,`Bets ${v}% of your cash per trade, never more than <b>$25</b>.`,`Bails out if a trade gets 20% against it. Results go into the "Net so far" number above.`,`<b>Sits out while you have a trade of your own open.</b>`];
+  const pnny=[`<b>Only trades while the app is closed.</b> With the app open, you're the trader.`,`Bets ${PNB.includes(x.id)?Math.min(v,pMx(x.id)):v}% of your cash per trade, never more than <b>${money(PNB.includes(x.id)?pCap(x.id):25)}</b>.`,`Bails out if a trade gets 20% against it. Results go into the "Net so far" number above.`,`<b>Sits out while you have a trade of your own open.</b>`];
   switch(x.id){
    case "asl": return li([`When you open a trade, it sets a stop loss <b>${v}%</b> against you right away. Example: buy at $10.00 → stop at <b>$${(10*(1-v/100)).toFixed(2)}</b>. Short at $10.00 → stop at <b>$${(10*(1+v/100)).toFixed(2)}</b>.`,`It also applies to trades your bots open.`,`You can still drag or remove the stop on any trade.`,`Too tight and normal wiggles knock you out. PNNY swings ~6% a minute, so steady stocks suit small settings better.`]);
    case "atp": return li([`When you open a trade, it sets a take profit <b>${v}%</b> in your favor. Example: buy at $10.00 → sells at <b>$${(10*(1+v/100)).toFixed(2)}</b>. Short at $10.00 → covers at <b>$${(10*(1-v/100)).toFixed(2)}</b>.`,`It also applies to trades your bots open, so a bot trade can close early with a win.`,`Pair it with Default stop loss so every trade has an exit both ways.`]);
@@ -1005,11 +1020,11 @@ function autoInfo(x){ const a=A(x.id), v=a.own?a.v:(x.set||[])[3], li=arr=>`<ul 
    case "openb": { const t=nextSod(OPEN_H*3600+5), n=STOCKS.filter(d=>!d.gone&&unlocked(d)&&d.od&&S.know[d.s+"_open"]).length;
      return li([`At the morning open (<b>${clk(t)}</b> your time), it trades every stock whose <b>"at the morning open" lesson</b> you own, in the direction that lesson says, and closes 10 minutes later.`,`Uses <b>${v}%</b> of your cash per stock and keeps 10% of any profit. With several stocks it splits up your cash quickly, so start small.`,`<b>Only trades while the app is closed</b>, and sits out while you have a trade of your own open. If you come back mid-trade, it still finishes that trade.`,`PNNY has no morning open.`,n?`You own <b>${n}</b> open lesson${n>1?"s":""}. Next open: <b>${inT(t)}</b>.`:`<b>You don't own any open lessons yet</b>, so it has nothing to trade.`]); }
    case "pscalp": { let t=null; P0.rit.forEach(R=>{ const u=nextSod(R.h*3600+R.m); if(!t||u<t) t=u; });
-     return li([`PNNY has <b>6 routines a day</b>: a move one way, then back the other. This bot trades both halves, at the same times every day.`,...pnny,`Next routine: <b>${inT(t)}</b>.`,`Won about 95% in testing.`]); }
+     return li([`PNNY has <b>6 routines a day</b>: a move one way, then back the other. This bot trades both halves, at the same times every day.`,...pnny,`Next routine: <b>${inT(t)}</b>.`,`Won about 95% in testing.`])+pLvInfo(x.id); }
    case "pflush": { const h=Math.floor(NOW/3600); let t=(h-(((h%3)+3)%3))*3600+120; while(t<=NOW) t+=3*3600;
-     return li([`Every 3rd hour, every stock dips for 2 minutes then recovers. This bot buys PNNY at <b>:02</b> past the hour and sells at <b>:05</b>.`,...pnny,`Next one: <b>${inT(t)}</b>.`,`Won about 93% in testing.`]); }
-   case "ppump": return li([`When a pump starts on PNNY, it waits 60 seconds for the spike, then <b>shorts the top</b> and covers 4 minutes later, after the dump.`,...pnny,`Pumps come at random, a few times a day.`,`Won about 99% in testing.`]);
-   case "pswing": return li([`When PNNY breaks out on a volume surge, it <b>buys right after the surge starts</b> and sells 3 minutes later.`,...pnny,`Breakouts come at random, many times a day.`,`Won about 83% in testing.`]);
+     return li([`Every 3rd hour, every stock dips for 2 minutes then recovers. This bot buys PNNY at <b>:02</b> past the hour and sells at <b>:05</b>.`,...pnny,`Next one: <b>${inT(t)}</b>.`,`Won about 93% in testing.`])+pLvInfo(x.id); }
+   case "ppump": return li([`When a pump starts on PNNY, it waits 60 seconds for the spike, then <b>shorts the top</b> and covers 4 minutes later, after the dump.`,...pnny,`Pumps come at random, a few times a day.`,`Won about 99% in testing.`])+pLvInfo(x.id);
+   case "pswing": return li([`When PNNY breaks out on a volume surge, it <b>buys right after the surge starts</b> and sells 3 minutes later.`,...pnny,`Breakouts come at random, many times a day.`,`Won about 89% in testing.`])+pLvInfo(x.id);
    case "resup": { const pr=prof(); return li([`Before a job starts, if you don't have enough ${pr?pr.sup.toLowerCase():"supplies"} for it, it buys enough for <b>4 jobs</b> automatically.`,`Only if you have the cash. Otherwise the job won't start.`,`Pairs with Booking app, so back-to-back jobs never stall for supplies.`]); }
    case "book": return li([`When a job finishes, it starts your <b>best job</b> right away, including while you're away.`,`"Best" means the highest-paying job you've learned and have the gear for.`,`It stops if your gear breaks (unless you have Auto-repair) or you run out of supplies (unless you have Auto-resupply).`,`If you switched professions, it waits until you start a job yourself.`]);
    case "inv": return li([`Every paycheck, <b>${v}%</b> goes straight into the index fund. Example: a $100 job puts $${v} in the fund and $${100-v} in your cash.`,`The index fund rises with the whole market, and you can withdraw any time on the Market tab.`,`Money in the fund is safer from bad trades, but it still drops in a crash.`]);
@@ -1024,10 +1039,12 @@ function buildAuto(){ const st=botStats(7), td=botStats(1), mx=Math.max(1,...st.
     <div class="t" style="margin-top:8px">Bots only trade while the app is closed, and sit out while you have a trade of your own open.</div></div>`;
   const row=(x,big)=>{ const a=A(x.id), ex=AEXP.has(x.id), i=BOTS.indexOf(x.id), r=big?botRar(i,BOTS.length):0, col=big?RAR[r].c:(a.own?"var(--gold)":"#77879a"), ic=big?"robot":AICON[x.id];
     const today=botStats(1,x.id), ctl=a.own?`<button class="tg ${a.on?"on":""}" data-atog="${x.id}" aria-label="on/off"></button>`:`<button class="btn buyul" style="margin-top:0;width:auto;padding:7px 12px" data-abuy="${x.id}" data-cost="${x.c}">${money(x.c)}</button>`;
-    const set=a.own&&x.set?`<div class="t" style="margin-top:8px">${x.set[4].includes("%")?"Setting":"Bet"}: <b style="color:var(--text)" id="av-${x.id}">${a.v}${x.set[4]}</b></div><input type="range" style="width:100%" min="${x.set[0]}" max="${x.set[1]}" step="${x.set[2]}" value="${a.v}" data-aset="${x.id}">`:"";
+    const pb=PNB.includes(x.id), smx=pb?pMx(x.id):x.set&&x.set[1], sv=pb?Math.min(a.v,smx):a.v, uc=pb&&a.own?pUpC(x.id):0;
+    const set=(a.own&&x.set?`<div class="t" style="margin-top:8px">${x.set[4].includes("%")?"Setting":"Bet"}: <b style="color:var(--text)" id="av-${x.id}">${sv}${x.set[4]}</b>${pb?` · max ${money(pCap(x.id))}`:""}</div><input type="range" style="width:100%" min="${x.set[0]}" max="${smx}" step="${x.set[2]}" value="${sv}" data-aset="${x.id}">`:"")
+      +(pb&&a.own?(uc?`<button class="btn buyul sm" style="margin-top:8px;width:100%" data-aup="${x.id}" data-cost="${uc}">Upgrade to Lv ${pLv(x.id)+1} · ${money(uc)}</button>`:`<div class="t" style="margin-top:8px;text-align:center">⭐ Max level</div>`):"");
     const more=`<button class="aexp" data-aexp="${x.id}">${ex?"Hide details ▴":"How it works ▾"}</button>${ex?`<div class="axd">${autoInfo(x)}</div>`:""}`;
     if(big) return `<div class="card abot${a.own?"":" lock"}" style="${a.own&&a.on?`box-shadow:inset 0 0 0 1px ${col}66`:""}"><div class="row">${ICOB("robot",a.own?col:"#77879a",20)}<span class="g"></span>${ctl}</div>
-      <div class="b" style="margin-top:8px;color:${a.own?col:"var(--text)"}">${x.n}</div>
+      <div class="b" style="margin-top:8px;color:${a.own?col:"var(--text)"}">${x.n}${PNB.includes(x.id)&&a.own?` <span class="t" style="font-weight:700;color:${col}">Lv ${pLv(x.id)}</span>`:""}</div>
       <div class="t">${!a.own?x.d.split(". ")[0].replace(/\.+$/,"")+".":!a.on?"Off":today.n?`<b class="${today.pl>=0?"up":"dn"}">${sg(today.pl)}</b> today · ${today.n} trade${today.n>1?"s":""}`:"Resting · no trades today"}</div>${set}${more}</div>`;
     return `<div class="card"><div class="row" style="gap:10px">${ICOB(ic,a.own&&a.on?"#f5b301":"#77879a",18)}<div class="g"><div class="b">${x.n}</div><div class="t">${x.d}</div></div>${ctl}</div>${set}${more}</div>`; };
   h+=`<h3>Your bots</h3><div class="g2">${BOTS.map(id=>row(AUTOS.find(x=>x.id===id),1)).join("")}</div>`;
@@ -1621,6 +1638,7 @@ main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||
   if(d.ord){ const o=ORD(sym); if(ARM===d.ord){ ARM=null; } else if(o[d.ord]){ delete o[d.ord]; toast(d.ord.endsWith("sl")?"Stop loss removed":"Take profit removed"); } else { ARM=d.ord; toast("Now tap the chart where you want your "+(d.ord.endsWith("sl")?"stop loss":"take profit")); } $("pos").dataset.k=""; return build(true); }
   if(d.abuy){ const x=AUTOS.find(y=>y.id===d.abuy); if(S.cash>=x.c){ S.cash-=x.c; A(x.id).own=1; A(x.id).on=1; resetPeak(); toast("🤖 "+x.n+" is on","good"); sfx('bubble'); sfx('levelmax'); } return buildAuto(), hdr(); }
   if(d.aexp){ AEXP.has(d.aexp)?AEXP.delete(d.aexp):AEXP.add(d.aexp); const y=main.scrollTop; buildAuto(); main.scrollTop=y; return; }
+  if(d.aup){ const id=d.aup, c=pUpC(id), x=AUTOS.find(y=>y.id===id); if(c&&S.cash>=c){ S.cash-=c; const a=A(id), top=a.v>=pMx(id); a.lv=pLv(id)+1; if(top) a.v=pMx(id); resetPeak(); toast(`🤖 ${x.n} is now Lv ${a.lv}`,"good"); sfx('levelmax'); } return buildAuto(), hdr(); }
   if(d.atog){ const a=A(d.atog); a.on=a.on?0:1; sfx(a.on?'bubble':'tap'); return buildAuto(); }
   if(d.pf){ const id=d.pf; return modal("Switch to "+PB[id].n+"?",`<p>${S.profs[id]?"You'll pick up with your old gear and reputation.":"You've never done this. You start with borrowed gear."}</p>`,[["Cancel","ghost"],["Switch","gold",()=>chooseProf(id)]]); }
   if(d.ms){ const m=MS.find(x=>x.id===d.ms); if(S.cash>=m.c){ S.cash-=m.c; S.ms[m.id]=1; resetPeak(); life("🎉 "+m.n); sfx('unlock'); modal("🎉 "+m.n,`<div class="mom">"${m.mom}"</div><p>Permanent perk: <b>${m.p}</b></p>`,[["Let's go","gold"]]); } }
@@ -1760,7 +1778,7 @@ main.addEventListener("click",e=>{ if(e.target.closest("#zlive")) zoomReset();
   if(e.target.closest("#lclear")){ const n=myLines(S.sel).length; if(!n) return toast("No lines on "+S.sel); delete LINES[S.sel]; saveLines(); toast(`Cleared ${n} line${n>1?"s":""} on ${S.sel}`); draw(); } });
 main.addEventListener("pointermove",e=>{ if(e.target.id!=="chart"||e.pointerType!=="mouse"||e.buttons) return; const r=e.target.getBoundingClientRect(); HOV={x:e.clientX-r.left,y:e.clientY-r.top}; draw(); });
 main.addEventListener("pointerout",e=>{ if(e.target.id==="chart"&&e.pointerType==="mouse"){ HOV=null; draw(); } });
-main.addEventListener("input",e=>{ const id=e.target.dataset.aset; if(!id) return; A(id).v=+e.target.value; const x=AUTOS.find(y=>y.id===id); $("av-"+id).textContent=e.target.value+x.set[4]; });
+main.addEventListener("input",e=>{ const id=e.target.dataset.aset; if(!id) return; A(id).v=+e.target.value; const x=AUTOS.find(y=>y.id===id); $("av-"+id).textContent=e.target.value+x.set[4]+(PNB.includes(id)?" · max "+money(pCap(id)):""); });
 
 function flowPush(sym,dir,usd){ if(SIM||!DB||!(usd>0)) return; MYFLOW=MYFLOW.filter(x=>NOW-x[0]<1800); MYFLOW.push([NOW,BYSYM[sym].i,dir,Math.round(usd*100)/100]); if(MYFLOW.length>25) MYFLOW.shift(); flowDirty=true; }
 async function flowSync(){ if(!DB||!UID||flowBusy) return; flowBusy=true; const now=nowSec();

@@ -453,7 +453,7 @@ function sched(i,h){ const key=i+":"+h; let s=SC.get(key); if(s) return s;
   if(!d.idx){ const r=RNG("e"+d.sid+":"+h), pz=persOf(d,h), pf=pz&&pz.f!=null?pz.f:.45; for(let sl=0;sl<3;sl++) if(r()<pf){ const e=makeEp(d,r,h,sl<2&&!eps.some(x=>x.shape)); e.st=e.shape?sl*1200+10*Math.floor(r()*((1190-epLen(e))/10)):sl*1200+1+Math.floor(r()*(1199-epLen(e))); eps.push(e);} }
   const mr=RNG("m:"+h); let cr=mr()<1/60?1+Math.floor(mr()*3400):null; if(cr!=null&&h>=H2) cr=Math.max(cr,150);
   let ee=0, eeP=0; for(const e of eps){ if(e.shape){ ee+=e.net*d.vol*Math.sqrt(60); continue; } for(const p of e.ph){ const m=p[0]*(p[3]?p[1]:p[1]*d.vol); ee+=m; if(p[3]&&h>=H1) eeP+=.78*m; } } // part of a collapse/squeeze sticks
-  if(cr!=null) ee+=Math.log(.82)*d.beta+(h>=H2?Math.log(.995)*d.beta:0);
+  if(cr!=null){ const cb=d.beta*(d.idx&&h>=H7?IXC:1); ee+=Math.log(.82)*cb+(h>=H2?Math.log(.995)*cb:0); }
   if(d.od&&((h%24)+24)%24===OPEN_H) ee+=openSign(i,h)*d.oD;
   s={eps,cr,ee,eeP}; SC.set(key,s); if(SC.size>3000) SC.delete(SC.keys().next().value); return s; }
 // hourly anchors (log-price), mean-reverting around a long-run trend
@@ -468,15 +468,20 @@ function L(i,h){ const d=SER[i], a=AN[i], k=h-H0; if(k<0) return Lpre(i,h);
   while(a.length<=k){ const j=a.length-1, hh=H0+j, ee=sched(i,hh).ee, g=d.sdh*G(RNG("a"+d.sid+":"+hh));
     if(hh+1<H1) a.push(d.ar*(a[j]+ee)+g);
     else { const sc=sched(i,hh), ae=AE[i], ej=ae[j]||0, en=.6*(ej+ee-sc.eeP); ae[j+1]=en;
-      if(d.idx&&hh>=H7){ const rg=ixReg(hh); a.push(a[j]-ej+sc.eeP+rg.m/168+rg.s/Math.sqrt(168)*(g/d.sdh)+en); } // real-index walk: no pull back to a trend line
+      if(d.idx&&hh>=H7){ const rg=ixReg(hh), z=g/d.sdh, v=ixVar(hh,z); a.push(a[j]-ej+sc.eeP+rg.m/168+rg.s/Math.sqrt(168)*Math.sqrt(v)*z+en); } // real-index walk: no pull back to a trend line
       else a.push(d.ar*(a[j]-ej+sc.eeP)+g*(d.idx||d.lv?1:CALM*((persOf(d,hh)||{}).calm||1))+en); } } // from H1 on, pattern after-effects fade within hours instead of piling up
   return (d.lv?pnLevel(h):Math.log(d.p)+d.tr*3600*(d.idx?Math.min(k,H7-H0):k))+a[k]+d.beta*MKT(h); }
 // ---------- index fund as a real index (from H7 = 6pm Central Nov 7 2026; index prices before H7 are unchanged) ----------
 // One week is one year. Like a real stock index, TTI is a random walk with no line pulling it back: most years go up,
 // about 1 in 4 goes down, and it moves through bull markets, short corrections, bear markets and fast recoveries.
 // Tuned so the average year (week) is about +11% with a spread close to the real S&P 500's.
-const H7=Math.floor(Date.UTC(2026,10,8,0)/3600000), IXR=[];
-const IXT={bull:{d:[7,35],m:.165,s:.11},corr:{d:[2,5],m:-.30,s:.20},bear:{d:[5,12],m:-.30,s:.24},rec:{d:[3,7],m:.30,s:.18}};
+const H7=Math.floor(Date.UTC(2026,10,8,0)/3600000), IXR=[], IXV=[1];
+// Volatility clustering with the leverage effect (GJR-GARCH on the hourly moves): a big move makes the next hours
+// jumpier, and drops do it more than rises. Averages out to 1, so the yearly numbers don't change. IXC: the index
+// feels market crashes at this fraction of its beta (real one-day drops of 4-5% happen about once or twice a year).
+const IXG={a:.05,g:.12,b:.87}, IXC=.5, IXW=.65;
+function ixVar(hh,z){ const k=hh-H7, v=IXV[k]; if(IXV.length===k+1){ const w=1-IXG.a-IXG.g/2-IXG.b; IXV.push(Math.min(9,w+(IXG.a+(z<0?IXG.g:0))*z*z*v+IXG.b*v)); } return v; }
+const IXT={bull:{d:[7,35],m:.16,s:.125},corr:{d:[2,5],m:-.30,s:.22},bear:{d:[5,12],m:-.30,s:.27},rec:{d:[3,7],m:.30,s:.20}};
 function ixReg(h){ while(!IXR.length||IXR[IXR.length-1].h1<=h){ const n=IXR.length, p=IXR[n-1], r=RNG("ixr"+n), ty=p?p.nx:"bull", T=IXT[ty];
     const days=T.d[0]+Math.floor(r()*(T.d[1]-T.d[0]+1)), nx=ty==="bull"?(r()<.3?"bear":"corr"):ty==="bear"?"rec":"bull", h0=p?p.h1:H7;
     IXR.push({ty,h0,h1:h0+days*24,m:T.m,s:T.s,nx}); }
@@ -549,12 +554,14 @@ function chunk(i,h){ const key=i+":"+h; let c=CH.get(key); if(c) return c;
   if(d.od&&dh===OPEN_H){ const a=openSign(i,h)*d.oD/600; for(let t=1;t<=600;t++){ mu[t]+=a; vm[t]*=3; if(h>=H4) sm[t]*=SQ; } }
   if(d.lv&&h>=H4&&dh===5){ const a=Math.log(1-pnDay(pnnyDay(h)).f)/300; for(let t=HN-299;t<=HN;t++){ mu[t]+=a; vm[t]*=4; } } // PNNY midnight crash (11:55pm-midnight Central)
   for(const m of minorNews(i,h)) for(let k=1;k<=20;k++){ mu[m.at+k]+=m.a/20; vm[m.at+k]*=2.2; }
-  if(s.cr!=null) for(let k=0;k<90;k++){ mu[s.cr+k]+=Math.log(.82)/90*d.beta; vm[s.cr+k]*=4; }
-  if(s.cr!=null&&h>=H2) for(let k=1;k<=120;k++){ mu[s.cr-k]+=Math.log(.995)/120*d.beta; vm[s.cr-k]*=1.8; }
-  const r=RNG("n"+d.sid+":"+h), M=d.idx?null:mpath(h), X=new Float64Array(HN+1), E=new Float64Array(HN+1), V=new Float32Array(HN+1), tv=d.vol*d.vol; let v=tv;
+  const cb=d.beta*(d.idx&&h>=H7?IXC:1);
+  if(s.cr!=null) for(let k=0;k<90;k++){ mu[s.cr+k]+=Math.log(.82)/90*cb; vm[s.cr+k]*=4; }
+  if(s.cr!=null&&h>=H2) for(let k=1;k<=120;k++){ mu[s.cr-k]+=Math.log(.995)/120*cb; vm[s.cr-k]*=1.8; }
+  const ixq=d.idx&&h>=H7, dvol=ixq?(L(i,h+1),ixReg(h).s/Math.sqrt(168)*Math.sqrt(IXV[h-H7])/60*IXW):d.vol; // index from H7: in-hour noise as big as the hour's move, so the path is a true random walk with no fake momentum
+  const r=RNG("n"+d.sid+":"+h), M=d.idx?null:mpath(h), X=new Float64Array(HN+1), E=new Float64Array(HN+1), V=new Float32Array(HN+1), tv=dvol*dvol; let v=tv;
   for(let t=1;t<=HN;t++){ const e0=Math.sqrt(v)*G(r)*(r()<.02?2.6:1), e=e0*sm[t]; v=.02*tv+.06*e0*e0+.92*v;
     X[t]=X[t-1]+e+(M?d.beta*(M[t]-M[t-1]):0); E[t]=E[t-1]+mu[t];
-    V[t]=(h>=H4?(1200+600*r())*vm[t]*(.4+.75*Math.abs(e0)/d.vol):(900+900*r())*vm[t]*(1+Math.abs(e)/d.vol*.25))*(d.p<5?40:d.p>500?.3:1); }
+    V[t]=(h>=H4?(1200+600*r())*vm[t]*(.4+.75*Math.abs(e0)/dvol):(900+900*r())*vm[t]*(1+Math.abs(e)/d.vol*.25))*(d.p<5?40:d.p>500?.3:1); }
   const L0=L(i,h), L1=L(i,h+1), P=new Float64Array(HN+1), shp=s.eps.find(e=>e.shape);
   if(!shp){ if(d.lv&&h>=H4){ const C=PNP.cap; for(let t=0;t<=HN;t++) P[t]=Math.exp(L0+t/HN*(L1-L0-E[HN])+C*Math.tanh((X[t]-t/HN*X[HN])/C)+E[t]); } // PNNY from H4: the in-hour swing is softly capped at about 2x / 0.5x the hour's path, so a spike can't run to 6-12x
     else for(let t=0;t<=HN;t++) P[t]=Math.exp(L0+t/HN*(L1-L0-E[HN])+X[t]-t/HN*X[HN]+E[t]); }
@@ -782,7 +789,7 @@ const JUMPY=["SOLR","ORBT","CHIP","ROBO","SKYD","RAMX","EVCO","AIQ"], snapPct=d=
 const LONG=[
  {id:"pnreset",ch:"1h chart",n:"PNNY's midnight crash",c:250,t:"PNNY crashes every night before midnight.",d:()=>`PNNY trends all day, usually up, sometimes down, and every few weeks it gets on a roll for up to a week. But every night from <b>${lt(5,3300)}</b> to <b>${lt(6)}</b> your time it <b>crashes for 5 minutes</b>. It never jumps then. The more it climbed that day, the harder it falls:<br><br>Up 0–30% since ${lt(6)} → falls about <b>17%</b><br>Up 30–70% → about <b>21%</b><br>Up 70–150% → about <b>30%</b><br>Up more than that → about <b>34%</b>, up to 45%<br>Down on the day → only about 9%, too small to trade.<br><br>At <b>${lt(5,3300)}</b>, compare PNNY to its price at ${lt(6)} last night (the start of the day). If it's <b>higher, short it</b>. Cover just after ${lt(6)}. Won <b>94%</b> of nights, averaging +22%.`},
  {id:"pnsnap",ch:"1h chart",n:"PNNY always comes home",c:600,t:"However wild PNNY gets during an hour, it ends up back on track.",d:()=>`On the <b>1h chart</b>, watch the current candle. At <b>:30 past any hour</b>, compare PNNY's price to where that candle opened.<br><br>If it's <b>50% or more above</b> the open, <b>short</b>. If it's <b>50% or more below</b>, <b>buy</b>. Close at <b>:59</b>. Won <b>98%</b>, about 3 or 4 chances a day.`},
- {id:"crashidx",ch:"Index fund",n:"Crash sale on the index",c:2500,t:"The one time the index fund goes on sale.",d:()=>`A <b>“Market crash”</b> drags the index fund down too, but it climbs back over the next day. Wait <b>2 minutes</b> after the headline for the drop to finish, <b>deposit into the index fund</b>, and <b>withdraw 12 hours later</b>. Won <b>96% of the time in testing</b>, about +9% each time. Crashes come roughly every 2½ days.`},
+ {id:"crashidx",ch:"Index fund",n:"Crash sale on the index",c:2500,t:"The one time the index fund goes on sale.",d:()=>`A <b>“Market crash”</b> drags the index fund down too, but most of the drop comes back within a few hours. Wait <b>2 minutes</b> after the headline for the drop to finish, <b>deposit into the index fund</b>, and <b>withdraw 3 hours later</b>. Won <b>91% of the time in testing</b>, about +3.4% each time. Crashes come roughly every 2½ days.`},
  {id:"snap",ch:"1h chart",n:"The hourly snap-back",c:6000,t:"Jumpy stocks overshoot during the hour, then drift back.",d:()=>`On the <b>1h chart</b> at <b>:30 past the hour</b>, check how far the current candle has moved from its open. If it's past the stock's number below, bet on it coming back: <b>short</b> if it's up, <b>buy</b> if it's down. Close at <b>:59</b>. Won about <b>97%</b> on these jumpy stocks; steady ones only win about 70%, so skip them.<br><br>${JUMPY.map(s=>`<b>${s}</b> ±${snapPct(BYSYM[s])}%`).join(" · ")}`},
  {id:"wreck",ch:"1h chart",n:"Buy the wreckage",c:20000,t:"What a stock does in the hours after it collapses.",d:()=>`A collapse overshoots, and the stock spends the next several hours crawling back. After the <b>“auditor resigns”</b> headline and the huge red candle, wait until the volume calms down, about <b>3 to 4 minutes after the drop ends</b>. Then <b>buy and hold for 6 hours</b>. Won <b>97%</b>, averaging about +55%, but part of the crash never comes back.`}];
 const ALLK=KNOW.concat(SK,LONG);

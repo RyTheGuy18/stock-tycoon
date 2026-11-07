@@ -19,3 +19,11 @@ Re-run it after any engine change. Engine changes alter the market for everyone,
   3rd-touch volume (1.8×).
 - To test the new engine, replace `H2*3600` / `H3*3600` with `H4*3600` in the harness T0 line.
 - PNNY lessons (midnight crash, 1h snap), the flush, the morning open and every daily routine were checked with a separate script over 60–150 days.
+
+## v7.9 news revamp (H8 = Nov 8 2026 06:00 UTC, midnight Central)
+- From H8 the old breaking news (`bigEv`), the every-30-min small news (`minorNews`) and the mood headlines are off. News comes from
+  `newsV2` (market-wide / industry / big company / everyday company) and moves prices through `nwo()` (added inside `evo()`).
+- Earnings / rumor / investigation episodes now only come from the company news schedule (`nCoEp`), about 1 a day per stock, with
+  their moves doubled. To test the new engine, replace `H2*3600` / `H3*3600` with `H8*3600` in the harness T0 lines.
+- Whispers come from industry and big company stories in `newsV2` (not `newsSince`), so `WHISP` no longer finds them; test with
+  `newsV2(...).filter(x=>x.tell==='whisper')` and close 1 h after the story.

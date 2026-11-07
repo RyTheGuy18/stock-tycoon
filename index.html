@@ -33,7 +33,7 @@ main{flex:1;overflow-y:auto;min-height:0;overscroll-behavior:contain;position:re
 #ptr{position:absolute;left:50%;width:36px;height:36px;margin-left:-18px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;z-index:5;opacity:0;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
 #ptr svg{width:20px;height:20px;color:var(--gold)} #ptr.spin svg{animation:ptrs .8s linear infinite} @keyframes ptrs{to{transform:rotate(360deg)}}
 @media (display-mode: standalone){ html{height:min(100lvh,calc(100% + env(safe-area-inset-top)))} }
-#modal,#intro,#tut,#auth,#chat{position:absolute!important;top:0!important;bottom:0!important;height:auto!important}
+#modal,#intro,#tut,#auth,#chat,#nx{position:absolute!important;top:0!important;bottom:0!important;height:auto!important}
 html.pwa nav{padding-bottom:max(12px,calc(env(safe-area-inset-bottom) - 20px))} html.pwa nav button{padding:12px 0 0}
 html.pwa header{padding-top:calc(env(safe-area-inset-top) + 32px)} html.pwa #hbtns{top:calc(env(safe-area-inset-top) + 30px)}
 nav{display:flex;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom)}
@@ -236,6 +236,14 @@ html,body{overscroll-behavior:none} body{-webkit-touch-callout:none} input.inp{f
 nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:var(--dn)}
 #auth{position:fixed;inset:0;z-index:20;background:radial-gradient(120% 90% at 50% 0%,#1b2333,#07090c 70%);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 20px) 22px calc(env(safe-area-inset-bottom) + 20px);overflow-y:auto}
 #auth .au{width:100%;max-width:380px} #auth h1{text-align:center;margin:4px 0 6px;font-size:28px;font-weight:800} .aulogo{font-size:46px;text-align:center}
+#nx{position:fixed;inset:0;z-index:8;background:var(--bg);display:none;flex-direction:column;max-width:560px;margin:0 auto;height:100dvh}
+.nxs{margin:10px 12px 4px} .nxs button{font-size:12px;padding:7px 2px;position:relative} .ndot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--dn);vertical-align:2px}
+.nxl{flex:1;overflow-y:auto;padding:6px 12px calc(env(safe-area-inset-bottom) + 16px)}
+.ncd{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:9px} .ncd.nnew{border-color:#3a4a5c} .ncd.nfu{opacity:.85}
+.nmeta{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mut);margin-bottom:4px} .nimp{font-size:10.5px;padding:1px 7px;border-radius:99px}
+.nimp.mj{background:#3a1518;color:#f09595} .nimp.md{background:#3a2c10;color:#fac775} .nimp.mi{background:var(--c2);color:#9aa8b8}
+.nhl{font-size:15px;font-weight:600;line-height:1.35} .nbl{font-size:12.5px;color:var(--mut);margin-top:3px;line-height:1.4}
+.ntk .mu{color:var(--mut);margin-left:3px} .ntk{display:inline-block;font-size:11.5px;background:var(--c2);border-radius:6px;padding:3px 7px;margin:7px 5px 0 0;color:var(--text)}
 #chat{position:fixed;inset:0;z-index:8;background:var(--bg);display:flex;flex-direction:column;max-width:560px;margin:0 auto;height:100dvh}
 .chd{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;border-bottom:1px solid var(--line);background:var(--panel)}
 .chb{font-size:32px;line-height:1;padding:0 8px 4px 0;color:var(--text)}
@@ -402,15 +410,159 @@ const Lsg=(i,h)=>h<H0?(SER[i].lv?dayLevel(h):Math.log(SER[i].p)):h>=H1?L(i,h)+ev
 const openSign=(i,h)=>(Lsg(i,h)>=Lsg(i,h-24)?1:-1)*SER[i].od;
 const IDX={s:"TTI",sid:16,n:"Tycoon Total Index",p:100,vol:.00006,beta:.5,spr:0,tr:Math.log(1.11)/604800,ar:.97,sdh:.0025,idx:1};
 const SER=STOCKS.concat([IDX]), II=SER.length-1, BYSYM={}; SER.forEach((d,i)=>{d.i=i;BYSYM[d.s]=d;});
+// ---------- news v2 (from H8 = midnight Central Nov 8 2026; prices before H8 are unchanged) ----------
+// Four kinds of news, all unpredictable (no calendar). Headlines never say what the stock will do; each kind of story
+// just has odds (pb = chance it turns out bad), and the wording makes the likely direction semi-obvious.
+//  - Market-wide: about every 3-4 weeks. Moves the index and every stock, for up to a week. The rarer the size, the harder it hits.
+//  - Industry: about every 1-2 weeks per industry. Only that industry's stocks, for 1-3 days.
+//  - Big company news: about every 2-3 weeks per stock, lasts 3-4 days.
+//  - Everyday company news: about twice a day per stock (half of them are the lesson headlines: earnings, rumors,
+//    investigations), lasting 20 min-2 h, about 45 min on average.
+const H8=Math.floor(Date.UTC(2026,10,8,6)/3600000);
+const IND={tech:{n:"Tech",s:["CHIP","AIQ","GAME"]},cons:{n:"Food & shopping",s:["BRGR","BREW","PNNY"]},trav:{n:"Travel & space",s:["FLYR","ORBT"]},ener:{n:"Energy & cars",s:["OILX","EVCO"]},heal:{n:"Health",s:["MEDX"]}};
+const INDOF={}; for(const k in IND) for(const s of IND[k].s) INDOF[s]=k;
+// shapes: T rise (s), H hold (s), k share that lingers, D1 fast fade (s), D2 slow fade (s)
+const NSH={shock:r=>({T:1800+r()*5400,H:21600+r()*64800,k:.2+r()*.3,D1:86400*(.8+r()*.8),D2:86400*(2.5+r()*2)}),
+  grind:r=>({T:86400*(1.5+r()*2),H:43200+r()*43200,k:.3,D1:86400*1.2,D2:86400*3.5}),
+  pop:r=>({T:1800+r()*5400,H:86400*(1+r()),k:.5+r()*.3,D1:86400*2,D2:86400*(4+r()*2)}),
+  climb:r=>({T:86400*(1.5+r()*2.5),H:86400*(1+r()),k:.6,D1:86400*2,D2:86400*5}),
+  ind:r=>({T:600+r()*3000,H:21600+r()*64800,k:.3,D1:43200+r()*43200,D2:86400*1.3}),
+  big:r=>({T:300+r()*1500,H:86400*(1+r()),k:.3,D1:86400*(.6+r()*.4),D2:86400*1.2}),
+  small:r=>{ const D=Math.min(7200,Math.max(1200,2700*Math.exp(.45*G(r)))); return {T:40+r()*140,H:D*.35,k:0,D1:D*.25,D2:1}; }};
+const MACRO=[
+ {t:"Surprise election result: control of Congress flips",b:"Investors worry a split government will get less done.",pb:.75,sh:"shock"},
+ {t:"The central bank raises interest rates more than expected",b:"Higher rates make it more expensive for people and companies to borrow money.",pb:.85,sh:"shock",ind:{tech:1.4,cons:1.1}},
+ {t:"Prices are rising fast: inflation hits a 10-year high",b:"When everything costs more, people buy less, and the central bank may raise rates.",pb:.85,sh:"grind",ind:{cons:1.3}},
+ {t:"Hiring suddenly stalls in the monthly jobs report",b:"Fewer new jobs can mean the economy is slowing down.",pb:.8,sh:"shock"},
+ {t:"Recession fears grow as factories slow down",b:"A recession is when the whole economy shrinks for a while.",pb:.9,sh:"grind",fx:{PNNY:-.6}},
+ {t:"Oil shock: an attack on a major pipeline cuts supply",b:"Less oil means higher prices for gas, flights and shipping.",pb:.8,sh:"shock",fx:{OILX:-1.6,FLYR:1.8,EVCO:-.4}},
+ {t:"War breaks out overseas",b:"Wars make the future harder to predict, and that makes investors nervous.",pb:.85,sh:"shock",fx:{ORBT:-.7,OILX:-.9,FLYR:1.5}},
+ {t:"A major bank collapses, and panic spreads",b:"When one bank fails, people worry others could be next.",pb:.95,sh:"shock",x:1.5},
+ {t:"New tariffs start a trade war",b:"Tariffs are taxes on goods from other countries, so lots of products get more expensive.",pb:.8,sh:"grind",ind:{cons:1.3,tech:1.3}},
+ {t:"The central bank cuts interest rates",b:"Cheaper borrowing makes it easier for people and companies to spend.",pb:.15,sh:"pop",ind:{tech:1.3}},
+ {t:"Inflation cools faster than expected",b:"Prices are rising more slowly, so shoppers get some relief.",pb:.15,sh:"pop",ind:{cons:1.2}},
+ {t:"The jobs report blows past expectations",b:"Lots of new jobs usually means a strong economy.",pb:.2,sh:"pop"},
+ {t:"The new president's tax cut becomes law",b:"Companies and families get to keep more of what they earn.",pb:.2,sh:"climb"},
+ {t:"A trade deal is signed and tariffs are dropped",b:"Goods can move between countries more cheaply again.",pb:.15,sh:"pop",ind:{cons:1.2,tech:1.2}},
+ {t:"A ceasefire is announced overseas",b:"The fighting stops, and investors relax.",pb:.15,sh:"pop",fx:{OILX:-.6,ORBT:.3}},
+ {t:"The economy grows at its fastest pace in years",b:"A growing economy means more sales and profits for most companies.",pb:.2,sh:"climb"},
+ {t:"The election ends with a clear winner",b:"A clear result ends months of uncertainty.",pb:.3,sh:"pop"}];
+const INDN={
+ tech:[{t:"The chip shortage gets worse",b:"Computer chips go into almost everything, and factories can't make enough.",pb:.85,fx:{CHIP:1.2}},
+  {t:"Big tech companies spend record amounts on AI",b:"Companies are racing to build smarter computers.",pb:.2,fx:{AIQ:1.3,CHIP:1.1,GAME:.4}},
+  {t:"New rules could limit how tech companies use your data",b:"Lawmakers want stricter privacy laws.",pb:.75},
+  {t:"Gamers spend a record amount this holiday season",b:"Game sales are higher than ever.",pb:.2,fx:{GAME:1.5,CHIP:.5,AIQ:.3}},
+  {t:"Hackers break into several big tech companies",b:"Customer information may have been stolen.",pb:.8},
+  {t:"A breakthrough makes chips twice as fast",b:"Faster chips could power a new wave of gadgets.",pb:.15,fx:{CHIP:1.4}}],
+ cons:[{t:"Shoppers cut back as prices rise",b:"People are skipping eating out and extras to save money.",pb:.8,fx:{PNNY:-.8}},
+  {t:"Restaurant sales hit a record",b:"People are eating out more than ever.",pb:.2,fx:{BRGR:1.3,BREW:1,PNNY:.2}},
+  {t:"Coffee bean prices double after a bad harvest",b:"Bad weather ruined crops in coffee-growing countries.",pb:.85,fx:{BREW:1.6,BRGR:.4,PNNY:.2}},
+  {t:"The minimum wage goes up in 20 states",b:"Restaurants and stores have to pay their workers more.",pb:.7},
+  {t:"Holiday shopping season starts strong",b:"Stores report busy weekends and full parking lots.",pb:.2},
+  {t:"Food safety rules get much stricter",b:"Restaurants will need more inspections and paperwork.",pb:.7,fx:{BRGR:1.3,BREW:.8,PNNY:.2}}],
+ trav:[{t:"Jet fuel prices jump",b:"Fuel is one of the biggest costs for anything that flies.",pb:.85,fx:{FLYR:1.3,ORBT:.5}},
+  {t:"A record number of people travel this holiday",b:"Airports are packed and flights are sold out.",pb:.2,fx:{FLYR:1.4,ORBT:.3}},
+  {t:"The government signs a huge space program deal",b:"Billions will go to rockets and satellites.",pb:.15,fx:{ORBT:1.6,FLYR:.2}},
+  {t:"A shortage of airplane parts grounds flights",b:"Planes can't fly until they're repaired.",pb:.85,fx:{FLYR:1.4,ORBT:.6}},
+  {t:"Space tourism takes off with a sold-out trip",b:"Regular people are paying to fly to space.",pb:.2,fx:{ORBT:1.5,FLYR:.3}},
+  {t:"Air traffic controllers go on strike",b:"Thousands of flights could be cancelled.",pb:.9,fx:{FLYR:1.5,ORBT:.2}}],
+ ener:[{t:"Oil prices jump as supply runs low",b:"Oil-producing countries are pumping less.",pb:.2,fx:{OILX:1.4,EVCO:.5}},
+  {t:"Oil prices crash as countries pump more",b:"There's suddenly far more oil than people need.",pb:.85,fx:{OILX:1.5,EVCO:.2}},
+  {t:"The government offers big tax credits for electric cars",b:"Buyers can save thousands on an electric car.",pb:.15,fx:{EVCO:1.6,OILX:-.5}},
+  {t:"Battery fires spark an electric car safety probe",b:"Investigators are looking into cars catching fire.",pb:.85,fx:{EVCO:1.6,OILX:-.3}},
+  {t:"A giant new oil field is found offshore",b:"It could be one of the biggest finds in decades.",pb:.25,fx:{OILX:1.2}},
+  {t:"Charging stations double nationwide",b:"Charging an electric car is getting much easier.",pb:.2,fx:{EVCO:1.3}}],
+ heal:[{t:"The government plans to cap drug prices",b:"Drug companies may have to charge less for medicine.",pb:.85},
+  {t:"Flu season is the worst in a decade",b:"Doctors are seeing far more patients than usual.",pb:.25},
+  {t:"The government speeds up approval for new drugs",b:"New medicines could reach patients years sooner.",pb:.15},
+  {t:"Hospitals report a shortage of medicine",b:"Some common drugs are hard to find right now.",pb:.5}]};
+const BIGN=[{t:"{n}'s CEO resigns suddenly",b:"No replacement has been named yet.",pb:.7},
+ {t:"{n} names a new CEO",b:"The new boss comes from a rival company.",pb:.45},
+ {t:"{n} gets a buyout offer",b:"Another company wants to buy all of {n}.",pb:.1},
+ {t:"{n} is hit with a fraud investigation",b:"Regulators are looking into how {n} reported its money.",pb:.9},
+ {t:"{n} wins the biggest contract in its history",b:"The deal is worth more than a year of its sales.",pb:.1},
+ {t:"{n} announces a huge recall",b:"Customers are being told to return thousands of products.",pb:.85},
+ {t:"{n} loses a giant lawsuit",b:"A court orders {n} to pay billions.",pb:.85},
+ {t:"{n} plans to split into two companies",b:"Each half would be run on its own.",pb:.35},
+ {t:"{n} cuts 20% of its workers",b:"The company says it needs to save money.",pb:.55},
+ {t:"{n} announces a surprise partnership with a tech giant",b:"The two companies will build products together.",pb:.15},
+ {t:"Medexa's cancer drug wins approval",b:"Doctors can start prescribing it next month.",pb:.1,only:"MEDX"},
+ {t:"Medexa's top drug fails its final trial",b:"Years of work on the drug may be lost.",pb:.9,only:"MEDX"},
+ {t:"Burgerline food poisoning scare at dozens of locations",b:"Health officials are investigating.",pb:.9,only:"BRGR"},
+ {t:"A Skyline jet makes an emergency landing",b:"No one was hurt, but the plane model is under review.",pb:.8,only:"FLYR"}];
+const SMALLN=[{t:"{n} signs a new partnership",b:"The two companies will work together on new products.",pb:.2},
+ {t:"{n} wins a major customer",b:"A large company signed a multi-year deal.",pb:.15},
+ {t:"Analysts raise their target for {n}",b:"Analysts study companies and predict where their stock is headed.",pb:.2},
+ {t:"{n} launches a new product",b:"Early reviews are mixed.",pb:.45},
+ {t:"{n} will buy back its own shares",b:"A buyback means the company buys its own stock from investors.",pb:.2},
+ {t:"{n} hires a well-known executive",b:"She was a top leader at a bigger rival.",pb:.3},
+ {t:"{n} loses a key customer",b:"One of its biggest buyers is switching to a rival.",pb:.85},
+ {t:"Analysts cut their target for {n}",b:"They think the next few months will be tough.",pb:.8},
+ {t:"{n} delays its next big product",b:"The launch is pushed back several months.",pb:.8},
+ {t:"Customers sue {n}",b:"The lawsuit says products didn't work as promised.",pb:.7},
+ {t:"{n} announces layoffs",b:"A small part of its staff will lose their jobs.",pb:.55},
+ {t:"A top executive leaves {n}",b:"The company didn't say why.",pb:.7}];
+// heavy tail: the rarer the size, the bigger it is
+const ptail=(r,min,a,cap)=>Math.min(cap,min*Math.pow(1-r()*.999,-1/a));
+const sd45=d=>d.vol*Math.sqrt(2700);
+const NSQ={};
+function nseq(key,g0,g1,first,make,upto){ const a=NSQ[key]||(NSQ[key]=[]);
+  while(!a.length||a[a.length-1].t0<upto){ const n=a.length, r=RNG(key+":"+n), t0=n?a[n-1].t0+Math.floor(g0+r()*(g1-g0)):H8*3600+Math.floor(first[0]+r()*(first[1]-first[0])); a.push(make(r,t0,n)); }
+  return a; }
+const DAY=86400;
+const mkEv=(r,t0,tp,sh,m)=>{ const dir=r()<tp.pb?-1:1; return Object.assign({t0,tp,dir,m},NSH[sh](r)); };
+const nMacro=upto=>nseq("nmac",21*DAY,28*DAY,[2*DAY,5*DAY],(r,t0)=>{ const tp=MACRO[Math.floor(r()*MACRO.length)], e=mkEv(r,t0,tp,tp.sh,Math.min(.5,ptail(r,.08,2,.45)*(tp.x||1))); e.lv="mkt"; return e; },upto);
+const nInd=(k,upto)=>nseq("nind"+k,7*DAY,14*DAY,[.3*DAY,7*DAY],(r,t0)=>{ const L=INDN[k], tp=L[Math.floor(r()*L.length)], e=mkEv(r,t0,tp,"ind",ptail(r,2,2.3,6)); e.lv="ind"; e.ik=k; e.pw=300+Math.floor(r()*301); return e; },upto);
+const nBig=(d,upto)=>nseq("nbig"+d.s,14*DAY,21*DAY,[.5*DAY,14*DAY],(r,t0)=>{ const L=BIGN.filter(x=>!x.only||x.only===d.s), tp=L[Math.floor(r()*L.length)], e=mkEv(r,t0,tp,"big",ptail(r,3,2.2,9)); e.lv="big"; e.s=d.s; e.pw=300+Math.floor(r()*301); return e; },upto);
+// everyday company news: every 6-18 h. Half are the lesson headlines (built as episodes in sched), half are price nudges here.
+const nCo=(d,upto)=>nseq("nco"+d.s,8*3600,20*3600,[0,12*3600],(r,t0)=>{ if(r()<.5){ const u=r(); return {t0,lv:"co",ep:u<.35?"beat":u<.65?"rumor":"deadcat",sl:Math.floor((t0%3600)/1200)}; }
+  const tp=SMALLN[Math.floor(r()*SMALLN.length)], e=mkEv(r,t0,tp,"small",1.2+r()*1.3); e.lv="co"; e.s=d.s; return e; },upto);
+const nEnd=e=>e.T+e.H+(e.k>0?6*e.D2:6*e.D1);
+function nwShape(e,t){ const dt=t-e.t0; if(dt<=0) return e.pw&&dt>-e.pw?.05*(1+dt/e.pw):0; if(dt<e.T){ const x=dt/e.T; return x*x*(3-2*x); }
+  const a=dt-e.T-e.H; if(a<=0) return 1; return (1-e.k)*Math.exp(-a/e.D1)+e.k*Math.exp(-a/e.D2); }
+const NWL=new Map();
+function nwList(i,h){ if(h<H8-1) return []; const key=i+":"+h; let l=NWL.get(key); if(l) return l; l=[]; const d=SER[i], t1=(h+1)*3600, t0=h*3600, vf=Math.min(1.6,Math.max(.7,Math.sqrt(d.vol/.0018)));
+  const add=(arr,w)=>{ for(let j=arr.length-1;j>=0;j--){ const e=arr[j]; if(e.t0-(e.pw||0)>=t1) continue; if(e.t0+nEnd(e)<t0){ if(t0-e.t0>40*DAY) break; continue; } const a=w(e); if(a) l.push([e,a]); } };
+  add(nMacro(t1+DAY),e=>{ if(d.idx) return e.m*e.dir; const s=(e.tp.fx&&e.tp.fx[d.s]!=null?e.tp.fx[d.s]:1)*((e.tp.ind&&e.tp.ind[INDOF[d.s]])||1); return e.dir*s*Math.max(-.6,Math.min(.6,e.m/.08*1.3*sd45(d)*Math.min(1.5,d.beta))); });
+  if(!d.idx&&!d.gone){ const k=INDOF[d.s];
+    if(k) add(nInd(k,t1+DAY),e=>{ const w=e.tp.fx&&e.tp.fx[d.s]!=null?e.tp.fx[d.s]:1; return Math.max(-.45,Math.min(.45,e.m*sd45(d)*.6))*e.dir*w; });
+    add(nBig(d,t1+DAY),e=>e.dir*Math.min(.6,e.m*sd45(d)*.6));
+    add(nCo(d,t1+DAY),e=>e.ep?0:e.dir*Math.min(.3,e.m*sd45(d))); }
+  NWL.set(key,l); if(NWL.size>80000) NWL.delete(NWL.keys().next().value); return l; }
+function nwo(i,t){ const h=Math.floor(t/HN); if(h<H8-1) return 0; const l=nwList(i,h); let s=0; for(const x of l) s+=x[1]*nwShape(x[0],t); return s; }
+function nwVol(i,t){ const h=Math.floor(t/HN); if(h<H8-1) return 1; let m=1; for(const x of nwList(i,h)){ const e=x[0], dt=t-e.t0, w=Math.min(1,Math.abs(x[1])/.08); if(dt>0&&dt<e.T) m*=1+(e.lv==="co"?1.5:2.5)*w; else if(dt>0&&dt<e.T+e.H) m*=1+.5*w; else if(e.pw&&dt<=0&&dt>-e.pw) m*=1+.9*w; } return m; }
+// the lesson headlines (earnings, rumors, investigations) now come from the everyday company news schedule
+function nCoEp(d,h){ if(h<H8||d.idx||d.gone) return null; const a=nCo(d,(h+1)*3600); for(let j=a.length-1;j>=0;j--){ const e=a[j]; if(e.t0<h*3600) break; if(e.ep&&e.t0<(h+1)*3600) return e; } return null; }
+// importance: Major / Moderate / Minor
+const nImp=e=>e.lv==="mkt"?(e.m>=.12?"Major":"Moderate"):e.lv==="big"?"Major":e.lv==="ind"?"Moderate":"Minor";
+const nNm=(tp,d)=>tp.replace(/\{n\}/g,d?d.n:"");
+// every v2 story between t0 and t1, plus follow-ups for the big ones
+function newsV2(t0,t1){ const out=[]; if(t1<H8*3600) return out;
+  const fu=(e,txt,b)=>{ const at=e.t0+Math.floor(e.T+e.H); if(at>t0&&at<=t1) out.push({at,lv:e.lv,imp:"Minor",fu:1,ev:e,t:txt,b,s:e.s||"*"}); };
+  for(const e of nMacro(t1)){ if(e.t0>t0&&e.t0<=t1) out.push({at:e.t0,lv:"mkt",imp:nImp(e),ev:e,t:e.tp.t,b:e.tp.b,s:"*"});
+    fu(e,e.dir<0?"Markets start to steady after: "+e.tp.t.charAt(0).toLowerCase()+e.tp.t.slice(1):"The rally cools after: "+e.tp.t.charAt(0).toLowerCase()+e.tp.t.slice(1),"Investors are taking a breath."); }
+  for(const k in IND){ const live=IND[k].s.filter(s=>BYSYM[s]&&!BYSYM[s].gone); if(!live.length) continue;
+    for(const e of nInd(k,t1)){ if(e.t0>t0&&e.t0<=t1) out.push({at:e.t0,lv:"ind",imp:"Moderate",ev:e,t:e.tp.t,b:e.tp.b,s:"*",ind:k});
+      if(e.pw){ const at=e.t0-e.pw; if(at>t0&&at<=t1) out.push({at,lv:"tell",imp:"Minor",tell:"whisper",s:"*",t:`👀 Big money is quietly ${e.dir>0?"buying":"dumping"} ${nTk(e).slice(0,3).join(", ")}. Traders expect ${e.dir>0?"good":"bad"} news any minute`}); } } }
+  for(const d of STOCKS){ if(d.gone) continue;
+    for(const e of nBig(d,t1)){ if(e.t0>t0&&e.t0<=t1) out.push({at:e.t0,lv:"big",imp:"Major",ev:e,t:nNm(e.tp.t,d),b:nNm(e.tp.b,d),s:d.s});
+      if(e.pw){ const at=e.t0-e.pw; if(at>t0&&at<=t1) out.push({at,lv:"tell",imp:"Minor",tell:"whisper",s:d.s,t:`👀 Big money is quietly ${e.dir>0?"buying":"dumping"} ${d.s}. Traders expect ${e.dir>0?"good":"bad"} news any minute`}); }
+      fu(e,nNm("{n} stock settles down after the big news",d),"The first rush of buying and selling is over."); }
+    for(const e of nCo(d,t1)){ if(!e.ep&&e.t0>t0&&e.t0<=t1) out.push({at:e.t0,lv:"co",imp:"Minor",ev:e,t:nNm(e.tp.t,d),b:nNm(e.tp.b,d),s:d.s}); } }
+  return out; }
+// tickers a story touches, biggest first
+function nTk(e){ if(e.lv==="big"||e.lv==="co") return [e.s]; const L=STOCKS.filter(d=>!d.gone&&(e.lv!=="ind"||INDOF[d.s]===e.ik));
+  return L.map(d=>[d.s,Math.abs(nwList(d.i,Math.floor(e.t0/3600)+1).filter(x=>x[0]===e).reduce((a,x)=>a+x[1],0))]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).map(x=>x[0]); }
 
 // ---------- episodes: the learnable patterns ----------
 // phase [ticks, drift (×vol unless abs), volume×, abs?]
-function makeEp(d,r,h,shapeOK){ const nw=h>=H1; // from H1 on, collapses and squeezes are rare (about once every 2 weeks per stock instead of every 2 days)
+function makeEp(d,r,h,shapeOK,force){ const nw=h>=H1; // from H1 on, collapses and squeezes are rare (about once every 2 weeks per stock instead of every 2 days)
   const w=[["breakout",3],["fakeout",3],["beat",1.4],["rumor",1.4],["deadcat",1.8],["collapse",nw?.03:.22],["squeeze",nw?.035:.25]];
   if(d.vol<.0017) w.push(["capit",2]); if(d.pump) w.push(["pump",2.2]);
   if(h>=H3&&shapeOK) w.push(["dtop",1.1],["dbot",1.1],["atri",.9],["dtri",.9],["bflag",1.1],["sflag",1.1]);
   const pz=persOf(d,h); if(pz) w.forEach(k=>{ if(pz.w&&pz.w[k[0]]!=null) k[1]*=pz.w[k[0]]; });
-  let x=r()*w.reduce((a,b)=>a+b[1],0), ty="breakout"; for(const k of w){x-=k[1]; if(x<=0){ty=k[0];break;}}
+  if(h>=H8) w.forEach(k=>{ if(k[0]==="beat"||k[0]==="rumor"||k[0]==="deadcat") k[1]=0; }); // from H8 these only come from the company news schedule
+  let x=r()*w.reduce((a,b)=>a+b[1],0), ty="breakout"; for(const k of w){x-=k[1]; if(x<=0){ty=k[0];break;}} if(force) ty=force;
   const E={breakout:{ph:[[60,0,.35,0,.3],[30,.28,3.6],[220,.1,1.7]]}, fakeout:{ph:[[40,.22,1.1],[150,-.08,1]]},
     beat:{nw:"📊 {n} beats earnings, raises outlook",ph:[[6,1.2,6],[400,.09,1.8]]},
     rumor:{nw:"💬 Rumor: {n} in buyout talks",ph:[[8,1,4],[60,.02,1.5],[320,-.08,1.1]]},
@@ -450,7 +602,7 @@ function shapeFlag(s,r){ // bull (s=1) / bear (s=-1) flag: a sharp pole, a slow 
 const SC=new Map();
 function sched(i,h){ const key=i+":"+h; let s=SC.get(key); if(s) return s;
   const d=SER[i], eps=[];
-  if(!d.idx){ const r=RNG("e"+d.sid+":"+h), pz=persOf(d,h), pf=pz&&pz.f!=null?pz.f:.45; for(let sl=0;sl<3;sl++) if(r()<pf){ const e=makeEp(d,r,h,sl<2&&!eps.some(x=>x.shape)); e.st=e.shape?sl*1200+10*Math.floor(r()*((1190-epLen(e))/10)):sl*1200+1+Math.floor(r()*(1199-epLen(e))); eps.push(e);} }
+  if(!d.idx){ const r=RNG("e"+d.sid+":"+h), pz=persOf(d,h), pf=pz&&pz.f!=null?pz.f:.45; const fN=nCoEp(d,h); for(let sl=0;sl<3;sl++) if(fN&&fN.sl===sl){ const e=makeEp(d,r,h,false,fN.ep); e.ph=e.ph.map((q,ix)=>ix===0&&e.sOff?q:[q[0],q[1]*2,q[2],q[3]]); e.cn=1; e.st=sl*1200+1+Math.floor(r()*(1199-epLen(e))); eps.push(e); } else if(r()<pf){ const e=makeEp(d,r,h,sl<2&&!eps.some(x=>x.shape)); e.st=e.shape?sl*1200+10*Math.floor(r()*((1190-epLen(e))/10)):sl*1200+1+Math.floor(r()*(1199-epLen(e))); eps.push(e);} }
   const mr=RNG("m:"+h); let cr=mr()<1/60?1+Math.floor(mr()*3400):null; if(cr!=null&&h>=H2) cr=Math.max(cr,150);
   let ee=0, eeP=0; for(const e of eps){ if(e.shape){ ee+=e.net*d.vol*Math.sqrt(60); continue; } for(const p of e.ph){ const m=p[0]*(p[3]?p[1]:p[1]*d.vol); ee+=m; if(p[3]&&h>=H1) eeP+=.78*m; } } // part of a collapse/squeeze sticks
   if(cr!=null){ const cb=d.beta*(d.idx&&h>=H7?IXC:1); ee+=Math.log(.82)*cb+(h>=H2?Math.log(.995)*cb:0); }
@@ -530,7 +682,7 @@ const H5=Math.floor(Date.UTC(2026,10,6,9)/3600000);
 const MNG=["📰 {n} lands a new partnership","📰 Analyst upgrades {n}","📰 {n} expands into new cities","📰 Customers love {n}'s new product line","📰 {n} hires a big-name executive","📰 {n} raises its dividend","📰 {n} beats a sales target early","📰 {n} wins an industry award"],
   MNB=["📰 Analyst downgrades {n}","📰 {n} delays a product launch","📰 {n} loses a big customer","📰 {n} hit with a small lawsuit","📰 {n} executive steps down","📰 Supply costs rise for {n}","📰 {n} misses a sales target","📰 Complaints pile up about {n}"];
 const MNC=new Map();
-function minorNews(i,h){ const key=i+":"+h; let l=MNC.get(key); if(l) return l; l=[]; const d=SER[i];
+function minorNews(i,h){ const key=i+":"+h; let l=MNC.get(key); if(l) return l; l=[]; const d=SER[i]; if(h>=H8){ MNC.set(key,l); return l; }
   if(h>=H5&&!d.idx&&!d.gone){ const r=RNG("mnews"+d.sid+":"+h), dh=((h%24)+24)%24;
     for(let k=0;k<4;k++){ const on=r()<.4, at=k*900+30+Math.floor(r()*840), dir=r()<.5?1:-1, sz=1.5+2*r(), tp=Math.floor(r()*8); if(!on) continue;
       if(h%3===0&&at<360) continue; if(d.od&&dh===OPEN_H&&at<700) continue; if(d.lv&&dh===5&&at>3200) continue;
@@ -619,7 +771,7 @@ const SCEN=[
  {k:"f",dir:1,t:"Axion's humanoid robot demo stuns the world",fx:{ROBO:1,AIQ:.3,CHIP:.15}}];
 const EVSLOT=21600, EVS=new Map(), EVL=new Map();
 function bigEv(sl){ if(EVS.has(sl)) return EVS.get(sl); let e=null; const t0=sl*EVSLOT;
-  if(t0>=H1*3600){ const r=RNG("big"+sl); if(r()<.28){ const sc=SCEN[Math.floor(r()*SCEN.length)], fast=sc.k==="f";
+  if(t0>=H1*3600&&t0<H8*3600){ const r=RNG("big"+sl); if(r()<.28){ const sc=SCEN[Math.floor(r()*SCEN.length)], fast=sc.k==="f";
     e={sl,t0:t0+Math.floor(r()*(EVSLOT-3600)),sc,A:(fast?.18+r()*.4:.2+r()*.35)*(fast&&sc.dir<0?1.25:1),T:fast?900+Math.floor(r()*1800):Math.floor(86400*(1+r()*2)),hold:fast?Math.floor(86400*(.5+r())):43200,D:86400*(3+r()*3)}; } }
   if(e&&e.t0>=H2*3600) e.pw=300+Math.floor(RNG("bigw"+sl)()*301);
   EVS.set(sl,e); return e; }
@@ -629,8 +781,8 @@ function evList(i,h){ const key=i+":"+h; let l=EVL.get(key); if(l) return l; l=[
   if(h>=H1){ const d=SER[i], s1=Math.floor((h+1)*3600/EVSLOT);
     for(let sl=s1;sl>=s1-150;sl--){ const e=bigEv(sl); if(!e||e.t0-(e.pw||0)>=(h+1)*3600) continue; const w=evW(e,d); if(!w) continue; if((h*3600-e.t0-e.T-e.hold)/e.D>7) continue; l.push([e,w*e.A*e.sc.dir,Math.abs(w)]); } }
   EVL.set(key,l); if(EVL.size>80000) EVL.delete(EVL.keys().next().value); return l; }
-function evo(i,t){ const l=evList(i,Math.floor(t/HN)); if(!l.length) return 0; let s=0; for(const x of l) s+=x[1]*evShape(x[0],t); return s; }
-function evVol(i,t){ const l=evList(i,Math.floor(t/HN)); let m=1; for(const x of l){ const e=x[0], dt=t-e.t0; if(dt>0&&dt<e.T) m*=e.sc.k==="f"?1+5*Math.min(1,x[2]):1+.6*Math.min(1,x[2]); else if(e.pw&&dt<=0&&dt>-e.pw) m*=1+.9*Math.min(1,x[2]); } return m; }
+function evo(i,t){ const l=evList(i,Math.floor(t/HN)); let s=nwo(i,t); for(const x of l) s+=x[1]*evShape(x[0],t); return s; }
+function evVol(i,t){ const l=evList(i,Math.floor(t/HN)); let m=nwVol(i,t); for(const x of l){ const e=x[0], dt=t-e.t0; if(dt>0&&dt<e.T) m*=e.sc.k==="f"?1+5*Math.min(1,x[2]):1+.6*Math.min(1,x[2]); else if(e.pw&&dt<=0&&dt>-e.pw) m*=1+.9*Math.min(1,x[2]); } return m; }
 function price(i,t){ const h=Math.floor(t/HN), p=chunk(i,h).P[t-h*HN], o=evo(i,t); return o?p*Math.exp(o):p; }
 function volAt(i,t){ const h=Math.floor(t/HN); return chunk(i,h).V[t-h*HN]*evVol(i,t); }
 // Chart timeframes: [candle seconds, label]
@@ -638,7 +790,7 @@ const TFS=[[10,"10s"],[60,"1m"],[300,"5m"],[600,"10m"],[1800,"30m"],[3600,"1h"],
 // Finished candles never change, so they're cached. Hour summaries feed the 1h and 1D charts.
 const CC=new Map(), HSUM=new Map(); let BUDGET=Infinity;
 function hsum(i,h){ const key=i+":"+h; let s=HSUM.get(key); if(s) return s; if(performance.now()>BUDGET) return null;
-  const c=chunk(i,h), P=c.P, V=c.V, ev=evList(i,h).length>0, b=h*HN; let first=0,last=0,hi=-Infinity,lo=Infinity,v=0;
+  const c=chunk(i,h), P=c.P, V=c.V, ev=evList(i,h).length>0||nwList(i,h).length>0, b=h*HN; let first=0,last=0,hi=-Infinity,lo=Infinity,v=0;
   for(let t=0;t<HN;t++){ const p=ev?price(i,b+t):P[t]; if(!t) first=p; last=p; if(p>hi)hi=p; if(p<lo)lo=p; v+=ev?volAt(i,b+t):V[t]; }
   s=[first,hi,lo,last,v]; HSUM.set(key,s); if(HSUM.size>40000) HSUM.delete(HSUM.keys().next().value); return s; }
 const dayOfs=()=>Math.round(new Date().getTimezoneOffset()/60)*3600; // daily candles start at local midnight
@@ -665,7 +817,7 @@ function newsSince(t0,t1){ const out=[]; for(let h=Math.floor(t0/HN);h<=Math.flo
     if(e&&e.pw){ const at=e.t0-e.pw; if(at>t0&&at<=t1){ const tk=Object.entries(e.sc.fx).filter(([k])=>k!=="*"&&BYSYM[k]&&!BYSYM[k].gone).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,3).map(([k,w])=>k);
       if(tk.length) out.push({at,s:"*",big:1,tell:"whisper",t:`👀 Big money is quietly ${e.sc.dir>0?"buying":"dumping"} ${tk.join(", ")}. Traders expect ${e.sc.dir>0?"good":"bad"} news ${e.sc.k==="f"?"any minute":"this week"}`}); } } }
   for(let day=Math.floor((t0/3600-6)/24);day<=Math.floor((t1/3600-6)/24);day++){ const g=regimeAt(day*24+6), at=(day*24+6)*3600;
-    if(g&&g.type&&g.d0===day&&at>t0&&at<=t1) out.push({at,s:"*",big:1,t:g.type>0?"📈 Bull run: investors are upbeat, stocks drifting higher":"📉 Bear market: nervous investors are selling, stocks drifting lower"}); }
+    if(g&&g.type&&g.d0===day&&at>t0&&at<=t1&&at<H8*3600) out.push({at,s:"*",big:1,t:g.type>0?"📈 Bull run: investors are upbeat, stocks drifting higher":"📉 Bear market: nervous investors are selling, stocks drifting lower"}); }
   return out.sort((a,b)=>b.at-a.at); }
 
 // ---------- professions ----------
@@ -1261,7 +1413,7 @@ function upd(){
   { const q=$("qc"), hh=" "+d1html(sym); if(q.dataset.h!==hh){ q.dataset.h=hh; q.innerHTML=hh; } }
   STOCKS.forEach(x=>{ const e=$("c-"+x.s); if(e){ e.textContent=px(sp(x.s)); e.className=day1(x.s)>=0?"up":"dn"; const f=$("cd-"+x.s), hh=d1html(x.s); if(f&&f.dataset.h!==hh){ f.dataset.h=hh; f.innerHTML=hh; } } });
   document.querySelectorAll(".tf button").forEach(b=>b.classList.toggle("on",+b.dataset.tf===S.tf));
-  const nw=newsSince(NOW-7200,NOW).filter(x=>x.s==="*"||x.s===S.sel||(BYSYM[x.s]&&unlocked(BYSYM[x.s]))).sort((a,b)=>b.at-a.at); $("news").textContent=nw[0]?nw[0].t+" · "+dur(NOW-nw[0].at)+" ago":"No headlines in the last 2 hours.";
+  const nw=nItems(NOW-7200,NOW).filter(x=>x.s===S.sel||x.lv==="mkt"||(x.lv==="ind"&&INDOF[S.sel]===x.ev.ik)); { const ne=$("news"); ne.textContent=nw[0]?"📰 "+nw[0].t+" · "+dur(NOW-nw[0].at)+" ago":"📰 No news for "+S.sel+" in the last 2 hours"; if(!ne.dataset.nw){ ne.dataset.nw=1; ne.style.cursor="pointer"; ne.onclick=()=>nxOpen(nw[0]&&nw[0].lv==="mkt"?"top":"mine"); } }
   let h="";
   if(p.l){ const b=bid(sym), pl=p.l*(b-p.lc); h+=`<div class="row"><div class="g t">🟢 <b style="color:var(--text)">${p.l} sh</b> bought at ${px(p.lc)} · worth ${money(p.l*sp(sym))}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((b/p.lc-1)*100).toFixed(2)}%)</b></div>`+netLine(pl,netPL(sym))+ordBtns("l"); }
   if(p.s){ const a=ask(sym), pl=Math.max(p.s*(p.se-a),-p.s*p.se); h+=`<div class="row"><div class="g t">🟣 <b style="color:var(--text)">${p.s} sh</b> shorted at ${px(p.se)} · margin call ${px(2*p.se)}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((1-a/p.se)*100).toFixed(2)}%)</b></div>`+netLine(pl,netPL(sym))+ordBtns("s"); }
@@ -1443,6 +1595,10 @@ function draw(){
     if(ph&&m!==newest) return;
     const tx=m.k==="B"?"BUY":m.k==="X"?"SHORT":(m.k==="S"?"SOLD ":"COVER ")+sg(m.pl); c.font="bold 9.5px JetBrains Mono"; const tw=c.measureText(tx).width+6, ty=dn?y+22:y-22, xx=Math.min(Math.max(2,x-tw/2),pw-tw);
     c.fillStyle="rgba(5,8,11,.85)"; c.fillRect(xx,ty-7,tw,14); c.fillStyle=col; c.fillText(tx,xx+3,ty); });
+  // news flags: a small marker where a story about this stock, its industry or the whole market came out (last 3 days)
+  { const t1=first+data.length*tf, fl=chartNews(sym,Math.max(first,NOW-3*86400),Math.min(t1,NOW)); c.font="bold 9px JetBrains Mono";
+    for(const x of fl){ const i=Math.floor((x.at-first)/tf); if(i<0||i>=data.length) continue; const xx=X(i), col=x.lv==="mkt"?"#ea3943":x.lv==="ind"?"#f5b301":x.lv==="big"?"#a855f7":"#4aa3ff";
+      c.beginPath(); c.moveTo(xx,bot-18); c.lineTo(xx,bot-4); c.lineWidth=1.5; c.strokeStyle=col; c.stroke(); c.fillStyle=col; c.fillRect(xx,bot-18,8,6); } }
   if(loading){ c.fillStyle=TH().lab; c.font="11px JetBrains Mono"; c.fillText("Loading older candles…",6,top+6); if(!DRAW_T) DRAW_T=setTimeout(()=>{ DRAW_T=0; if(tab==="trade") draw(); },60); }
   c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; c.fillText(spanLbl(tf,data.length),6,bot+4);
   { const zl=$("zlive"); if(zl) zl.style.display=(ZOFF||Math.abs(ZC-7)>.01||YZ!==1)?"":"none"; const lc=$("lclear"); if(lc) lc.style.display=myLines(sym).length?"":"none"; }
@@ -1817,8 +1973,8 @@ let lastSave=0;
 function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catchUp(); build(); return; }
   advance(t); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; sfx('tax'); modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); achCheck(); } compPub(); if(t%600===0) compSettle();
   if(t-lastSave>5){ save(); lastSave=t; if(ACT&&!cbusy) csave(); }
-  const nw=newsSince(S.lastNews,t); S.lastNews=t;
-  nw.forEach(x=>{ const p=S.pos[x.s]; if(x.s==="*"||x.s===S.sel||(p&&(p.l||p.s))){ toast(x.t); nlog(x); sfx(/Market crash/.test(x.t)?'crash':x.tell?'alert':x.big?'news':'ping'); if(x.big&&tab==="trade") newsCard(); } }); }
+  const nw=nItems(S.lastNews||t-1,t); S.lastNews=t; const my=myStocks();
+  nw.forEach(x=>{ if(x.imp==="Major"||x.s==="*"||my.has(x.s)){ toast((x.imp==="Major"?"🚨 ":"📰 ")+x.t+(x.s!=="*"&&x.lv!=="ind"?" ("+x.s+")":"")); sfx(x.lv==='sell'?'crash':x.tell?'alert':x.imp!=="Minor"?'news':'ping'); } }); if(nw.length) nxDraw(); }
 function intro(){ if(!S.prof){ if(!S.introSeen) storyIntro(); else profPicker(true); } }
 document.addEventListener("visibilitychange",()=>{ if(document.hidden){ save(); if(ACT) csave(); } else { loop(); cpull(); } });
 // ---------- set stop loss / take profit right on the chart ----------
@@ -2378,13 +2534,66 @@ function alog(ic,t,go){ S.alog=S.alog||[]; if(go&&go.startsWith("chat:")) S.alog
 const actNew=()=>(S.alog||[]).filter(x=>x.at>(S.actSeen||0)).length+(FS.list||[]).filter(f=>f.status==='pending'&&f.from!==UID&&(f.at||0)/1000>(S.actSeen||0)).length;
 let NEWSCHK=0, NV=null;
 function bellUpd(force){ if(!force&&NOW-NEWSCHK<20) return; NEWSCHK=NOW; const b=$("bell"); if(!b) return;
-  if(!S.newsSeen) S.newsSeen=NOW-3600; const f=feedAll(Math.max(S.newsSeen,NOW-86400),NOW); b.classList.toggle("new",f.length>0||actNew()>0); }
+  if(!S.newsSeen) S.newsSeen=NOW-3600; b.classList.toggle("new",nNewCount()>0||actNew()>0); if(NOW%20===0) nxDraw(); }
+function nNewCount(){ const my=myStocks(); return nItems(Math.max(S.newsSeen||0,NOW-86400),NOW).filter(x=>x.lv==="mkt"||x.lv==="ind"||x.imp==="Major"||(x.s!=="*"&&my.has(x.s)&&x.lv!=="tell")).length; }
 // every news message that popped up on screen is also kept for the News tab (2 days), so nothing you saw goes missing
 function nlog(x){ S.nlog=(S.nlog||[]).filter(y=>NOW-y.at<172800); if(S.nlog.some(y=>y.at===x.at&&y.t===x.t)) return; S.nlog.unshift({at:x.at,s:x.s,t:x.t}); if(S.nlog.length>120) S.nlog.length=120; }
 function feedAll(t0,t1){ const f=newsFeed(t0,t1), key=new Set(f.map(x=>x.at+"|"+x.t));
   (S.nlog||[]).forEach(y=>{ if(y.at>t0&&y.at<=t1&&!key.has(y.at+"|"+y.t)) f.push({at:y.at,s:y.s,t:y.t,k:"seen"}); });
   return f.sort((a,b)=>b.at-a.at); }
-function openNews(view){ const f=feedAll(NOW-86400*2,NOW).slice(0,80), seen=S.newsSeen||0, an=actNew(), nn=f.filter(x=>x.at>seen).length;
+// ---------- News page (full screen, opened from the header bell) ----------
+// Top stories = market-wide only · Industries · Your stocks = company news for stocks you have a trade in (or are viewing) · All
+const NBL=[[/beats earnings/,"It made more profit than experts expected."],[/Rumor:/,"Nothing has been confirmed yet."],[/federal investigation/,"Investigators are looking into the company. Details are still unclear."],
+ [/auditor resigns/,"An auditor checks a company's books. Quitting suddenly is unusual."],[/Short interest/,"A lot of traders are betting this stock will fall."],[/call-option/,"Call options are bets that a stock will go up."],
+ [/Insiders quietly/,"Insiders are the people who run the company."],[/trending on social/,"Lots of people are suddenly talking about it online."],[/Futures sliding/,"Futures are early bets on where the market is headed."],[/Big money is quietly/,"Someone may know something the public doesn't yet."]];
+const nClean=t=>t.replace(/^[^A-Za-z0-9"']+/,"").replace(/ \([A-Z]{3,5}\)$/,"").replace(/^BREAKING: /,"");
+function nItems(t0,t1){ const out=newsV2(t0,t1).slice();
+  newsSince(t0,t1).forEach(x=>{ const b=(NBL.find(q=>q[0].test(x.t))||[0,""])[1];
+    if(x.s==="*"){ if(/Market crash/.test(x.t)) out.push({at:x.at,lv:"sell",imp:"Minor",s:"*",t:"Sell-off: panic selling hits the whole market",b:"Lots of investors rushed to sell at the same time."});
+      else if(x.tell) out.push({at:x.at,lv:"tell",imp:"Minor",s:"*",tell:x.tell,t:nClean(x.t),b});
+      return; } // old-style breaking news and market moods (before H8) aren't shown
+    if(x.minor) return; // the old every-30-minutes headlines (before H8) aren't shown
+    out.push({at:x.at,lv:x.tell?"tell":"co",imp:/auditor|Short interest/.test(x.t)?"Moderate":"Minor",tell:x.tell,s:x.s,t:nClean(x.t),b}); });
+  return out.filter(x=>x.s==="*"||(BYSYM[x.s]&&!BYSYM[x.s].gone&&unlocked(BYSYM[x.s]))).sort((a,b)=>b.at-a.at); }
+const myStocks=()=>{ const m=new Set([S.sel]); for(const k in S.pos){ const p=S.pos[k]; if(p&&(p.l||p.s)) m.add(k); } return m; };
+const CNC={k:"",v:[]};
+function chartNews(sym,t0,t1){ const k=sym+":"+Math.floor(t0/60)+":"+Math.floor(t1/30); if(CNC.k===k) return CNC.v; const d=BYSYM[sym], ik=INDOF[sym];
+  const v=newsV2(t0,t1).filter(x=>!x.fu&&!x.tell&&(x.lv==="mkt"||(x.lv==="ind"&&x.ev.ik===ik)||x.s===sym));
+  for(let h=Math.floor(t0/HN);h<=Math.floor(t1/HN);h++) sched(d.i,h).eps.forEach(e=>{ if(!e.nw) return; const at=h*HN+e.st+(e.nwo||0); if(at>t0&&at<=t1) v.push({at,lv:"co"}); });
+  CNC.k=k; CNC.v=v; return v; }
+const NTABS=[["top","Top stories"],["ind","Industries"],["mine","Your stocks"],["all","All"]];
+function nTab(k,L){ const my=myStocks();
+  if(k==="top") return L.filter(x=>x.lv==="mkt");
+  if(k==="ind") return L.filter(x=>x.lv==="ind");
+  if(k==="mine") return L.filter(x=>x.s!=="*"&&my.has(x.s)&&x.lv!=="ind");
+  return L; }
+const nSpan={top:45,ind:7,mine:2,all:2};
+function nChips(x){ let tk=[];
+  if(x.lv==="mkt"||x.lv==="sell") tk=["TTI"];
+  else if(x.lv==="ind") tk=nTk(x.ev).filter(s=>unlocked(BYSYM[s]));
+  else if(x.s&&x.s!=="*") tk=[x.s];
+  if(x.lv==="tell") return tk.map(s=>`<button class="ntk" data-nsel="${s}">${s}</button>`).join(""); // no reaction shown on tells: that's what the lessons teach
+  // the move right after the story (so old stories don't show weeks of unrelated moves): small news 20 min, big/industry 1 day, market-wide 2 days
+  const W={co:1200,tell:600,sell:3600,big:86400,ind:86400,mkt:172800}[x.lv]||3600, t2=Math.min(NOW,x.at+W), lab=t2<NOW?" in "+(W>=86400?W/86400+"d":W/60+"m"):"";
+  return tk.map(s=>{ const d=BYSYM[s], ch=(price(d.i,t2)/price(d.i,x.at-30)-1)*100; return `<button class="ntk"${s!=="TTI"?` data-nsel="${s}"`:""}>${s} <span class="${ch>=0?"up":"dn"}">${ch>=0?"+":""}${ch.toFixed(1)}%</span><span class="mu">${lab}</span></button>`; }).join(""); }
+let NXT="top", NXSEEN=0;
+function nxOpen(tab){ if(tab) NXT=tab; let el=$("nx"); if(!el){ el=document.createElement("div"); el.id="nx"; document.body.appendChild(el);
+    el.addEventListener("click",e=>{ const t=e.target.closest("[data-nt]"); if(t){ NXT=t.dataset.nt; return nxDraw(); }
+      const s=e.target.closest("[data-nsel]"); if(s){ S.sel=s.dataset.nsel; ZOFF=0; nxClose(); return setTab("trade"); }
+      if(e.target.closest("#nxx")) return nxClose(); if(e.target.closest("#nxact")){ nxClose(); return openNews("act"); } }); }
+  NXSEEN=S.newsSeen||0; S.newsSeen=NOW; el.style.display="flex"; nxDraw(); bellUpd(true); }
+function nxClose(){ const el=$("nx"); if(el) el.style.display="none"; }
+function nxDraw(){ const el=$("nx"); if(!el||el.style.display==="none") return; const L=nItems(NOW-86400*14,NOW), an=actNew(), y=($("nxl")||{}).scrollTop||0;
+  const cnt=k=>nTab(k,L).filter(x=>x.at>NXSEEN&&NOW-x.at<nSpan[k]*86400).length;
+  const rows=(NXT==="top"?newsV2(NOW-nSpan.top*86400,NOW).filter(x=>x.lv==="mkt").sort((a,b)=>b.at-a.at):nTab(NXT,L).filter(x=>NOW-x.at<nSpan[NXT]*86400)).slice(0,60);
+  const card=x=>{ const where=x.lv==="mkt"||x.lv==="sell"?"Market-wide":x.lv==="ind"?IND[x.ev.ik].n:x.s==="*"?"Market":(BYSYM[x.s]?BYSYM[x.s].n:x.s), imp=x.lv==="tell"?"":`<span class="nimp ${x.imp==="Major"?"mj":x.imp==="Moderate"?"md":"mi"}">${x.imp}</span>`;
+    return `<div class="ncd${x.at>NXSEEN?" nnew":""}${x.fu?" nfu":""}"><div class="nmeta">${imp}<span>${where} · ${ago(NOW-x.at)}</span></div><div class="nhl">${x.t}</div>${x.b?`<div class="nbl">${x.b}</div>`:""}<div>${nChips(x)}</div></div>`; };
+  const empty={top:"No market-wide news yet. These are rare (every few weeks), and when one hits, the whole market moves.",ind:"No industry news this week.",mine:"No news in the last 2 days for the stock you're viewing or the stocks you have a trade in.",all:"Quiet couple of days."}[NXT];
+  el.innerHTML=`<div class="chd"><b style="flex:1;font-size:18px">News</b><button id="nxact" class="btn ghost sm">👥 Activity${an?` · ${an}`:""}</button><button id="nxx" class="chb" aria-label="Close" style="font-size:26px;padding:0 4px">✕</button></div>
+   <div class="seg nxs">${NTABS.map(([k,n])=>{ const c=cnt(k); return `<button data-nt="${k}" class="${NXT===k?"on":""}">${n}${c?` <i class="ndot"></i>`:""}</button>`; }).join("")}</div>
+   <div class="nxl" id="nxl">${rows.length?rows.map(card).join(""):`<div class="t" style="padding:18px 6px">${empty}</div>`}</div>`;
+  $("nxl").scrollTop=y; }
+function openNews(view){ if(view!=="act"&&!(view==null&&actNew()>0&&!nNewCount())) return nxOpen(); const f=feedAll(NOW-86400*2,NOW).slice(0,80), seen=S.newsSeen||0, an=actNew(), nn=f.filter(x=>x.at>seen).length;
   view=view||NV||(an&&!nn?"act":"news"); NV=view;
   const segH=`<div class="seg"><button data-nv="news" class="${view==="news"?"on":""}">📰 News${nn?` · ${nn}`:""}</button><button data-nv="act" class="${view==="act"?"on":""}">👥 Activity${an?` · ${an}`:""}</button></div>`;
   if(view==="act") return openAct(segH);

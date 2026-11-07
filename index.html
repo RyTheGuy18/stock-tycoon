@@ -519,7 +519,7 @@ const nBig=(d,upto)=>nseq("nbig"+d.s,14*DAY,21*DAY,[.5*DAY,14*DAY],(r,t0)=>{ con
 const nCo=(d,upto)=>nseq("nco"+d.s,8*3600,20*3600,[0,12*3600],(r,t0)=>{ if(r()<.5){ const u=r(); return {t0,lv:"co",ep:u<.35?"beat":u<.65?"rumor":"deadcat",sl:Math.floor((t0%3600)/1200)}; }
   const tp=SMALLN[Math.floor(r()*SMALLN.length)], e=mkEv(r,t0,tp,"small",1.2+r()*1.3); e.lv="co"; e.s=d.s; return e; },upto);
 const nEnd=e=>e.T+e.H+(e.k>0?6*e.D2:6*e.D1);
-function nwShape(e,t){ const dt=t-e.t0; if(dt<=0) return e.pw&&dt>-e.pw?.05*(1+dt/e.pw):0; if(dt<e.T){ const x=dt/e.T; return x*x*(3-2*x); }
+function nwShape(e,t){ const dt=t-e.t0, w0=e.pw?.05:0; if(dt<=0) return e.pw&&dt>-e.pw?.05*(1+dt/e.pw):0; if(dt<e.T){ const x=dt/e.T; return w0+(1-w0)*x*x*(3-2*x); } // starts from where the whisper left off (no 1-second dip)
   const a=dt-e.T-e.H; if(a<=0) return 1; return (1-e.k)*Math.exp(-a/e.D1)+e.k*Math.exp(-a/e.D2); }
 const NWL=new Map();
 function nwList(i,h){ if(h<H8-1) return []; const key=i+":"+h; let l=NWL.get(key); if(l) return l; l=[]; const d=SER[i], t1=(h+1)*3600, t0=h*3600, vf=Math.min(1.6,Math.max(.7,Math.sqrt(d.vol/.0018)));
@@ -3051,7 +3051,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="116";
+const APPV="117";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

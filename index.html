@@ -1183,7 +1183,11 @@ const vbVal=v=>{ const pr=price(0,NOW); return v.dir>0?v.q*pr:Math.max(0,v.q*v.e
 const PLV=[100,500,2500,12000,60000].map(cap=>({cap,mx:100})) /* you pick 1-100% of cash; each level raises the max bet */, PBUPX=[4,12,40,120], PNB=["pscalp","pflush","ppump","pswing"];
 const PEXTRA={pscalp:{2:"+ shorts buyout rumors",3:"+ shorts insider selling",4:"+ buys earnings beats"},
   pflush:{2:"+ shorts the dip itself (:00 to :02)"}, ppump:{}, pswing:{3:"+ holds breakouts 4 min instead of 3"}};
-const pLv=id=>A(id).lv||1, pCap=id=>PLV[pLv(id)-1].cap, pMx=id=>PLV[pLv(id)-1].mx, pUpC=id=>{ const l=pLv(id); return l>=5?0:AUTOS.find(x=>x.id===id).c*PBUPX[l-1]; };
+// Upgrade prices = about one day (24 h away) of the EXTRA profit the new level makes once your cash reaches its max bet.
+// Measured per bot with the offline sim (profit per hour at the cap, Lv 1-5): Scalper 12/62/311/1495/7477,
+// Flush 4/44/219/1052/5261, Pump 56/284/1422/6829/34146, Breakout 76/383/2137/10264/51327.
+const PUPC={pscalp:[1200,6000,28000,145000],pflush:[950,4200,20000,100000],ppump:[5500,27000,130000,650000],pswing:[7400,42000,195000,985000]};
+const pLv=id=>A(id).lv||1, pCap=id=>PLV[pLv(id)-1].cap, pMx=id=>PLV[pLv(id)-1].mx, pUpC=id=>{ const l=pLv(id); return l>=5?0:PUPC[id][l-1]; };
 function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; if(!S.botV2){ S.botV2=1; for(const id of PNB){ const a=S.auto[id]; if(a&&a.v===10) a.v=50; } } if(!S.botV3){ S.botV3=1; for(const id of PNB){ const a=S.auto[id]; if(a&&a.v>pMx(id)) a.v=pMx(id); } } /* v8.0: old 10% default -> new 75% default, only if never moved */ const pr=price(0,NOW), h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
   // key = one trade slot (a bot can hold one trade per play); id = the bot
   const open=(key,id,dir)=>{ if(!SIM||!aOn(id)||S.vb[key]||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } const q=Math.floor(Math.min(Math.max(0,S.cash)*Math.min(aV(id),pMx(id))/100,pCap(id))/pr); if(q<1) return; S.cash-=q*pr; S.vb[key]={dir,q,en:pr,id}; resetPeak(); };
@@ -1219,7 +1223,7 @@ const clk=t=>new Date(t*1000).toLocaleTimeString([],{hour:"numeric",minute:"2-di
 const inT=t=>t-NOW<3600?`in ${Math.max(1,Math.round((t-NOW)/60))} min`:`at ${clk(t)}`;
 function pLvInfo(id){ const l=A(id).own?pLv(id):0, ex=PEXTRA[id]||{};
   return `<div class="t" style="margin:8px 0 2px"><b style="color:var(--text)">Levels</b> · a bigger max bet${Object.keys(ex).length?", and new plays (more trades a day)":""}</div><ul class="axl">${PLV.map((L,i)=>{ const n=i+1, on=n<=l;
-    return `<li style="${on?"":"opacity:.6"}">${on?"✅":"🔒"} <b>Lv ${n}</b>${n>1?` · ${money(AUTOS.find(x=>x.id===id).c*PBUPX[n-2])}`:""}: max bet ${money(L.cap)}${ex[n]?` <b>${ex[n]}</b>`:""}</li>`; }).join("")}</ul>`; }
+    return `<li style="${on?"":"opacity:.6"}">${on?"✅":"🔒"} <b>Lv ${n}</b>${n>1?` · ${money(PUPC[id][n-2])}`:""}: max bet ${money(L.cap)}${ex[n]?` <b>${ex[n]}</b>`:""}</li>`; }).join("")}</ul>`; }
 function autoInfo(x){ const a=A(x.id), v=a.own?a.v:(x.set||[])[3], li=arr=>`<ul class="axl">${arr.filter(Boolean).map(t=>`<li>${t}</li>`).join("")}</ul>`, P0=STOCKS[0];
   const pnny=[`<b>Only trades while the app is closed.</b> With the app open, you're the trader.`,`Bets <b>${v}%</b> of your cash per trade (you pick 1–100%)${PNB.includes(x.id)?`, never more than <b>${money(pCap(x.id))}</b> a trade at this level`:""}. Bigger bets win bigger and lose bigger.`,`Bails out if a trade gets 20% against it. Results go into the "Net so far" number above.`,`<b>Sits out while you have a trade of your own open.</b>`];
   switch(x.id){
@@ -3067,7 +3071,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="119";
+const APPV="120";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

@@ -124,6 +124,10 @@ h3{font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.07
 #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 70px);transform:translateX(-50%);background:#1d2835;border:1px solid var(--line);padding:8px 13px;border-radius:11px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:10;max-width:92%;text-align:center}
 #toast.show{opacity:1} #toast.good{border-color:var(--up);background:#0d2a1e} #toast.bad{border-color:var(--dn);background:#2c1014}
 canvas.sp{width:100%;height:46px;display:block;margin:6px 0}
+.fbar{display:flex;gap:6px;margin-top:8px} .fsg{margin-bottom:6px;flex:1} .fsg button{padding:5px 4px;font-size:12px} #frg{flex:1.2}
+.fwrap{position:relative} canvas.fch{width:100%;height:180px;display:block;touch-action:pan-y}
+.ftip{display:none;position:absolute;top:2px;width:150px;background:var(--c2);border:1px solid var(--line);border-radius:8px;padding:5px 7px;font-size:11px;line-height:1.35;pointer-events:none}
+.fkv{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-bottom:8px;font-size:12px} .fkv div{display:flex;justify-content:space-between;gap:6px} .fkv span{color:var(--mut)}
 #intro{position:fixed;inset:0;z-index:12;background:radial-gradient(120% 90% at 50% 0%,#1b2333,#07090c 70%);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 18px) max(26px,calc(50vw - 300px)) calc(env(safe-area-inset-bottom) + 22px)}
 #intro .skip{align-self:flex-end;color:var(--mut);font-size:13px;padding:6px}
 #intro .pg{flex:1;display:flex;flex-direction:column;justify-content:center;animation:fadeup .45s ease}
@@ -462,8 +466,20 @@ function Lpre(i,h){ const d=SER[i], b=AB[i], j=H0-h;
 function L(i,h){ const d=SER[i], a=AN[i], k=h-H0; if(k<0) return Lpre(i,h);
   while(a.length<=k){ const j=a.length-1, hh=H0+j, ee=sched(i,hh).ee, g=d.sdh*G(RNG("a"+d.sid+":"+hh));
     if(hh+1<H1) a.push(d.ar*(a[j]+ee)+g);
-    else { const sc=sched(i,hh), ae=AE[i], ej=ae[j]||0, en=.6*(ej+ee-sc.eeP); ae[j+1]=en; a.push(d.ar*(a[j]-ej+sc.eeP)+g*(d.idx||d.lv?1:CALM*((persOf(d,hh)||{}).calm||1))+en); } } // from H1 on, pattern after-effects fade within hours instead of piling up
-  return (d.lv?pnLevel(h):Math.log(d.p)+d.tr*3600*k)+a[k]+d.beta*MKT(h); }
+    else { const sc=sched(i,hh), ae=AE[i], ej=ae[j]||0, en=.6*(ej+ee-sc.eeP); ae[j+1]=en;
+      if(d.idx&&hh>=H7){ const rg=ixReg(hh); a.push(a[j]-ej+sc.eeP+rg.m/168+rg.s/Math.sqrt(168)*(g/d.sdh)+en); } // real-index walk: no pull back to a trend line
+      else a.push(d.ar*(a[j]-ej+sc.eeP)+g*(d.idx||d.lv?1:CALM*((persOf(d,hh)||{}).calm||1))+en); } } // from H1 on, pattern after-effects fade within hours instead of piling up
+  return (d.lv?pnLevel(h):Math.log(d.p)+d.tr*3600*(d.idx?Math.min(k,H7-H0):k))+a[k]+d.beta*MKT(h); }
+// ---------- index fund as a real index (from H7 = 6pm Central Nov 7 2026; index prices before H7 are unchanged) ----------
+// One week is one year. Like a real stock index, TTI is a random walk with no line pulling it back: most years go up,
+// about 1 in 4 goes down, and it moves through bull markets, short corrections, bear markets and fast recoveries.
+// Tuned so the average year (week) is about +11% with a spread close to the real S&P 500's.
+const H7=Math.floor(Date.UTC(2026,10,8,0)/3600000), IXR=[];
+const IXT={bull:{d:[7,35],m:.165,s:.11},corr:{d:[2,5],m:-.30,s:.20},bear:{d:[5,12],m:-.30,s:.24},rec:{d:[3,7],m:.30,s:.18}};
+function ixReg(h){ while(!IXR.length||IXR[IXR.length-1].h1<=h){ const n=IXR.length, p=IXR[n-1], r=RNG("ixr"+n), ty=p?p.nx:"bull", T=IXT[ty];
+    const days=T.d[0]+Math.floor(r()*(T.d[1]-T.d[0]+1)), nx=ty==="bull"?(r()<.3?"bear":"corr"):ty==="bear"?"rec":"bull", h0=p?p.h1:H7;
+    IXR.push({ty,h0,h1:h0+days*24,m:T.m,s:T.s,nx}); }
+  for(let j=IXR.length-1;j>=0;j--) if(IXR[j].h0<=h) return IXR[j]; return IXR[0]; }
 // ---------- market moods: stretches of 1-3 days where the whole market drifts up (bull) or down (bear) ----------
 // Starts at H1 so prices before it never change. Days run from 06:00 UTC (midnight Central).
 const H1=Math.floor(Date.UTC(2026,10,5,18)/3600000), MKA=[0], RGB=[];
@@ -765,7 +781,7 @@ const JUMPY=["SOLR","ORBT","CHIP","ROBO","SKYD","RAMX","EVCO","AIQ"], snapPct=d=
 const LONG=[
  {id:"pnreset",ch:"1h chart",n:"PNNY's midnight crash",c:250,t:"PNNY crashes every night before midnight.",d:()=>`PNNY trends all day, usually up, sometimes down, and every few weeks it gets on a roll for up to a week. But every night from <b>${lt(5,3300)}</b> to <b>${lt(6)}</b> your time it <b>crashes for 5 minutes</b>. It never jumps then. The more it climbed that day, the harder it falls:<br><br>Up 0–30% since ${lt(6)} → falls about <b>17%</b><br>Up 30–70% → about <b>21%</b><br>Up 70–150% → about <b>30%</b><br>Up more than that → about <b>34%</b>, up to 45%<br>Down on the day → only about 9%, too small to trade.<br><br>At <b>${lt(5,3300)}</b>, compare PNNY to its price at ${lt(6)} last night (the start of the day). If it's <b>higher, short it</b>. Cover just after ${lt(6)}. Won <b>94%</b> of nights, averaging +22%.`},
  {id:"pnsnap",ch:"1h chart",n:"PNNY always comes home",c:600,t:"However wild PNNY gets during an hour, it ends up back on track.",d:()=>`On the <b>1h chart</b>, watch the current candle. At <b>:30 past any hour</b>, compare PNNY's price to where that candle opened.<br><br>If it's <b>50% or more above</b> the open, <b>short</b>. If it's <b>50% or more below</b>, <b>buy</b>. Close at <b>:59</b>. Won <b>98%</b>, about 3 or 4 chances a day.`},
- {id:"crashidx",ch:"Index fund",n:"Crash sale on the index",c:2500,t:"The one time the index fund goes on sale.",d:()=>`A <b>“Market crash”</b> drags the index fund down too, but it climbs back over the next day. Wait <b>2 minutes</b> after the headline for the drop to finish, <b>deposit into the index fund</b>, and <b>withdraw 12 hours later</b>. Won <b>every time in testing</b>, about +9% each time. Crashes come roughly every 2½ days.`},
+ {id:"crashidx",ch:"Index fund",n:"Crash sale on the index",c:2500,t:"The one time the index fund goes on sale.",d:()=>`A <b>“Market crash”</b> drags the index fund down too, but it climbs back over the next day. Wait <b>2 minutes</b> after the headline for the drop to finish, <b>deposit into the index fund</b>, and <b>withdraw 12 hours later</b>. Won <b>96% of the time in testing</b>, about +9% each time. Crashes come roughly every 2½ days.`},
  {id:"snap",ch:"1h chart",n:"The hourly snap-back",c:6000,t:"Jumpy stocks overshoot during the hour, then drift back.",d:()=>`On the <b>1h chart</b> at <b>:30 past the hour</b>, check how far the current candle has moved from its open. If it's past the stock's number below, bet on it coming back: <b>short</b> if it's up, <b>buy</b> if it's down. Close at <b>:59</b>. Won about <b>97%</b> on these jumpy stocks; steady ones only win about 70%, so skip them.<br><br>${JUMPY.map(s=>`<b>${s}</b> ±${snapPct(BYSYM[s])}%`).join(" · ")}`},
  {id:"wreck",ch:"1h chart",n:"Buy the wreckage",c:20000,t:"What a stock does in the hours after it collapses.",d:()=>`A collapse overshoots, and the stock spends the next several hours crawling back. After the <b>“auditor resigns”</b> headline and the huge red candle, wait until the volume calms down, about <b>3 to 4 minutes after the drop ends</b>. Then <b>buy and hold for 6 hours</b>. Won <b>97%</b>, averaging about +55%, but part of the crash never comes back.`}];
 const ALLK=KNOW.concat(SK,LONG);
@@ -892,7 +908,21 @@ function maxQty(sym){ let q=Math.floor(Math.max(0,S.cash)/ask(sym)/(1+STX())); w
 const bid=sym=>sp(sym)*(1-BYSYM[sym].spr*sprMult()/2), ask=sym=>sp(sym)*(1+BYSYM[sym].spr*sprMult()/2);
 const P=sym=>S.pos[sym]||(S.pos[sym]={l:0,lc:0,s:0,se:0});
 function posVal(){ let v=0; if(S.vb) for(const id in S.vb) v+=vbVal(S.vb[id]); for(const k in S.pos){ const p=S.pos[k]; if(p.l) v+=p.l*bid(k); if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-ask(k))); } return v; }
-const fundVal=()=>S.fu*price(II,NOW);
+// The fund holds "units" (S.fu) of the total-return index. Real-fund details on top, from H7:
+// a dividend 4 times a game year (every 42 h, about 1.3% a year) that's reinvested automatically, so your share count grows
+// and the share price drops by the dividend that day; and a 0.04% yearly expense ratio taken out of the price.
+const IXDIV=42*3600, IXER=.0004, IXQ=[], IXDC=[1], H7S=()=>H7*3600;
+const ixQ=k=>{ while(IXQ.length<=k) IXQ.push(.0028+.001*RNG("ixd"+IXQ.length)()); return IXQ[k]; };
+const ixN=t=>t<H7S()?0:Math.floor((t-H7S())/IXDIV); // dividends paid at or before t
+const ixD=t=>{ const n=ixN(t); while(IXDC.length<=n){ const k=IXDC.length; IXDC.push(IXDC[k-1]*(1+ixQ(k))); } return IXDC[n]; };
+const ixE=t=>t<=H7S()?1:Math.exp(-IXER*(t-H7S())/604800);
+const trv=(t,p)=>(p??price(II,t))*ixE(t);          // what one unit is worth
+const nav=(t,p)=>trv(t,p)/ixD(t);                   // the fund's share price
+const fShares=()=>S.fu*ixD(NOW);
+const fundVal=()=>S.fu*trv(NOW);
+// deposit/withdraw log for the chart: [time, kind d|w|a|s, dollars (+ in, - out), units]
+function flog(){ if(!S.flog){ S.flog=S.fu>0?[[NOW,"s",S.fbasis,S.fu]]:[]; } return S.flog; }
+function flogAdd(k,dl,u){ const L=flog(), l=L[L.length-1]; if(k==="a"&&l&&l[1]==="a"&&NOW-l[0]<1800){ l[2]+=dl; l[3]+=u; } else L.push([NOW,k,dl,u]); if(L.length>400){ const x=L.splice(0,L.length-399); L.unshift([x[x.length-1][0],"s",x.reduce((a,e)=>a+e[2],0),x.reduce((a,e)=>a+e[3],0)]); } }
 const liquid=()=>S.cash+posVal(), netWorth=()=>liquid()+fundVal();
 // Net worth needed to unlock each stock (raised ~3× in v7.6). d.un (the old number) still sets liquidity and lesson prices.
 // Stocks you had already unlocked under the old numbers stay unlocked (S.unl).
@@ -1100,7 +1130,7 @@ function learnJob(k){ const p=prof(), s=pst(), j=p.jobs[k]; if(!j||k!==skill(p.i
   S.cash-=j.tc; s.sk=k; resetPeak(); life(`🎓 Learned: ${j.n}`); toast(`🎓 Learned a new job: ${j.n}`,"good"); sfx('unlock'); save(); jobPicker(); }
 function finishJob(){ const jb=S.job, p=PB[jb.p], j=p.jobs[jb.k], s=pst(jb.p); S.job=null;
   S.cash+=jb.pay; txInc(jb.pay); S.st.jobs++; S.st.jobPay+=jb.pay; s.rep++;
-  if(aOn("inv")){ const a=jb.pay*aV("inv")/100; S.cash-=a; S.fu+=a/price(II,NOW); S.fbasis+=a; resetPeak(); }
+  if(aOn("inv")){ const a=jb.pay*aV("inv")/100, u=a/trv(NOW); flog(); S.cash-=a; S.fu+=u; S.fbasis+=a; flogAdd("a",a,u); resetPeak(); }
   let msg=`${p.i} ${j.n}: +${money(jb.pay)}`;
   if(Math.random()<GBRK[jb.t]*eff("brk",jb.p)){ if(ulv(s,"ins")>=1){ msg+=" · gear broke, insurance fixed it"; } else { const fc=Math.max(3,GCOST[jb.t]*.25); S.st.breaks++; if(aOn("fix")&&S.cash>=fc){ S.cash-=fc; resetPeak(); msg+=` · gear broke, auto-repaired (-${money(fc)})`; } else { s.br[jb.t]=true; if(jb.t===0) s.momFix=NOW+3600; msg+=` · your ${p.gear[jb.t]} broke!`; } } }
   life(msg); toast(msg,"good"); sfx('pay');
@@ -1268,14 +1298,78 @@ function newsCard(){ const el=$("newsc"); if(!el) return; const g=regimeAt(Math.
   el.innerHTML=`<div class="row" style="margin-bottom:${items.length?6:0}px"><div class="g t">Market mood</div>${mood}</div>`+(items.length?items.map(x=>{ const e=x.ev, live=NOW-e.t0<e.T;
     const fx=Object.entries(e.sc.fx).filter(([k])=>k!=="*"&&BYSYM[k]&&!BYSYM[k].gone).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,4).map(([k,w])=>{ const up=w*e.sc.dir>0; return `<span class="m ${up?"up":"dn"}" style="font-size:11.5px">${up?"▲":"▼"}${k}</span>`; }).join(" ");
     return `<div class="li" style="display:block"><div style="font-size:13px">${x.t.replace("BREAKING: ","")}</div><div class="t">${dur(NOW-x.at)} ago${live?` · <b style="color:var(--gold)">${e.sc.k==="f"?"moving now":"still unfolding"}</b>`:e.sc.k==="s"&&NOW-e.t0<e.T?" · unfolding over days":""} · ${fx}</div></div>`; }).join(""):`<div class="t" style="margin-top:4px">No big stories in the last 2 days. When one breaks, you'll get an alert.</div>`); }
-function fundCard(){ const el=$("fundc"); if(!el) return; const v=fundVal(), g=v-S.fbasis, ip=price(II,NOW), w=(ip/price(II,NOW-86400)-1)*100;
+function fundCard(){ const el=$("fundc"); if(!el) return; flog(); const v=fundVal(), g=v-S.fbasis, w=(trv(NOW)/trv(NOW-86400)-1)*100;
   { const fs=$("fs-fund"); if(fs) fs.innerHTML=`<b>${money(v)}</b> · <span class="${w>=0?"up":"dn"}">${w>=0?"+":""}${w.toFixed(1)}% today</span>`; }
   // build the card once; after that only refresh the numbers, so the amount you're typing isn't wiped every 5 s
-  if(!$("famt")||!el.contains($("famt"))) el.innerHTML=`<div class="row"><div class="g" id="fundv"></div></div>
-  <canvas class="sp" id="spark"></canvas>
-  <div class="row"><input id="famt" class="inp g" inputmode="decimal" placeholder="Amount $"><button class="btn buy sm" data-x="dep">Deposit</button><button class="btn ghost sm" data-x="wd">Withdraw</button></div>`;
-  $("fundv").innerHTML=`<div class="b m">${money(v)} <span class="m ${g>=0?"up":"dn"}" style="font-size:12px">${S.fu>0?sg(g)+" all-time":""}</span></div><div class="t">Tracks the whole market. Averages about +11% a week, with dips. Survives going broke. Index ${w>=0?"+":""}${w.toFixed(2)}% today</div>`;
-  const pts=S.fu>0?S.fh.map(x=>x[1]).concat([v]):candles(II,600,48,NOW).map(c=>c[3]); spark($("spark"),pts); }
+  if(!$("famt")||!el.contains($("famt"))){ el.innerHTML=`<div class="row"><div class="g" id="fundv"></div></div>
+  <div class="fbar"><div class="seg fsg" id="fmd"><button data-fm="p">Share price</button><button data-fm="m">My money</button></div>
+   <div class="seg fsg" id="frg">${["1D","1W","1M","All"].map(r=>`<button data-fr="${r}">${r}</button>`).join("")}</div></div>
+  <div class="fwrap"><canvas class="fch" id="fch"></canvas><div class="ftip" id="ftip"></div></div>
+  <div class="t" id="fleg" style="margin:2px 0 8px"></div>
+  <div class="fkv" id="fstats"></div>
+  <div class="row"><input id="famt" class="inp g" inputmode="decimal" placeholder="Amount $"><button class="btn buy sm" data-x="dep">Buy</button><button class="btn ghost sm" data-x="wd">Sell</button></div>`;
+   el.addEventListener("click",e=>{ const b=e.target.closest("[data-fm],[data-fr]"); if(!b) return; if(b.dataset.fm) S.fmd=b.dataset.fm; else S.frg=b.dataset.fr; FCH.key=""; fundCard(); });
+   const cv=$("fch"); const mv=e=>{ const r=cv.getBoundingClientRect(); fScrub(e.clientX-r.left); }; cv.addEventListener("pointerdown",mv); cv.addEventListener("pointermove",e=>{ if(e.pointerType==="mouse"||e.buttons) mv(e); });
+   const end=()=>{ FCH.sx=null; $("ftip").style.display="none"; fDraw(); }; cv.addEventListener("pointerup",()=>setTimeout(end,1200)); cv.addEventListener("pointerleave",end); cv.addEventListener("pointercancel",end);
+   const fd=$("fd-fund"); if(fd&&!fd.dataset.fl){ fd.dataset.fl=1; fd.addEventListener("toggle",()=>{ FCH.key=""; fundCard(); }); } }
+  const sh=fShares(), np=nav(NOW), nx=(Math.max(0,ixN(NOW))+1)*IXDIV+H7S(), dv=fDivs();
+  $("fundv").innerHTML=`<div class="b m">${money(v)} <span class="m ${g>=0?"up":"dn"}" style="font-size:12px">${S.fu>0?sg(g)+" all-time":""}</span></div><div class="t">Tycoon Total Index fund (TTI): owns a slice of the whole market. 1 week here = 1 year. Averages about <b>+11% a year</b>, but about 1 year in 4 loses money, and bear markets can drop it 20–50% before it recovers. Survives going broke.</div>`;
+  $("fstats").innerHTML=[["Share price",money(np)],["Today",`<span class="${w>=0?"up":"dn"}">${w>=0?"+":""}${w.toFixed(2)}%</span>`],["Shares you own",sh.toFixed(3)],["Your avg cost",sh>0?money(S.fbasis/sh):"—"],
+    ["Dividends reinvested",money(dv)],["Next dividend",NOW<H7S()?"starts "+new Date(H7S()*1000+IXDIV*1000).toLocaleDateString([],{weekday:"short"}):"in "+dur(nx-NOW)],["Dividend yield","≈1.3% a year"],["Expense ratio","0.04% a year"]].map(x=>`<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join("");
+  fDraw(); }
+// ---------- index fund chart: share price or your money, with your buys/sells marked ----------
+const FCH={key:"",at:0,pts:[],sx:null};
+function fUnits(t){ let u=0,c=0,first=null; for(const e of flog()){ if(e[0]>t) break; if(first===null) first=e[0]; u+=e[3]; c+=e[2]; } return {u:Math.max(0,u),c,first}; }
+function fDivs(){ const L=flog(); if(!L.length) return 0; let tot=0; for(let k=Math.max(1,ixN(L[0][0])+1);k<=ixN(NOW);k++){ const t=H7S()+k*IXDIV, u=fUnits(t-1).u; if(u>0) tot+=u*trv(t)*ixQ(k)/(1+ixQ(k)); } return tot; }
+function fSeries(){ const rg=S.frg||"1W", md=S.fmd||"p", L=flog(), key=rg+md+L.length+(L.length?L[L.length-1][0]:0)+":"+Math.floor(NOW/(rg==="1D"?20:120));
+  if(FCH.key===key) return FCH; let tf,n;
+  if(rg==="1D"){ tf=600; n=144; } else if(rg==="1W"){ tf=3600; n=168; } else if(rg==="1M"){ tf=14400; n=180; }
+  else { const st=Math.min(L.length?L[0][0]:NOW,(S.fh[0]||[NOW])[0],NOW-86400), sp=NOW-st; tf=[600,1800,3600,14400,43200,86400].find(x=>sp/x<=200)||86400; n=Math.min(400,Math.ceil(sp/tf)+1); }
+  const cs=candles(II,tf,n,NOW), pts=[];
+  for(const c of cs){ if(c[3]==null) continue; const t=Math.min(c[5]+tf-1,NOW);
+    if(md==="p") pts.push({t,y:nav(t,c[3])});
+    else { const f=fUnits(t); if(f.first===null||f.first>t){ const h=S.fh.find(x=>x[0]>=c[5]&&x[0]<=t); if(h) pts.push({t,y:h[1]}); continue; } pts.push({t,y:f.u*trv(t,c[3]),c:f.c}); } }
+  if(pts.length) pts[pts.length-1].y=md==="p"?nav(NOW):pts[pts.length-1].c!=null?fundVal():pts[pts.length-1].y;
+  const t0=pts.length?pts[0].t-tf:NOW, ev=L.filter(e=>e[1]!=="s"&&e[0]>t0), dvs=[]; for(let k=Math.max(1,ixN(t0)+1);k<=ixN(NOW);k++) dvs.push({t:H7S()+k*IXDIV,k});
+  Object.assign(FCH,{key,pts,tf,md,rg,ev,dvs}); return FCH; }
+function fDraw(){ const cv=$("fch"); if(!cv) return; const W=cv.clientWidth,H=cv.clientHeight; if(!W) return; const F=fSeries(), P=F.pts;
+  document.querySelectorAll("#fmd button").forEach(b=>b.classList.toggle("on",b.dataset.fm===(S.fmd||"p"))); document.querySelectorAll("#frg button").forEach(b=>b.classList.toggle("on",b.dataset.fr===(S.frg||"1W")));
+  const dpr=devicePixelRatio||1; cv.width=W*dpr; cv.height=H*dpr; const c=cv.getContext("2d"); c.scale(dpr,dpr); c.font="10px -apple-system,system-ui,sans-serif";
+  const lg=$("fleg"); if(P.length<2){ c.fillStyle="#77879a"; c.fillText(F.md==="m"?"Buy some shares to see your money here":"Loading…",8,H/2); if(lg) lg.textContent=""; return; }
+  const sh=fShares(), avg=sh>0?S.fbasis/sh:null, ys=P.map(p=>p.y).concat(F.md==="m"?P.filter(p=>p.c!=null).map(p=>p.c):(avg&&F.md==="p"?[avg]:[]));
+  let lo=Math.min(...ys), hi=Math.max(...ys); const pad=(hi-lo||hi*.01||1)*.12; lo-=pad; hi+=pad*1.6;
+  const T0=P[0].t, T1=P[P.length-1].t, X=t=>(t-T0)/((T1-T0)||1)*(W-44), Y=v=>H-16-(v-lo)/(hi-lo)*(H-22);
+  const up=P[P.length-1].y>=P[0].y, col=up?"#16c784":"#ea3943";
+  // grid + price labels
+  c.strokeStyle="rgba(255,255,255,.05)"; c.fillStyle="#77879a"; c.textAlign="left"; for(let q=0;q<=3;q++){ const v=lo+(hi-lo)*(q+.5)/4, y=Y(v); c.beginPath(); c.moveTo(0,y); c.lineTo(W-44,y); c.stroke(); c.fillText(money(v),W-42,y+3); }
+  const dl=t=>{ const d=new Date(t*1000); return F.rg==="1D"?d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):d.toLocaleDateString([],{month:"short",day:"numeric"}); };
+  c.fillText(dl(T0),0,H-3); c.textAlign="right"; c.fillText(dl(T1),W-46,H-3); c.textAlign="left";
+  // "money you put in" (My money) or your average cost (Share price)
+  c.setLineDash([4,4]); c.lineWidth=1.2; c.strokeStyle="#9aa8b8";
+  if(F.md==="m"){ c.beginPath(); let s0=false; P.forEach(p=>{ if(p.c==null) return; const x=X(p.t),y=Y(p.c); s0?c.lineTo(x,y):c.moveTo(x,y); s0=true; }); c.stroke(); }
+  else if(avg){ const y=Y(avg); c.beginPath(); c.moveTo(0,y); c.lineTo(W-44,y); c.stroke(); c.fillStyle="#9aa8b8"; c.fillText("your avg cost",4,y-4); }
+  c.setLineDash([]);
+  // the line
+  c.beginPath(); P.forEach((p,i)=>{ const x=X(p.t),y=Y(p.y); i?c.lineTo(x,y):c.moveTo(x,y); }); c.strokeStyle=col; c.lineWidth=1.8; c.stroke();
+  c.lineTo(X(T1),H-16); c.lineTo(0,H-16); c.closePath(); c.fillStyle=up?"rgba(22,199,132,.10)":"rgba(234,57,67,.10)"; c.fill();
+  const yAt=t=>{ let i=P.findIndex(p=>p.t>=t); if(i<0) i=P.length-1; return Y(P[i].y); };
+  // dividends: small blue dots
+  for(const d of F.dvs){ if(d.t<T0||d.t>T1) continue; c.fillStyle="#4aa3ff"; c.beginPath(); c.arc(X(d.t),yAt(d.t),3,0,7); c.fill(); }
+  // your buys and sells: grouped per point, newest 4 get a label
+  const G=[]; for(const e of F.ev){ const x=X(Math.max(T0,e[0])), g=G.find(q=>Math.abs(q.x-x)<10); if(g){ g.d+=e[2]; } else G.push({x,t:e[0],d:e[2]}); }
+  G.forEach((g,i)=>{ const y=yAt(g.t), b=g.d>=0; c.fillStyle=b?"#16c784":"#ea3943"; c.strokeStyle="#0e1319"; c.lineWidth=1.5; c.beginPath();
+    if(b){ c.moveTo(g.x,y+4); c.lineTo(g.x-6,y+14); c.lineTo(g.x+6,y+14); } else { c.moveTo(g.x,y-4); c.lineTo(g.x-6,y-14); c.lineTo(g.x+6,y-14); } c.closePath(); c.stroke(); c.fill();
+    if(i>=G.length-4){ c.textAlign="center"; c.fillText((b?"+":"−")+money(Math.abs(g.d)).replace(".00",""),Math.min(Math.max(g.x,18),W-62),b?y+25:y-17); c.textAlign="left"; } });
+  if(lg) lg.innerHTML=(F.md==="m"?`<span style="color:${col}">━</span> what your shares are worth · <span style="color:#9aa8b8">┅</span> money you put in. The gap is your gain.`:`<span style="color:${col}">━</span> TTI share price${avg?` · <span style="color:#9aa8b8">┅</span> your average cost`:""}. The line only moves with the market, never with your buys.`)
+    +` · <span class="up">▲</span> you bought · <span class="dn">▼</span> you sold · <span style="color:#4aa3ff">●</span> dividend`+(F.rg==="1W"?" · 1W = 1 game year":"");
+  if(FCH.sx!=null){ const x=FCH.sx; c.strokeStyle="rgba(255,255,255,.35)"; c.beginPath(); c.moveTo(x,0); c.lineTo(x,H-16); c.stroke(); } }
+function fScrub(x){ const F=FCH, P=F.pts; if(P.length<2) return; const cv=$("fch"), W=cv.clientWidth, T0=P[0].t, T1=P[P.length-1].t, t=T0+Math.max(0,Math.min(1,x/(W-44)))*(T1-T0);
+  let p=P[0]; for(const q of P) if(Math.abs(q.t-t)<Math.abs(p.t-t)) p=q; FCH.sx=(p.t-T0)/((T1-T0)||1)*(W-44); fDraw();
+  const d=new Date(p.t*1000), when=d.toLocaleDateString([],{weekday:"short",month:"short",day:"numeric"})+" "+d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+  const near=F.ev.filter(e=>Math.abs(e[0]-p.t)<=F.tf), dv=F.dvs.find(q=>Math.abs(q.t-p.t)<=F.tf);
+  const tip=$("ftip"); tip.innerHTML=`<b>${when}</b><br>${F.md==="m"?`Worth ${money(p.y)}${p.c!=null?` · put in ${money(p.c)}`:""}`:`Share price ${money(p.y)}`}`+
+    near.map(e=>`<br><span class="${e[2]>=0?"up":"dn"}">${e[2]>=0?"▲ You bought":"▼ You sold"} ${money(Math.abs(e[2]))}${e[1]==="a"?" (auto-invest)":""}</span>`).join("")+(dv?`<br><span style="color:#4aa3ff">● Dividend ${(ixQ(dv.k)*100).toFixed(2)}%, reinvested</span>`:"");
+  tip.style.display="block"; tip.style.left=Math.min(Math.max(0,FCH.sx-70),W-150)+"px"; }
 function spark(cv,pts){ const dpr=devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight; if(!W||pts.length<2) return; cv.width=W*dpr; cv.height=H*dpr; const c=cv.getContext("2d"); c.scale(dpr,dpr);
   const lo=Math.min(...pts),hi=Math.max(...pts),r=hi-lo||1, up=pts[pts.length-1]>=pts[0], col=up?"#16c784":"#ea3943";
   c.beginPath(); pts.forEach((v,i)=>{const x=i/(pts.length-1)*W,y=H-3-(v-lo)/r*(H-6); i?c.lineTo(x,y):c.moveTo(x,y);}); c.strokeStyle=col; c.lineWidth=1.8; c.stroke();
@@ -1649,8 +1743,8 @@ main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||
     case "jobs": return jobPicker();
     case "pL": return paper("L"); case "pS": return paper("S"); case "pclose": return paperClose();
     case "fill": { const cap=FUSE[tier()]*4, a=Math.min(cap-s.fuel,Math.max(0,S.cash)/supP(p)); S.cash-=a*supP(p); s.fuel+=a; resetPeak(); break; }
-    case "dep": { const a=Math.min(+$("famt").value||0,S.cash); if(a<=0||inDebt()) return toast("Enter an amount you have"); const ip=price(II,NOW); S.cash-=a; S.fu+=a/ip; S.fbasis+=a; S.fh.push([NOW,fundVal()]); resetPeak(); sfx('coin'); toast("🏦 Invested "+money(a)+" in the index"); $("famt").value=""; fundCard(); break; }
-    case "wd": { const v=fundVal(), a=Math.min(+$("famt").value||0,v); if(a<=0) return toast("Enter an amount"); const ip=price(II,NOW); S.fbasis=Math.max(0,S.fbasis*(1-a/v)); S.fu-=a/ip; if(S.fu<1e-9) S.fu=0; S.cash+=a; S.fh.push([NOW,fundVal()]); sfx('coin'); toast("🏦 Withdrew "+money(a)); $("famt").value=""; fundCard(); break; }
+    case "dep": { const a=Math.round(Math.min(+$("famt").value||0,S.cash)*100)/100; if(a<=0||inDebt()) return toast("Enter an amount you have"); const u=a/trv(NOW); flog(); S.cash-=a; S.fu+=u; S.fbasis+=a; flogAdd("d",a,u); S.fh.push([NOW,fundVal()]); resetPeak(); sfx('coin'); toast(`🏦 Bought ${(u*ixD(NOW)).toFixed(3)} shares at ${money(nav(NOW))} (${money(a)})`); $("famt").value=""; fundCard(); break; }
+    case "wd": { const v=fundVal(), a=Math.round(Math.min(+$("famt").value||0,v)*100)/100; if(a<=0) return toast("Enter an amount"); const u=Math.min(S.fu,a/trv(NOW)); flog(); S.fbasis=Math.max(0,S.fbasis*(1-a/v)); S.fu-=u; if(S.fu<1e-9) S.fu=0; S.cash+=a; flogAdd("w",-a,-u); S.fh.push([NOW,fundVal()]); sfx('coin'); toast(`🏦 Sold ${(u*ixD(NOW)).toFixed(3)} shares at ${money(nav(NOW))} (${money(a)})`); $("famt").value=""; fundCard(); break; }
     case "exp": { const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); $("sbox").value=code; try{navigator.clipboard.writeText(code).then(()=>toast("Copied"));}catch(_){} return; }
     case "imp": { const gv=($("sbox").value||"").trim().toUpperCase(); if(gv==="SORRY20"){ if(S.gift20) return toast("That code's already been used on this save"); S.gift20=1; S.cash+=20; resetPeak(); life("🎁 Gift code: +$20"); save(); act(); sfx('coin'); $("sbox").value=""; hdr(); build(true); return toast("🎁 +$20 added. Sorry about the lost progress!","good"); }
     } try{ const nx=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob($("sbox").value.trim()))))); backup(S,"before loading a code"); S=nx; S.resetAt=Date.now(); save(); act(); build(); toast("Loaded"); }catch(_){ toast("Bad code"); } return;
@@ -1681,7 +1775,7 @@ function backup(x,why){ try{ if(!x||prog(x)<1) return; let L=JSON.parse(localSto
 const baks=()=>{ try{ return JSON.parse(localStorage.getItem("st.baks")||"[]"); }catch(_){ return []; } };
 // ---------- live sync between your devices ----------
 // chart choices (timeframe, selected stock, share count) stay on each device
-const viewPrefs=()=>({tf:S.tf,sel:S.sel,qty:S.qty,cq:S.cq,csel:S.csel});
+const viewPrefs=()=>({tf:S.tf,sel:S.sel,qty:S.qty,cq:S.cq,csel:S.csel,fmd:S.fmd,frg:S.frg});
 // Each device has an id. Every cloud save carries a revision number (rev) that goes up by one per push.
 // A device only pushes after you actually DO something (tap a button, move a stop/target line): just looking,
 // scrolling or leaving the app open never pushes, because everything else (prices, jobs, bots, bills) is worked out

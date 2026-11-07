@@ -1149,12 +1149,12 @@ const AUTOS=[
  {id:"asl",cat:"Trading",n:"Default stop loss",c:50,d:"Every new trade automatically gets a stop loss this far from your entry.",set:[1,20,1,5,"% from entry"]},
  {id:"atp",cat:"Trading",n:"Default take profit",c:100,d:"Every new trade automatically gets a take profit this far from your entry.",set:[1,30,1,5,"% from entry"]},
  {id:"trail",cat:"Trading",n:"Trailing stop",c:1200,d:"Your stop loss follows the price as it moves your way, always staying this far behind it. Locks in gains.",set:[1,15,1,3,"% behind"]},
- {id:"rit",cat:"Trading",n:"Routine bot",c:5000,d:"While the app is closed, trades the daily routines you've learned for you, both halves. Uses this much of your cash per trade. The bot keeps 10% of any profit.",set:[5,50,5,10,"% of cash"]},
- {id:"openb",cat:"Trading",n:"Morning-open bot",c:12000,d:"While the app is closed, trades the morning open on every stock whose open lesson you've learned. Uses this much of your cash per stock. Keeps 10% of any profit.",set:[5,50,5,10,"% of cash"]},
- {id:"pscalp",cat:"PNNY",n:"Penny Scalper",c:8,d:"Trades PNNY's 6 daily routines (both halves), fades PNNY's wild hours at :30, and shorts the midnight crash.",set:[5,90,5,50,"% of cash per trade"]},
- {id:"pflush",cat:"PNNY",n:"Flush Catcher",c:20,d:"Buys PNNY at :02 every 3rd hour and sells at :05.",set:[5,90,5,50,"% of cash per trade"]},
- {id:"ppump",cat:"PNNY",n:"Pump Sniper",c:35,d:"Buys PNNY when it starts trending, then shorts the top after the pump spikes and covers when it dumps.",set:[5,90,5,50,"% of cash per trade"]},
- {id:"pswing",cat:"PNNY",n:"Breakout Rider",c:60,d:"Buys PNNY breakouts right after the volume surge and trades PNNY's chart patterns (double tops and bottoms, triangles, flags), 3 minutes each.",set:[5,90,5,50,"% of cash per trade"]},
+ {id:"rit",cat:"Trading",n:"Routine bot",c:5000,d:"While the app is closed, trades the daily routines you've learned for you, both halves. Uses this much of your cash per trade. The bot keeps 10% of any profit.",set:[1,100,1,10,"% of cash"]},
+ {id:"openb",cat:"Trading",n:"Morning-open bot",c:12000,d:"While the app is closed, trades the morning open on every stock whose open lesson you've learned. Uses this much of your cash per stock. Keeps 10% of any profit.",set:[1,100,1,10,"% of cash"]},
+ {id:"pscalp",cat:"PNNY",n:"Penny Scalper",c:8,d:"Trades PNNY's 6 daily routines (both halves), fades PNNY's wild hours at :30, and shorts the midnight crash.",set:[1,100,1,50,"% of cash per trade"]},
+ {id:"pflush",cat:"PNNY",n:"Flush Catcher",c:20,d:"Buys PNNY at :02 every 3rd hour and sells at :05.",set:[1,100,1,50,"% of cash per trade"]},
+ {id:"ppump",cat:"PNNY",n:"Pump Sniper",c:35,d:"Buys PNNY when it starts trending, then shorts the top after the pump spikes and covers when it dumps.",set:[1,100,1,50,"% of cash per trade"]},
+ {id:"pswing",cat:"PNNY",n:"Breakout Rider",c:60,d:"Buys PNNY breakouts right after the volume surge and trades PNNY's chart patterns (double tops and bottoms, triangles, flags), 3 minutes each.",set:[1,100,1,50,"% of cash per trade"]},
  {id:"resup",cat:"Hustle",n:"Auto-resupply",c:150,d:"Tops up your supplies before a job when you're running low."},
  {id:"book",cat:"Hustle",n:"Booking app",c:600,d:"When a job ends, automatically starts your best job, even while you're away. Pairs well with Auto-resupply."},
  {id:"inv",cat:"Hustle",n:"Paycheck auto-invest",c:300,d:"Puts part of every job paycheck straight into the index fund.",set:[5,100,5,20,"% of pay"]},
@@ -1180,7 +1180,7 @@ function botClose(sym,tag){ const p=P(sym); if(p.bot!==tag||(!p.l&&!p.s)) return
 // win most of the time, and bail out if a trade ever gets 20% against them
 const vbVal=v=>{ const pr=price(0,NOW); return v.dir>0?v.q*pr:Math.max(0,v.q*v.en+v.q*(v.en-pr)); };
 // PNNY bot levels (v7.7): each upgrade raises the bet cap and the most of your cash the bot may use, and some levels add new plays (more trades a day)
-const PLV=[{cap:25,mx:50},{cap:40,mx:60},{cap:80,mx:70},{cap:150,mx:80},{cap:300,mx:90}], PBUPX=[4,12,40,120], PNB=["pscalp","pflush","ppump","pswing"];
+const PLV=[100,500,2500,12000,60000].map(cap=>({cap,mx:100})) /* you pick 1-100% of cash; each level raises the max bet */, PBUPX=[4,12,40,120], PNB=["pscalp","pflush","ppump","pswing"];
 const PEXTRA={pscalp:{2:"+ shorts buyout rumors",3:"+ shorts insider selling",4:"+ buys earnings beats"},
   pflush:{2:"+ shorts the dip itself (:00 to :02)"}, ppump:{}, pswing:{3:"+ holds breakouts 4 min instead of 3"}};
 const pLv=id=>A(id).lv||1, pCap=id=>PLV[pLv(id)-1].cap, pMx=id=>PLV[pLv(id)-1].mx, pUpC=id=>{ const l=pLv(id); return l>=5?0:AUTOS.find(x=>x.id===id).c*PBUPX[l-1]; };
@@ -1218,10 +1218,10 @@ function nextSod(sod){ const b=NOW-(((NOW%86400)+86400)%86400); let t=b+sod; if(
 const clk=t=>new Date(t*1000).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
 const inT=t=>t-NOW<3600?`in ${Math.max(1,Math.round((t-NOW)/60))} min`:`at ${clk(t)}`;
 function pLvInfo(id){ const l=A(id).own?pLv(id):0, ex=PEXTRA[id]||{};
-  return `<div class="t" style="margin:8px 0 2px"><b style="color:var(--text)">Levels</b> · bigger bets${Object.keys(ex).length?", and new plays (more trades a day)":""}</div><ul class="axl">${PLV.map((L,i)=>{ const n=i+1, on=n<=l;
-    return `<li style="${on?"":"opacity:.6"}">${on?"✅":"🔒"} <b>Lv ${n}</b>${n>1?` · ${money(AUTOS.find(x=>x.id===id).c*PBUPX[n-2])}`:""}: max ${money(L.cap)}, ${L.mx}% of cash${ex[n]?` <b>${ex[n]}</b>`:""}</li>`; }).join("")}</ul>`; }
+  return `<div class="t" style="margin:8px 0 2px"><b style="color:var(--text)">Levels</b> · a bigger max bet${Object.keys(ex).length?", and new plays (more trades a day)":""}</div><ul class="axl">${PLV.map((L,i)=>{ const n=i+1, on=n<=l;
+    return `<li style="${on?"":"opacity:.6"}">${on?"✅":"🔒"} <b>Lv ${n}</b>${n>1?` · ${money(AUTOS.find(x=>x.id===id).c*PBUPX[n-2])}`:""}: max bet ${money(L.cap)}${ex[n]?` <b>${ex[n]}</b>`:""}</li>`; }).join("")}</ul>`; }
 function autoInfo(x){ const a=A(x.id), v=a.own?a.v:(x.set||[])[3], li=arr=>`<ul class="axl">${arr.filter(Boolean).map(t=>`<li>${t}</li>`).join("")}</ul>`, P0=STOCKS[0];
-  const pnny=[`<b>Only trades while the app is closed.</b> With the app open, you're the trader.`,`Bets ${PNB.includes(x.id)?Math.min(v,pMx(x.id)):v}% of your cash per trade, never more than <b>${money(PNB.includes(x.id)?pCap(x.id):25)}</b>.`,`Bails out if a trade gets 20% against it. Results go into the "Net so far" number above.`,`<b>Sits out while you have a trade of your own open.</b>`];
+  const pnny=[`<b>Only trades while the app is closed.</b> With the app open, you're the trader.`,`Bets <b>${v}%</b> of your cash per trade (you pick 1–100%)${PNB.includes(x.id)?`, never more than <b>${money(pCap(x.id))}</b> a trade at this level`:""}. Bigger bets win bigger and lose bigger.`,`Bails out if a trade gets 20% against it. Results go into the "Net so far" number above.`,`<b>Sits out while you have a trade of your own open.</b>`];
   switch(x.id){
    case "asl": return li([`When you open a trade, it sets a stop loss <b>${v}%</b> against you right away. Example: buy at $10.00 → stop at <b>$${(10*(1-v/100)).toFixed(2)}</b>. Short at $10.00 → stop at <b>$${(10*(1+v/100)).toFixed(2)}</b>.`,`It also applies to trades your bots open.`,`You can still drag or remove the stop on any trade.`,`Too tight and normal wiggles knock you out. PNNY swings ~6% a minute, so steady stocks suit small settings better.`]);
    case "atp": return li([`When you open a trade, it sets a take profit <b>${v}%</b> in your favor. Example: buy at $10.00 → sells at <b>$${(10*(1+v/100)).toFixed(2)}</b>. Short at $10.00 → covers at <b>$${(10*(1-v/100)).toFixed(2)}</b>.`,`It also applies to trades your bots open, so a bot trade can close early with a win.`,`Pair it with Default stop loss so every trade has an exit both ways.`]);
@@ -1251,7 +1251,7 @@ function buildAuto(){ const st=botStats(7), td=botStats(1), mx=Math.max(1,...st.
   const row=(x,big)=>{ const a=A(x.id), ex=AEXP.has(x.id), i=BOTS.indexOf(x.id), r=big?botRar(i,BOTS.length):0, col=big?RAR[r].c:(a.own?"var(--gold)":"#77879a"), ic=big?"robot":AICON[x.id];
     const today=botStats(1,x.id), ctl=a.own?`<button class="tg ${a.on?"on":""}" data-atog="${x.id}" aria-label="on/off"></button>`:`<button class="btn buyul" style="margin-top:0;width:auto;padding:7px 12px" data-abuy="${x.id}" data-cost="${x.c}">${money(x.c)}</button>`;
     const pb=PNB.includes(x.id), smx=pb?pMx(x.id):x.set&&x.set[1], sv=pb?Math.min(a.v,smx):a.v, uc=pb&&a.own?pUpC(x.id):0;
-    const set=(a.own&&x.set?`<div class="t" style="margin-top:8px">${x.set[4].includes("%")?"Setting":"Bet"}: <b style="color:var(--text)" id="av-${x.id}">${sv}${x.set[4]}</b>${pb?` · max ${money(pCap(x.id))}`:""}</div><input type="range" style="width:100%" min="${x.set[0]}" max="${smx}" step="${x.set[2]}" value="${sv}" data-aset="${x.id}">`:"")
+    const set=(a.own&&x.set?`<div class="t" style="margin-top:8px">${x.set[4].includes("%")?"Setting":"Bet"}: <b style="color:var(--text)" id="av-${x.id}">${sv}${x.set[4]}</b>${pb?` · max bet ${money(pCap(x.id))}`:""}</div><input type="range" style="width:100%" min="${x.set[0]}" max="${smx}" step="${x.set[2]}" value="${sv}" data-aset="${x.id}">`:"")
       +(pb&&a.own?(uc?`<button class="btn buyul sm" style="margin-top:8px;width:100%" data-aup="${x.id}" data-cost="${uc}">Upgrade to Lv ${pLv(x.id)+1} · ${money(uc)}</button>`:`<div class="t" style="margin-top:8px;text-align:center">⭐ Max level</div>`):"");
     const more=`<button class="aexp" data-aexp="${x.id}">${ex?"Hide details ▴":"How it works ▾"}</button>${ex?`<div class="axd">${autoInfo(x)}</div>`:""}`;
     if(big) return `<div class="card abot${a.own?"":" lock"}" style="${a.own&&a.on?`box-shadow:inset 0 0 0 1px ${col}66`:""}"><div class="row">${ICOB("robot",a.own?col:"#77879a",20)}<span class="g"></span>${ctl}</div>
@@ -3067,7 +3067,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="118";
+const APPV="119";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

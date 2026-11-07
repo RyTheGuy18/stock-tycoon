@@ -37,3 +37,7 @@ Re-run it after any engine change. Engine changes alter the market for everyone,
   Rider also trades PNNY's chart shapes. Offline sim: `bots.py` style, advance() with SIM=true over 4 h windows.
 - v114 (same H9): patterns are placed back to back (at least 100 s apart, plus a random gap) instead of in slots; each stock has its
   own pace (`PACE`, 0.65-1.35x). Fewer fakeouts, collapses/squeezes x0.3, breakouts 1.3x stronger, flush dip 1.6x deeper.
+
+## Releasing
+Every release bumps BOTH numbers to the same value: `const APPV="NN"` in index.html and `const C = "tt-vNN"` in sw.js.
+The Settings → App updater compares them; if only sw.js changes, the app keeps showing the old version.

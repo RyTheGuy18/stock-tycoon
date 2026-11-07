@@ -28,7 +28,7 @@ Re-run it after any engine change. Engine changes alter the market for everyone,
 - Whispers come from industry and big company stories in `newsV2` (not `newsSince`), so `WHISP` no longer finds them; test with
   `newsV2(...).filter(x=>x.tell==='whisper')` and close 1 h after the story.
 
-## v8.0 more patterns (H9 = Nov 7 2026 21:00 UTC, 3pm Central)
+## v8.0 more patterns (H9 = Nov 7 2026 19:00 UTC, 1pm Central)
 - From H9 each hour has 6 pattern slots of 10 min (was 3 of 20 min) and a higher chance per slot, so patterns come about 3x as often.
   Long patterns (chart shapes, squeezes) take two slots. Patterns never start on top of the flush, the morning open, PNNY's midnight
   crash or a daily routine. Test with `H9*3600` in the harness T0 lines.

@@ -613,11 +613,12 @@ function sched(i,h){ const key=i+":"+h; let s=SC.get(key); if(s) return s;
       let t=Math.floor(r()*G), shp=false, fdone=!fN;
       while(t<3500){
         if(!fdone&&t>=fN.sl*1200){ fdone=true; const e=makeEp(d,r,h,false,fN.ep); e.ph=e.ph.map((q,ix)=>ix===0&&e.sOff?q:[q[0],q[1]*2,q[2],q[3]]); e.cn=1; e.st=t; if(t+epLen(e)<3590&&!busy(e)){ eps.push(e); t+=epLen(e)+GAP(); } continue; }
-        const e=makeEp(d,r,h,!shp&&t<2400), L=epLen(e); e.st=e.shape?10*Math.ceil(t/10):t; if(e.st+L>3590) break;
+        const e=makeEp(d,r,h,!shp&&t<2400&&!d.lv), L=epLen(e); e.st=e.shape?10*Math.ceil(t/10):t; if(e.st+L>3590) break;
+        if(e.ty==="pump"&&eps.some(x=>x.ty==="pump")){ t+=60; continue; } // at most one pump an hour (PNNY: no chart shapes, they skip its swing limit)
         if(busy(e)){ t+=60; continue; } eps.push(e); if(e.shape) shp=true; t=e.st+L+GAP(); } }
     else for(let sl=0;sl<3;sl++) if(fN&&fN.sl===sl) ce(sl); else if(r()<pf){ const e=makeEp(d,r,h,sl<2&&!eps.some(x=>x.shape)); e.st=e.shape?sl*1200+10*Math.floor(r()*((1190-epLen(e))/10)):sl*1200+1+Math.floor(r()*(1199-epLen(e))); eps.push(e);} }
   const mr=RNG("m:"+h); let cr=mr()<1/60?1+Math.floor(mr()*3400):null; if(cr!=null&&h>=H2) cr=Math.max(cr,150);
-  let ee=0, eeP=0; for(const e of eps){ if(e.shape){ ee+=e.net*d.vol*Math.sqrt(60); continue; } for(const p of e.ph){ const m=p[0]*(p[3]?p[1]:p[1]*d.vol); ee+=m; if(p[3]&&h>=H1) eeP+=.78*m; } } // part of a collapse/squeeze sticks
+  let ee=0, eeP=0; for(const e of eps){ if(e.shape){ ee+=e.net*d.vol*Math.sqrt(60); continue; } const fk=h>=H9&&!e.ph.some(p=>p[3])?.15:1; for(const p of e.ph){ const m=p[0]*(p[3]?p[1]:p[1]*d.vol); ee+=m*fk; if(p[3]&&h>=H1) eeP+=.78*m; } } // part of a collapse/squeeze sticks
   if(cr!=null){ const cb=d.beta*(d.idx&&h>=H7?IXC:1); ee+=Math.log(.82)*cb+(h>=H2?Math.log(.995)*cb:0); }
   if(d.od&&((h%24)+24)%24===OPEN_H) ee+=openSign(i,h)*d.oD;
   s={eps,cr,ee,eeP}; SC.set(key,s); if(SC.size>3000) SC.delete(SC.keys().next().value); return s; }
@@ -711,7 +712,10 @@ const CH=new Map();
 function chunk(i,h){ const key=i+":"+h; let c=CH.get(key); if(c) return c;
   const d=SER[i], s=sched(i,h), mu=new Float64Array(HN+1), vm=new Float32Array(HN+1).fill(1), sm=new Float32Array(HN+1).fill(1);
   for(const e of s.eps){ if(e.shape){ for(let j=1;j<e.kp.length;j++){ const [a]=e.kp[j-1], [b,,,sg]=e.kp[j]; for(let t=e.st+a+1;t<=e.st+b&&t<=HN;t++){ vm[t]*=sg[0]; sm[t]*=sg[1]; } } continue; }
-    let t=e.st; for(const p of e.ph){ const m=p[3]?p[1]:p[1]*d.vol; for(let k=0;k<p[0];k++,t++){ mu[t]+=m; vm[t]*=p[2]; if(p[4]) sm[t]*=p[4]; if(h>=H4) sm[t]*=EQ; } } }
+    let t=e.st, net=0; for(const p of e.ph){ const m=p[3]?p[1]:p[1]*d.vol; net+=m*p[0]; for(let k=0;k<p[0];k++,t++){ mu[t]+=m; vm[t]*=p[2]; if(p[4]) sm[t]*=p[4]; if(h>=H4) sm[t]*=EQ; } }
+    // from H9 (patterns back to back): after a pattern ends, 85% of its move fades back over the next few minutes, so the
+    // moves don't pile up during the hour (which the hour's start-to-end line would otherwise erase as a long steady slide)
+    if(h>=H9&&!e.ph.some(p=>p[3])){ const nx=Math.min(HN,...s.eps.filter(x=>x.st>e.st).map(x=>x.st)), F=Math.min(300,nx-t); if(F>20) for(let k=1;k<=F;k++) mu[t+k-1]-=.85*net/F; } }
   // "3-hour flush": at the top of every UTC hour divisible by 3, stocks dip then fully recover
   if(!d.idx&&h%3===0){ const a=Math.log(1-Math.min(.5,flushD(d)*(h>=H9?1.6:1)))/120; /* from H9 a deeper dip so it stands out in the busier hours */ for(let t=1;t<=120;t++){ mu[t]+=a; vm[t]*=2; } for(let t=121;t<=300;t++) mu[t]-=a*120/180; if(h>=H4) for(let t=1;t<=300;t++) sm[t]*=SQ; }
   const dh=((h%24)+24)%24;
@@ -1147,10 +1151,10 @@ const AUTOS=[
  {id:"trail",cat:"Trading",n:"Trailing stop",c:1200,d:"Your stop loss follows the price as it moves your way, always staying this far behind it. Locks in gains.",set:[1,15,1,3,"% behind"]},
  {id:"rit",cat:"Trading",n:"Routine bot",c:5000,d:"While the app is closed, trades the daily routines you've learned for you, both halves. Uses this much of your cash per trade. The bot keeps 10% of any profit.",set:[5,50,5,10,"% of cash"]},
  {id:"openb",cat:"Trading",n:"Morning-open bot",c:12000,d:"While the app is closed, trades the morning open on every stock whose open lesson you've learned. Uses this much of your cash per stock. Keeps 10% of any profit.",set:[5,50,5,10,"% of cash"]},
- {id:"pscalp",cat:"PNNY",n:"Penny Scalper",c:8,d:"Trades PNNY's 6 daily routines (both halves), fades PNNY's wild hours at :30, and shorts the midnight crash.",set:[5,95,5,75,"% of cash per trade"]},
- {id:"pflush",cat:"PNNY",n:"Flush Catcher",c:20,d:"Buys PNNY at :02 every 3rd hour and sells at :05.",set:[5,95,5,75,"% of cash per trade"]},
- {id:"ppump",cat:"PNNY",n:"Pump Sniper",c:35,d:"Buys PNNY when it starts trending, then shorts the top after the pump spikes and covers when it dumps.",set:[5,95,5,75,"% of cash per trade"]},
- {id:"pswing",cat:"PNNY",n:"Breakout Rider",c:60,d:"Buys PNNY breakouts right after the volume surge and trades PNNY's chart patterns (double tops and bottoms, triangles, flags), 3 minutes each.",set:[5,95,5,75,"% of cash per trade"]},
+ {id:"pscalp",cat:"PNNY",n:"Penny Scalper",c:8,d:"Trades PNNY's 6 daily routines (both halves), fades PNNY's wild hours at :30, and shorts the midnight crash.",set:[5,90,5,50,"% of cash per trade"]},
+ {id:"pflush",cat:"PNNY",n:"Flush Catcher",c:20,d:"Buys PNNY at :02 every 3rd hour and sells at :05.",set:[5,90,5,50,"% of cash per trade"]},
+ {id:"ppump",cat:"PNNY",n:"Pump Sniper",c:35,d:"Buys PNNY when it starts trending, then shorts the top after the pump spikes and covers when it dumps.",set:[5,90,5,50,"% of cash per trade"]},
+ {id:"pswing",cat:"PNNY",n:"Breakout Rider",c:60,d:"Buys PNNY breakouts right after the volume surge and trades PNNY's chart patterns (double tops and bottoms, triangles, flags), 3 minutes each.",set:[5,90,5,50,"% of cash per trade"]},
  {id:"resup",cat:"Hustle",n:"Auto-resupply",c:150,d:"Tops up your supplies before a job when you're running low."},
  {id:"book",cat:"Hustle",n:"Booking app",c:600,d:"When a job ends, automatically starts your best job, even while you're away. Pairs well with Auto-resupply."},
  {id:"inv",cat:"Hustle",n:"Paycheck auto-invest",c:300,d:"Puts part of every job paycheck straight into the index fund.",set:[5,100,5,20,"% of pay"]},
@@ -1176,11 +1180,11 @@ function botClose(sym,tag){ const p=P(sym); if(p.bot!==tag||(!p.l&&!p.s)) return
 // win most of the time, and bail out if a trade ever gets 20% against them
 const vbVal=v=>{ const pr=price(0,NOW); return v.dir>0?v.q*pr:Math.max(0,v.q*v.en+v.q*(v.en-pr)); };
 // PNNY bot levels (v7.7): each upgrade raises the bet cap and the most of your cash the bot may use, and some levels add new plays (more trades a day)
-const PLV=[{cap:25,mx:75},{cap:40,mx:80},{cap:80,mx:85},{cap:150,mx:90},{cap:300,mx:95}], PBUPX=[4,12,40,120], PNB=["pscalp","pflush","ppump","pswing"];
+const PLV=[{cap:25,mx:50},{cap:40,mx:60},{cap:80,mx:70},{cap:150,mx:80},{cap:300,mx:90}], PBUPX=[4,12,40,120], PNB=["pscalp","pflush","ppump","pswing"];
 const PEXTRA={pscalp:{2:"+ shorts buyout rumors",3:"+ shorts insider selling",4:"+ buys earnings beats"},
   pflush:{2:"+ shorts the dip itself (:00 to :02)"}, ppump:{}, pswing:{3:"+ holds breakouts 4 min instead of 3"}};
 const pLv=id=>A(id).lv||1, pCap=id=>PLV[pLv(id)-1].cap, pMx=id=>PLV[pLv(id)-1].mx, pUpC=id=>{ const l=pLv(id); return l>=5?0:AUTOS.find(x=>x.id===id).c*PBUPX[l-1]; };
-function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; if(!S.botV2){ S.botV2=1; for(const id of PNB){ const a=S.auto[id]; if(a&&a.v===10) a.v=75; } } /* v8.0: old 10% default -> new 75% default, only if never moved */ const pr=price(0,NOW), h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
+function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; if(!S.botV2){ S.botV2=1; for(const id of PNB){ const a=S.auto[id]; if(a&&a.v===10) a.v=50; } } if(!S.botV3){ S.botV3=1; for(const id of PNB){ const a=S.auto[id]; if(a&&a.v>pMx(id)) a.v=pMx(id); } } /* v8.0: old 10% default -> new 75% default, only if never moved */ const pr=price(0,NOW), h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
   // key = one trade slot (a bot can hold one trade per play); id = the bot
   const open=(key,id,dir)=>{ if(!SIM||!aOn(id)||S.vb[key]||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } const q=Math.floor(Math.min(Math.max(0,S.cash)*Math.min(aV(id),pMx(id))/100,pCap(id))/pr); if(q<1) return; S.cash-=q*pr; S.vb[key]={dir,q,en:pr,id}; resetPeak(); };
   const close=key=>{ const v=S.vb[key]; if(!v) return; delete S.vb[key]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; botLog(v.id||key,pl); resetPeak(); };

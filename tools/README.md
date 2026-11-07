@@ -27,3 +27,11 @@ Re-run it after any engine change. Engine changes alter the market for everyone,
   their moves doubled. To test the new engine, replace `H2*3600` / `H3*3600` with `H8*3600` in the harness T0 lines.
 - Whispers come from industry and big company stories in `newsV2` (not `newsSince`), so `WHISP` no longer finds them; test with
   `newsV2(...).filter(x=>x.tell==='whisper')` and close 1 h after the story.
+
+## v8.0 more patterns (H9 = Nov 7 2026 21:00 UTC, 3pm Central)
+- From H9 each hour has 6 pattern slots of 10 min (was 3 of 20 min) and a higher chance per slot, so patterns come about 3x as often.
+  Long patterns (chart shapes, squeezes) take two slots. Patterns never start on top of the flush, the morning open, PNNY's midnight
+  crash or a daily routine. Test with `H9*3600` in the harness T0 lines.
+- PNNY bots: Lv 1 now uses up to 75% of cash per trade (ladder 75/80/85/90/95%); default slider = 75%. New plays: Penny Scalper also
+  fades PNNY at :30 (PNNY always comes home) and shorts the midnight crash; Pump Sniper buys the trending tell at Lv 1; Breakout
+  Rider also trades PNNY's chart shapes. Offline sim: `bots.py` style, advance() with SIM=true over 4 h windows.

@@ -418,7 +418,7 @@ const SER=STOCKS.concat([IDX]), II=SER.length-1, BYSYM={}; SER.forEach((d,i)=>{d
 //  - Big company news: about every 2-3 weeks per stock, lasts 3-4 days.
 //  - Everyday company news: about twice a day per stock (half of them are the lesson headlines: earnings, rumors,
 //    investigations), lasting 20 min-2 h, about 45 min on average.
-const H8=Math.floor(Date.UTC(2026,10,8,6)/3600000);
+const H8=Math.floor(Date.UTC(2026,10,7,19)/3600000); // 1pm Central Nov 7 (moved up from midnight at Ryan's request)
 const IND={tech:{n:"Tech",s:["CHIP","AIQ","GAME"]},cons:{n:"Food & shopping",s:["BRGR","BREW","PNNY"]},trav:{n:"Travel & space",s:["FLYR","ORBT"]},ener:{n:"Energy & cars",s:["OILX","EVCO"]},heal:{n:"Health",s:["MEDX"]}};
 const INDOF={}; for(const k in IND) for(const s of IND[k].s) INDOF[s]=k;
 // shapes: T rise (s), H hold (s), k share that lingers, D1 fast fade (s), D2 slow fade (s)

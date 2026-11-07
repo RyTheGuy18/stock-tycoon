@@ -20,7 +20,7 @@ Re-run it after any engine change. Engine changes alter the market for everyone,
 - To test the new engine, replace `H2*3600` / `H3*3600` with `H4*3600` in the harness T0 line.
 - PNNY lessons (midnight crash, 1h snap), the flush, the morning open and every daily routine were checked with a separate script over 60–150 days.
 
-## v7.9 news revamp (H8 = Nov 8 2026 06:00 UTC, midnight Central)
+## v7.9 news revamp (H8 = Nov 7 2026 19:00 UTC, 1pm Central)
 - From H8 the old breaking news (`bigEv`), the every-30-min small news (`minorNews`) and the mood headlines are off. News comes from
   `newsV2` (market-wide / industry / big company / everyday company) and moves prices through `nwo()` (added inside `evo()`).
 - Earnings / rumor / investigation episodes now only come from the company news schedule (`nCoEp`), about 1 a day per stock, with

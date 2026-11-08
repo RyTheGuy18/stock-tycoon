@@ -1146,19 +1146,19 @@ function sellLong(sym,q,why){ const p=P(sym); if(q<1) return; const b=fillSell(s
   rec(sym,"L",q,en,b,pl); mark(sym,"S",sp(sym),pl); const net=pl-tx2(q*en)-tx; if(taxTrap(pl,net)) sfx('loss'); else winFx(pl); tipCredit(sym,pl); toast(taxTrap(pl,net)?`${why||"Sold"} ${q} ${sym}: PROFIT ${sg(pl)}, but after taxes you LOST ${money(-net)}`:`${why||"Sold"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0&&!taxTrap(pl,net)?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`); chips(); }
 // ---------- automations (lost if you go broke) ----------
 const AUTOS=[
- {id:"asl",cat:"Trading",n:"Default stop loss",c:50,d:"Every new trade automatically gets a stop loss this far from your entry.",set:[1,20,1,5,"% from entry"]},
- {id:"atp",cat:"Trading",n:"Default take profit",c:100,d:"Every new trade automatically gets a take profit this far from your entry.",set:[1,30,1,5,"% from entry"]},
- {id:"trail",cat:"Trading",n:"Trailing stop",c:1200,d:"Your stop loss follows the price as it moves your way, always staying this far behind it. Locks in gains.",set:[1,15,1,3,"% behind"]},
- {id:"rit",cat:"Trading",n:"Routine bot",c:5000,d:"While the app is closed, trades the daily routines and morning opens you've learned on every stock except PNNY. Uses this much of your cash per trade. The bot keeps 10% of any profit.",set:[1,100,1,10,"% of cash"]},
- {id:"pscalp",cat:"PNNY",n:"Penny Scalper",c:8,d:"Trades PNNY's clock: its 6 daily routines (both halves), its wild hours at :30, and the midnight crash. Medium bets, about 15 trades a day.",set:[1,50,1,30,"% of cash per trade"]},
- {id:"pflush",cat:"PNNY",n:"Flush Catcher",c:20,d:"Buys the dip that hits every stock every 3rd hour. Small bets; upgrades add more stocks.",set:[1,25,1,15,"% of cash per trade"]},
- {id:"pswing",cat:"PNNY",n:"Breakout Rider",c:60,d:"Buys breakouts right after the volume surge, 3 minutes each. Trades all day in small bets; upgrades add more stocks.",set:[1,20,1,10,"% of cash per trade"]},
- {id:"ppump",cat:"PNNY",n:"Pump Sniper",c:35,d:"Buys PNNY when it starts trending, then shorts the top after the pump spikes and covers when it dumps.",set:[1,50,1,30,"% of cash per trade"]},
- {id:"pnews",cat:"PNNY",n:"News bot",c:400,d:"Trades company news on every stock you've unlocked (earnings, investigations, buyout rumors). Only a few trades a day, but big bets with big wins.",set:[1,100,1,50,"% of cash per trade"]},
- {id:"resup",cat:"Hustle",n:"Auto-resupply",c:150,d:"Tops up your supplies before a job when you're running low."},
- {id:"book",cat:"Hustle",n:"Booking app",c:600,d:"When a job ends, automatically starts your best job, even while you're away. Pairs well with Auto-resupply."},
- {id:"inv",cat:"Hustle",n:"Paycheck auto-invest",c:300,d:"Puts part of every job paycheck straight into the index fund.",set:[5,100,5,20,"% of pay"]},
- {id:"fix",cat:"Hustle",n:"Auto-repair",c:1500,d:"When gear breaks, pays to fix it on the spot so the Booking app can keep going."}];
+ {id:"asl",cat:"Trading",n:"Default stop loss",c:50,d:"Puts a stop loss on every new trade.",set:[1,20,1,5,"% from entry"]},
+ {id:"atp",cat:"Trading",n:"Default take profit",c:100,d:"Puts a take profit on every new trade.",set:[1,30,1,5,"% from entry"]},
+ {id:"trail",cat:"Trading",n:"Trailing stop",c:1200,d:"Your stop loss follows the price to lock in gains.",set:[1,15,1,3,"% behind"]},
+ {id:"rit",cat:"Trading",n:"Routine bot",c:5000,d:"Trades your learned routines and morning opens while you're away (not PNNY). Keeps 10% of profit.",set:[1,100,1,10,"% of cash"]},
+ {id:"pscalp",cat:"PNNY",n:"Penny Scalper",c:8,d:"Trades PNNY's routines, its wild :30 hours and the midnight crash. About 15 trades a day.",set:[1,50,1,30,"% of cash per trade"]},
+ {id:"pflush",cat:"PNNY",n:"Flush Catcher",c:20,d:"Buys the dip that hits every 3rd hour. Upgrades add stocks.",set:[1,25,1,15,"% of cash per trade"]},
+ {id:"pswing",cat:"PNNY",n:"Breakout Rider",c:60,d:"Rides breakouts for 3 minutes. Upgrades add stocks.",set:[1,20,1,10,"% of cash per trade"]},
+ {id:"ppump",cat:"PNNY",n:"Pump Sniper",c:35,d:"Rides PNNY pumps up, then shorts the dump.",set:[1,50,1,30,"% of cash per trade"]},
+ {id:"pnews",cat:"PNNY",n:"News bot",c:400,d:"Trades company news on your stocks. Few trades, big bets.",set:[1,100,1,50,"% of cash per trade"]},
+ {id:"resup",cat:"Hustle",n:"Auto-resupply",c:150,d:"Restocks supplies before a job when you're low."},
+ {id:"book",cat:"Hustle",n:"Booking app",c:600,d:"Starts your best job when one ends, even while you're away."},
+ {id:"inv",cat:"Hustle",n:"Paycheck auto-invest",c:300,d:"Puts part of each paycheck into the index fund.",set:[5,100,5,20,"% of pay"]},
+ {id:"fix",cat:"Hustle",n:"Auto-repair",c:1500,d:"Fixes broken gear right away so jobs keep going."}];
 const A=id=>{ S.auto=S.auto||{}; return S.auto[id]||(S.auto[id]={own:0,on:1,v:(AUTOS.find(x=>x.id===id).set||[])[3]}); };
 const aOn=id=>S.auto&&S.auto[id]&&S.auto[id].own&&S.auto[id].on;
 const aV=id=>A(id).v;
@@ -3128,7 +3128,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="122";
+const APPV="123";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

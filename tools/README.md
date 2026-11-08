@@ -41,3 +41,8 @@ Re-run it after any engine change. Engine changes alter the market for everyone,
 ## Releasing
 Every release bumps BOTH numbers to the same value: `const APPV="NN"` in index.html and `const C = "tt-vNN"` in sw.js.
 The Settings → App updater compares them; if only sw.js changes, the app keeps showing the old version.
+
+## v8.4 bot rebalance
+`bot-harness.js`: `BOTLV(days)` measures each trading bot alone at every level at its max bet; `AWAY(cash,hours,bots)` averages
+net worth after time away. Upgrade prices (`PUPC`) = about 24 h of the extra $/day a level adds at its max bet. Max bet per level =
+`PBASE` x `PMUL[bot]`; the slider's top (`PMXP`) is low for the frequent bots and 100% for the News bot.

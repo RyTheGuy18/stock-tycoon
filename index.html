@@ -1967,13 +1967,25 @@ main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||
   if(tab==="store") buildStore(); else if(tab==="me") buildMe(); hdr(); });
 
 // ---------- catch-up, save, loop ----------
-function catchUp(){ const away=nowSec()-S.lastT; if(away<=2){ advance(nowSec()); return; }
-  const nw0=netWorth(), j0=S.st.jobPay, b0=S.st.bills, bp0=S.st.botPay||0, bt0=S.st.realized; BOTSKIP=0; SIM=true; AWAY=[]; AWAY_BROKE=null; advance(nowSec()); SIM=false;
-  if(away<90) return;
-  if(AWAY_BROKE) return modal("💀 You went broke while you were away",AWAY_BROKE,[["Start over","gold"]]);
-  const dn=netWorth()-nw0;
-  modal("Welcome back",`<p>You were away <b>${dur(away)}</b>${away>offCap()?` (only the last ${dur(offCap())} counted)`:""}.</p><p>${S.st.realized!==bt0?`📈 Trades closed while away: <b class="${S.st.realized-bt0>=0?"up":"dn"}">${sg(S.st.realized-bt0)}</b><br>`:""}${BOTSKIP?`🤖 Your bots sat out ${BOTSKIP} trade${BOTSKIP>1?"s":""} because you had a trade of your own open.<br>`:""}${S.st.jobPay>j0?`💼 Jobs: <b class="up">+${money(S.st.jobPay-j0)}</b><br>`:""}${(S.st.botPay||0)!==bp0?`🪙 PNNY bots: <b class="${S.st.botPay-bp0>=0?"up":"dn"}">${sg(S.st.botPay-bp0)}</b><br>`:""}${S.st.bills>b0?`🧾 Bills: <b class="dn">-${money(S.st.bills-b0)}</b><br>`:""}Net worth: <b class="${dn>=0?"up":"dn"}">${sg(dn)}</b></p>`,[["OK","gold"]]); }
-function save(){ S.savedAt=Date.now(); meKeep(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} }
+// The welcome-back report is measured from SEEN: what THIS device last showed you (time, net worth, money counters),
+// not from the save's own clock. That way, if another device's newer save gets pulled in right after you come back
+// (laptop wakes up, phone had played since), the report still covers your whole time away from this screen.
+// WB holds one welcome-back for 30 s so a cloud save that lands a moment later just corrects the same report.
+let SEEN=(()=>{ try{ return JSON.parse(localStorage.getItem("st.seen")||"null"); }catch(_){ return null; } })(), WB=null;
+const snap=()=>({t:S.lastT,nw:netWorth(),j:S.st.jobPay||0,b:S.st.bills||0,bp:S.st.botPay||0,rt:S.st.realized||0,rs:resetT(S)});
+function seen(){ if(document.hidden) return; if(WB){ if(Date.now()<WB.until) return; WB=null; SEEN=snap(); return; }
+  if(SEEN&&SEEN.rs===resetT(S)&&S.lastT-SEEN.t>=90) return welcome(); SEEN=snap(); }
+function catchUp(){ const away=nowSec()-S.lastT, rs=resetT(S);
+  if(WB&&WB.base.rs!==rs) WB=null; if(!SEEN||SEEN.rs!==rs||SEEN.t>nowSec()) SEEN=snap();
+  if(away<=2){ advance(nowSec()); return welcome(); }
+  BOTSKIP=0; SIM=true; AWAY=[]; AWAY_BROKE=null; advance(nowSec()); SIM=false;
+  if(AWAY_BROKE){ WB=null; SEEN=snap(); return modal("💀 You went broke while you were away",AWAY_BROKE,[["Start over","gold"]]); }
+  welcome(); }
+function welcome(){ if(document.hidden||!SEEN) return; const live=WB&&Date.now()<WB.until, b=live?WB.base:SEEN, away=S.lastT-b.t;
+  if(away<90) return; if(live&&WB.shut) return; if(!live) WB={base:b,until:Date.now()+30000};
+  const c=x=>Math.round(x*100)/100, dn=netWorth()-b.nw, rt=c(S.st.realized-b.rt), jp=c((S.st.jobPay||0)-b.j), bp=c((S.st.botPay||0)-b.bp), bl=c((S.st.bills||0)-b.b), w=WB;
+  modal("Welcome back",`<p>You were away <b>${dur(away)}</b>${away>offCap()?` (only the last ${dur(offCap())} counted)`:""}.</p><p>${rt?`📈 Trades closed while away: <b class="${rt>=0?"up":"dn"}">${sg(rt)}</b><br>`:""}${BOTSKIP?`🤖 Your bots sat out ${BOTSKIP} trade${BOTSKIP>1?"s":""} because you had a trade of your own open.<br>`:""}${jp>0?`💼 Jobs: <b class="up">+${money(jp)}</b><br>`:""}${bp?`🪙 PNNY bots: <b class="${bp>=0?"up":"dn"}">${sg(bp)}</b><br>`:""}${bl>0?`🧾 Bills: <b class="dn">-${money(bl)}</b><br>`:""}Net worth: <b class="${dn>=0?"up":"dn"}">${sg(dn)}</b></p>`,[["OK","gold",()=>{ w.shut=1; }]]); }
+function save(){ S.savedAt=Date.now(); meKeep(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S)); if(SEEN) localStorage.setItem("st.seen",JSON.stringify(SEEN));}catch(_){} }
 let cref=null,cbusy=false,clast="";
 // ---------- progress guard + local backups ----------
 // A save "regresses" another if it has less than half the best net worth of the other (and the other is past $20),
@@ -2045,12 +2057,12 @@ async function csave(force){ if(!cref) return; if(!ACT&&!force) return; if(cbusy
   cbusy=false; }
 let lastSave=0;
 function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catchUp(); build(); return; }
-  advance(t); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; sfx('tax'); modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); achCheck(); } compPub(); if(t%600===0) compSettle();
+  advance(t); seen(); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; sfx('tax'); modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); achCheck(); } compPub(); if(t%600===0) compSettle();
   if(t-lastSave>5){ save(); lastSave=t; if(ACT&&!cbusy) csave(); }
   const nw=nItems(S.lastNews||t-1,t); S.lastNews=t; const my=myStocks();
   nw.forEach(x=>{ if(x.imp==="Major"||x.s==="*"||my.has(x.s)){ toast((x.imp==="Major"?"🚨 ":"📰 ")+x.t+(x.s!=="*"&&x.lv!=="ind"?" ("+x.s+")":"")); sfx(x.lv==='sell'?'crash':x.tell?'alert':x.imp!=="Minor"?'news':'ping'); } }); if(nw.length) nxDraw(); }
 function intro(){ if(!S.prof){ if(!S.introSeen) storyIntro(); else profPicker(true); } }
-document.addEventListener("visibilitychange",()=>{ if(document.hidden){ save(); if(ACT) csave(); } else { loop(); cpull(); } });
+document.addEventListener("visibilitychange",()=>{ if(document.hidden){ save(); if(ACT) csave(); } else { loop(); seen(); cpull(); } });
 // ---------- set stop loss / take profit right on the chart ----------
 let MAP=null, ORDL=[], DRAG=null, PDOWN=null;
 // chart zoom/pan: ZC = candle width in px, ZOFF = how many candles back from live the right edge is
@@ -3071,7 +3083,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="120";
+const APPV="121";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

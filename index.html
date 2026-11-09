@@ -1126,7 +1126,7 @@ const capQ=sym=>isFinite(stCap(sym))?Math.max(1,Math.floor(stCap(sym)/ask(sym)))
 function maxQty(sym){ let q=Math.min(capQ(sym),Math.floor(Math.max(0,S.cash)/ask(sym)/(1+STX()))); while(q>1&&q*fillBuy(sym,q)*(1+STX())>S.cash) q=Math.floor(q*.995); return q; }
 const bid=sym=>sp(sym)*(1-BYSYM[sym].spr*sprMult()/2), ask=sym=>sp(sym)*(1+BYSYM[sym].spr*sprMult()/2);
 const P=sym=>S.pos[sym]||(S.pos[sym]={l:0,lc:0,s:0,se:0});
-function posVal(){ let v=0; if(S.vb) for(const id in S.vb) v+=vbVal(S.vb[id]); for(const k in S.pos){ const p=S.pos[k]; if(p.l) v+=p.l*bid(k); if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-ask(k))); } return v; }
+function posVal(){ let v=0; if(S.vb) for(const id in S.vb){ const b=S.vb[id]; v+=b.d?Math.max(0,vbVal(b)-b.q*b.en):vbVal(b); } for(const k in S.pos){ const p=S.pos[k]; if(p.l) v+=p.l*bid(k); if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-ask(k))); } return v; }
 // The fund holds "units" (S.fu) of the total-return index. Real-fund details on top, from H7:
 // a dividend 4 times a game year (every 42 h, about 1.3% a year) that's reinvested automatically, so your share count grows
 // and the share price drops by the dividend that day; and a 0.04% yearly expense ratio taken out of the price.
@@ -1256,8 +1256,13 @@ function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; if(!S.botV2){ S.botV2=1
   if(S.auto.openb) openbMig();
   const h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
   // key = one trade slot (a bot can hold one trade per play); id = the bot; i = the stock; mx = longest it may stay open
-  const open=(key,id,dir,i,mx)=>{ i=i||0; if(!SIM||!aOn(id)||S.vb[key]||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } const pr=price(i,NOW), amt=Math.min(Math.max(0,S.cash)*Math.min(aV(id),pMx(id))/100,pCap(id),stCap(STOCKS[i].s)), q=amt/pr; if(amt<.05) return; /* bot bets are virtual, so fractional shares are fine (a $5 player can still bet 10%) */ S.cash-=q*pr; resetPeak(); return S.vb[key]={dir,q,en:pr,id,i,at:NOW,mx}; };
-  const close=key=>{ const v=S.vb[key]; if(!v) return; delete S.vb[key]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; botLog(v.id||key,pl); resetPeak(); };
+  const open=(key,id,dir,i,mx)=>{ i=i||0; if(!SIM||!aOn(id)||S.vb[key]) return; if(myOpen()){ BOTSKIP++; return; }
+    /* v8.7: in debt the bots keep working to pay it off. They bet as if you had cash equal to what you owe (at least $5); the bet isn't taken from cash, and a losing trade costs $0, so they can only shrink the debt */
+    const dbt=inDebt(), base=dbt?Math.max(5,-S.cash):Math.max(0,S.cash);
+    const pr=price(i,NOW), amt=Math.min(base*Math.min(aV(id),pMx(id))/100,pCap(id),stCap(STOCKS[i].s)), q=amt/pr; if(amt<.05) return; /* bot bets are virtual, so fractional shares are fine (a $5 player can still bet 10%) */
+    if(dbt) return S.vb[key]={dir,q,en:pr,id,i,at:NOW,mx,d:1};
+    S.cash-=q*pr; resetPeak(); return S.vb[key]={dir,q,en:pr,id,i,at:NOW,mx}; };
+  const close=key=>{ const v=S.vb[key]; if(!v) return; delete S.vb[key]; const back=vbVal(v); let pl=back-v.q*v.en; if(v.d){ pl=Math.max(0,pl); S.cash+=pl; } else S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; botLog(v.id||key,pl); resetPeak(); };
   for(const key in S.vb){ const v=S.vb[key]; if(vbVal(v)<=v.q*v.en*.8) close(key); }   // never more than 20% wrong
   const lv=id=>aOn(id)?pLv(id):0;
   // Penny Scalper: PNNY's clock. 6 routines (both halves), PNNY always comes home (:30 → :59), the midnight crash; Lv 2 fades fake breakouts
@@ -3213,7 +3218,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="128";
+const APPV="129";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

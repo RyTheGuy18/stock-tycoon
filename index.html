@@ -1005,6 +1005,7 @@ const ACH=[
  {id:"back",g:"🔄",n:"Comeback kid",d:"Go broke, then get back to $1,000 net worth",u:()=>!!AF().back},
  {id:"x2",g:"🚀",n:"Doubled up",d:"Make +100% on one trade",u:()=>!!AF().x2},
  {id:"big",g:"💰",n:"Big score",d:"Make $1,000 on one trade",u:()=>S.st.best>=1000},
+ {id:"ouch",g:"🤕",n:"Expensive lesson",d:"Lose over $100 on one trade",u:()=>S.st.worst<-100},
  {id:"apt",g:"🔑",n:"Moved out",d:"Move into your own apartment",u:()=>!!S.ms.apt},
  {id:"l10",g:"🎓",n:"Scholar",d:"Own 10 lessons",u:()=>Object.keys(S.know||{}).length>=10},
  {id:"w100",g:"🏹",n:"Centurion",d:"Win 100 trades",u:()=>S.st.wins>=100},
@@ -1816,7 +1817,7 @@ const tierBar=(N,own)=>`<div class="tiers">${Array.from({length:N},(_,i)=>`<i st
 const ICO=(k,col,sz)=>`<svg viewBox="0 0 24 24" width="${sz||22}" height="${sz||22}" fill="none" stroke="${col}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${LI[k]||""}</svg>`;
 const ILI=(k,sz,col)=>`<span class="ili">${ICO(k,col||"currentColor",sz||15)}</span>`, MEDC=["#f5b301","#cbd5e1","#d6884a"];
 // achievement icons (line art instead of emoji)
-const AIC={t1:"play",pr:"pencil",w1:"dollar",lsn:"book",fr:"crew",ntf:"bell",job:"brief",sh:"tdown",oops:"alert",broke:"down",tip:"bulb",comp:"flag",rmr:"search",w25:"target",st5:"flame",nw1k:"bank",car:"car",pump:"tup",crash:"wind",tipw:"gift",back:"refresh",x2:"rocket",big:"coins",apt:"key",l10:"grad",w100:"target",sq:"zap",col:"alert",pod:"trophy",nw100k:"gem",champ:"medal",nw1m:"crown",isl:"sun"};
+const AIC={t1:"play",pr:"pencil",w1:"dollar",lsn:"book",fr:"crew",ntf:"bell",job:"brief",sh:"tdown",oops:"alert",broke:"down",tip:"bulb",comp:"flag",rmr:"search",w25:"target",st5:"flame",nw1k:"bank",car:"car",pump:"tup",crash:"wind",tipw:"gift",back:"refresh",x2:"rocket",big:"coins",ouch:"tdown",apt:"key",l10:"grad",w100:"target",sq:"zap",col:"alert",pod:"trophy",nw100k:"gem",champ:"medal",nw1m:"crown",isl:"sun"};
 const ICOB=(k,col,sz)=>`<span class="icob" style="background:${col}22;box-shadow:inset 0 0 0 1px ${col}55">${ICO(k,col,sz)}</span>`;
 // ---------- business upgrades: 8 lines, 4 levels each ----------
 // v = the line's effect at levels 1-4 (not stacked within a line), c = cost of each level
@@ -3183,7 +3184,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="125";
+const APPV="126";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

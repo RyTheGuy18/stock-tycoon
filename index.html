@@ -33,7 +33,7 @@ main{flex:1;overflow-y:auto;min-height:0;overscroll-behavior:contain;position:re
 #ptr{position:absolute;left:50%;width:36px;height:36px;margin-left:-18px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;z-index:5;opacity:0;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
 #ptr svg{width:20px;height:20px;color:var(--gold)} #ptr.spin svg{animation:ptrs .8s linear infinite} @keyframes ptrs{to{transform:rotate(360deg)}}
 @media (display-mode: standalone){ html{height:min(100lvh,calc(100% + env(safe-area-inset-top)))} }
-#modal,#intro,#tut,#auth,#chat,#nx{position:absolute!important;top:0!important;bottom:0!important;height:auto!important}
+#modal,#intro,#tut,#auth,#chat,#nx,#taxx{position:absolute!important;top:0!important;bottom:0!important;height:auto!important}
 html.pwa nav{padding-bottom:max(12px,calc(env(safe-area-inset-bottom) - 20px))} html.pwa nav button{padding:12px 0 0}
 html.pwa header{padding-top:calc(env(safe-area-inset-top) + 32px)} html.pwa #hbtns{top:calc(env(safe-area-inset-top) + 30px)}
 nav{display:flex;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom)}
@@ -237,6 +237,21 @@ html,body{overscroll-behavior:none} body{-webkit-touch-callout:none} input.inp{f
 nav button{position:relative} .ndot{position:absolute;top:5px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:var(--dn)}
 #auth{position:fixed;inset:0;z-index:20;background:radial-gradient(120% 90% at 50% 0%,#1b2333,#07090c 70%);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 20px) 22px calc(env(safe-area-inset-bottom) + 20px);overflow-y:auto}
 #auth .au{width:100%;max-width:380px} #auth h1{text-align:center;margin:4px 0 6px;font-size:28px;font-weight:800} .aulogo{font-size:46px;text-align:center}
+#taxx{position:fixed;inset:0;z-index:30;background:#120607;display:flex;flex-direction:column;justify-content:space-between;animation:tflash 1s steps(2) 3}
+@keyframes tflash{50%{background:#3a0a0e}}
+.tstripe{height:26px;flex:none;background:repeating-linear-gradient(-45deg,#f5b301 0 18px,#111 18px 36px);animation:tstr 1s linear infinite;background-size:51px 51px}
+@keyframes tstr{to{background-position:51px 0}}
+.tbody{flex:1;overflow:auto;padding:18px 20px;text-align:center;max-width:520px;margin:0 auto;width:100%}
+.ttri{display:flex;justify-content:center;gap:14px;color:#f5b301;margin-top:6px} .ttri svg{width:44px;height:44px;animation:tpulse .6s ease-in-out infinite alternate}
+@keyframes tpulse{to{transform:scale(1.15);color:#ffd84d}}
+.ttl{font-size:46px;font-weight:900;letter-spacing:2px;color:#ff3b3b;margin:8px 0 4px;text-shadow:0 0 18px rgba(255,59,59,.6);animation:tpulse2 .5s ease-in-out infinite alternate}
+@keyframes tpulse2{to{transform:scale(1.04);text-shadow:0 0 30px rgba(255,59,59,.9)}}
+.tsub{color:#e9c9c9;font-size:13.5px;line-height:1.4} .tlab{margin-top:18px;color:#c9a0a0;font-size:12px;letter-spacing:2px;text-transform:uppercase}
+.todo{display:inline-flex;align-items:flex-start;font-family:JetBrains Mono,monospace;font-size:46px;font-weight:700;color:#f5b301;line-height:1.1;margin-top:4px;transition:color .3s}
+.todo.neg{color:#ff3b3b} .treel{display:inline-block;height:1.1em;overflow:hidden;width:.62em;transition:opacity .3s} .treel>span{display:flex;flex-direction:column;will-change:transform} .treel i{font-style:normal;height:1.1em;display:block}
+.tdot,.tcom{display:inline-block;width:.42em;text-align:center} .tbill{text-align:left;margin-top:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,80,80,.25);border-radius:12px;padding:10px 12px;font-size:13.5px}
+.tdebt .todo{animation:tshake .4s 2} @keyframes tshake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.tdebtm{color:#ff6b6b;font-weight:600;display:flex;gap:8px;align-items:flex-start} .tdebtm svg{width:20px;height:20px;flex:none}
 #nx{position:fixed;inset:0;z-index:8;background:var(--bg);display:none;flex-direction:column;max-width:560px;margin:0 auto;height:100dvh}
 .nxs{margin:10px 12px 4px} .nxs button{font-size:12px;padding:7px 2px;position:relative} .ndot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--dn);vertical-align:2px}
 .nxl{flex:1;overflow-y:auto;padding:6px 12px calc(env(safe-area-inset-bottom) + 16px)}
@@ -1400,7 +1415,7 @@ function taxDay(){ const tx=TX(), w=taxWk(NOW); if(w===tx.w) return;
   const b=taxBill(tx,warYear(tx.w)); S.tx={w,inc:0,gain:0,sales:0};
   if(warYear(w)&&!SIM){ toast("⚔️ War year! Income and property taxes are ×3 on this tax day","bad"); }
   if(b.total<=0) return;
-  bill("🧾 Taxes",b.total); S.st.taxes=(S.st.taxes||0)+b.total;
+  const before=S.cash; bill("🧾 Taxes",b.total); S.st.taxes=(S.st.taxes||0)+b.total; S.taxShow={b:Math.round(before*100)/100,a:Math.round(S.cash*100)/100,tot:b.total};
   const row=(l,v)=>`<div class="li"><span>${l}</span><b class="m dn">-${money(v)}</b></div>`;
   S.taxPend=`<p>It's tax day. Here's the bill for the week ("year") that just ended.</p>`+
     (b.it>0?row(`Income tax on ${money(b.base)} earned`,b.it):"")+
@@ -1408,6 +1423,31 @@ function taxDay(){ const tx=TX(), w=taxWk(NOW); if(w===tx.w) return;
     (b.war?`<p class="t" style="margin:6px 0">⚔️ It was a war year, so income and property tax were ×3.</p>`:"")+
     `<div class="li"><b>Total</b><b class="m dn">-${money(b.total)}</b></div>`+
     (b.acct?`<p class="t">Your accountant saved you 15%.</p>`:"")+(inDebt()?`<p class="dn">You can't cover it all. Pay off the debt within 24 hours or you go broke.</p>`:""); }
+// ---------- TAXES DUE: the first time you open the app after tax day ----------
+// A big warning screen with a siren, then your cash drains on spinning number reels from what you had to what's left.
+// If the bill is more than your cash, it keeps going below zero, gets a minus sign and turns red.
+const TUTON=()=>!!$("tut")||!!$("intro");
+const TRI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></svg>';
+function taxAlarm(h,ts){ h=h.replace(/<p class="dn">[\s\S]*?<\/p>/,""); const el=document.createElement("div"); el.id="taxx"; const nd=Math.max(3,String(Math.round(Math.max(Math.abs(ts.b),Math.abs(ts.a))*100)).length);
+  const reels=Array.from({length:nd},(_,i)=>{ const p=nd-1-i; return (p===1&&nd>2?'<span class="tdot">.</span>':'')+`<span class="treel" data-p="${p}"><span>${"0123456789".split("").concat(["0"]).map(d=>`<i>${d}</i>`).join("")}</span></span>`+(p>2&&(p-2)%3===0?'<span class="tcom">,</span>':''); });
+  el.innerHTML=`<div class="tstripe"></div><div class="tbody"><div class="ttri">${TRI}${TRI}${TRI}</div><div class="ttl">TAXES DUE</div>
+    <div class="tsub">Tax day. The government wants its cut of what you earned this week (your game "year").</div>
+    <div class="tlab">Cash</div><div class="todo" id="todo"><span class="tsg" id="tsg">$</span>${reels.join("")}</div>
+    <div class="tbill" id="tbill">${h}</div>
+    <button class="btn gold" id="tgo" style="width:100%;margin-top:14px">See the damage</button></div><div class="tstripe"></div>`;
+  document.body.appendChild(el); sfx('siren'); sfx('alert');
+  const set=(v,rest)=>{ const neg=v<-.004, c=rest?Math.round(Math.abs(v)*100):Math.abs(v)*100; $("tsg").textContent=(neg?"−":"")+"$"; $("todo").classList.toggle("neg",neg);
+    el.querySelectorAll(".treel").forEach(r=>{ const p=+r.dataset.p, u=Math.pow(10,p), rem=c%u, whole=Math.floor(c/u), pos=(whole%10)+(p===0?rem:Math.max(0,rem-(u-1))); // odometer: a reel only turns while the one below rolls over
+      r.firstChild.style.transform=`translateY(${-pos*10/11*100/10}%)`; const show=whole>0||p<=2; r.style.opacity=show?1:.12; }); };
+  set(ts.b,1); let phase=0;
+  $("tgo").onclick=()=>{ if(phase===1) return; if(phase===2){ el.remove(); hdr(); return; } phase=1; $("tgo").textContent="Paying…"; sfx('siren');
+    const t0=performance.now(), D=Math.min(4200,1800+Math.abs(ts.b-ts.a)*40); let lastTick=0;
+    const step=now=>{ const x=Math.min(1,(now-t0)/D), e=1-Math.pow(1-x,2.2), v=ts.b+(ts.a-ts.b)*e; set(v);
+      if(now-lastTick>70&&x<1){ lastTick=now; sfx('drain'); }
+      if(x<1) return requestAnimationFrame(step);
+      set(ts.a,1); sfx('thud'); if(ts.a<-.004){ sfx('broke'); el.classList.add("tdebt"); $("tbill").insertAdjacentHTML("beforeend",`<p class="tdebtm">${TRI}<span>You're in debt by <b>${money(-ts.a)}</b>. Pay it off within 24 hours or you go broke.</span></p>`); }
+      phase=2; $("tgo").textContent=ts.a<-.004?"I'll pay it off":"Pay up"; };
+    requestAnimationFrame(step); }; }
 function taxCard(){ const el=$("taxc"); if(!el) return; const tx=TX(), w=tx.w, b=taxBill(tx,warYear(w)), left=taxDayAt(w)-NOW;
   { const fs=$("fs-tax"); if(fs) fs.innerHTML=`in ${dur(left)} · <b class="dn">≈ -${money(b.total)}</b>`; }
   el.innerHTML=`<div class="row"><div class="g"><div class="b">🧾 Tax day in ${dur(left)}${warYear(w)?' <span class="pill bad">⚔️ War year</span>':''}</div>
@@ -2102,7 +2142,7 @@ async function csave(force){ if(!cref) return; if(!ACT&&!force) return; if(cbusy
   cbusy=false; }
 let lastSave=0;
 function loop(){ const t=nowSec(); if(t<=S.lastT) return; if(t-S.lastT>30){ catchUp(); build(); return; }
-  advance(t); seen(); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")){ const h=S.taxPend; S.taxPend=null; sfx('tax'); modal("🧾 Tax day",h,[["Pay up","gold"]]); } if(t%5===0){ momTexts(); cosCheck(); achCheck(); } compPub(); if(t%600===0) compSettle();
+  advance(t); seen(); build(true); tbarUpd(); bellUpd(); if(tab==="trade") lineAlerts(); if(S.taxPend&&$("modal").classList.contains("hide")&&!$("taxx")&&S.introSeen&&!TUTON()){ const h=S.taxPend, ts=S.taxShow; S.taxPend=null; S.taxShow=null; if(ts) taxAlarm(h,ts); else { sfx('tax'); modal("🧾 Tax day",h,[["Pay up","gold"]]); } } if(t%5===0){ momTexts(); cosCheck(); achCheck(); } compPub(); if(t%600===0) compSettle();
   if(t-lastSave>5){ save(); lastSave=t; if(ACT&&!cbusy) csave(); }
   const nw=nItems(S.lastNews||t-1,t); S.lastNews=t; const my=myStocks();
   nw.forEach(x=>{ if(x.imp==="Major"||x.s==="*"||my.has(x.s)){ toast((x.imp==="Major"?"🚨 ":"📰 ")+x.t+(x.s!=="*"&&x.lv!=="ind"?" ("+x.s+")":"")); sfx(x.lv==='sell'?'crash':x.tell?'alert':x.imp!=="Minor"?'news':'ping'); } }); if(nw.length) nxDraw(); }
@@ -3037,6 +3077,9 @@ const SFX={tap:()=>tone(1100,0,.04,'sine',.05),
  gearup:()=>{ tone(330,0,.12,'sine',.18,660); tone(500,.09,.12,'sine',.16,1000); tone(760,.18,.14,'sine',.14,1500); [784,988,1175,1568].forEach((f,i)=>tone(f,.3+i*.07,.3,'triangle',.09)); noise(.3,.5,.05,7000,.8,'highpass'); },
  whoosh:()=>noise(0,.22,.07,500,1.2,'bandpass',2400),
  err:()=>{ tone(180,0,.09,'square',.05); tone(150,.1,.14,'square',.05); },
+ siren:()=>{ for(let i=0;i<4;i++){ tone(880,i*.42,.2,'sawtooth',.05,1320); tone(1320,i*.42+.2,.2,'sawtooth',.05,880); } },
+ drain:()=>{ tone(2400,0,.018,'square',.02); },
+ thud:()=>{ tone(110,0,.6,'sine',.28,45); noise(0,.25,.12,400,1,'lowpass'); },
  tax:()=>{ noise(0,.04,.08,2500,3); tone(1046,.05,.1,'square',.04); tone(784,.16,.25,'sawtooth',.05,520); },
  broke:()=>{ [392,330,262,196].forEach((f,i)=>tone(f,i*.17,.38,'sawtooth',.055)); }};
 function sfx(k){ if(SIM||!snd()||!SNDU||!SFX[k]) return; try{ actx(); if(AC.state==='running') return SFX[k]();
@@ -3128,7 +3171,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="123";
+const APPV="124";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

@@ -1258,9 +1258,9 @@ function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; if(!S.botV2){ S.botV2=1
   // key = one trade slot (a bot can hold one trade per play); id = the bot; i = the stock; mx = longest it may stay open
   const open=(key,id,dir,i,mx)=>{ i=i||0; if(!SIM||!aOn(id)||S.vb[key]) return; if(myOpen()){ BOTSKIP++; return; }
     /* v8.7: in debt the bots keep working to pay it off. They bet as if you had cash equal to what you owe (at least $5); the bet isn't taken from cash, and a losing trade costs $0, so they can only shrink the debt */
-    const dbt=inDebt(), base=dbt?Math.max(5,-S.cash):Math.max(0,S.cash);
+    const dbt=inDebt(), low=!dbt&&S.cash<5, base=dbt?Math.max(5,-S.cash):low?5:S.cash; /* v8.8: under $5 cash the bots bet as if you had $5 (same free bet as in debt), so they can't stall at $0 */
     const pr=price(i,NOW), amt=Math.min(base*Math.min(aV(id),pMx(id))/100,pCap(id),stCap(STOCKS[i].s)), q=amt/pr; if(amt<.05) return; /* bot bets are virtual, so fractional shares are fine (a $5 player can still bet 10%) */
-    if(dbt) return S.vb[key]={dir,q,en:pr,id,i,at:NOW,mx,d:1};
+    if(dbt||low) return S.vb[key]={dir,q,en:pr,id,i,at:NOW,mx,d:1};
     S.cash-=q*pr; resetPeak(); return S.vb[key]={dir,q,en:pr,id,i,at:NOW,mx}; };
   const close=key=>{ const v=S.vb[key]; if(!v) return; delete S.vb[key]; const back=vbVal(v); let pl=back-v.q*v.en; if(v.d){ pl=Math.max(0,pl); S.cash+=pl; } else S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; botLog(v.id||key,pl); resetPeak(); };
   for(const key in S.vb){ const v=S.vb[key]; if(vbVal(v)<=v.q*v.en*.8) close(key); }   // never more than 20% wrong
@@ -1494,13 +1494,14 @@ function broke(why){
   for(const id in S.profs){ const s=S.profs[id]; S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:s.rep,sk:s.sk||0,up:{},ul:{},ulMig:1}; }
   S.auto={}; S.ord={}; S.vb={};
   life("💀 Went broke: "+why); sfx('broke');
-  const body=`<div class="mom">"${pick(["Your old room's still down there.","I'm not mad. I'm just… disappointed.","Come on home, kiddo. Again."])}"</div><p>${why}. Creditors took your cash, investments, gear, business upgrades and automations.</p><p>You keep your <b>index fund (${money(fundVal())})</b>, your <b>knowledge</b>, your <b>job skills</b>, your <b>reputation</b> and your <b>life milestones</b>.</p>`;
+  const body=`<div class="mom">"${/debt/.test(why)?pick(["I told you to pay that off. Come on home, kiddo.","Your old room's still down there. We'll get you back on your feet."]):pick(["Your old room's still down there.","I'm not mad. I'm just… disappointed.","Come on home, kiddo. Again."])}"</div><p>${why}. Creditors took your cash, investments, gear, business upgrades and automations.</p><p>You keep your <b>index fund (${money(fundVal())})</b>, your <b>knowledge</b>, your <b>job skills</b>, your <b>reputation</b> and your <b>life milestones</b>.</p>`;
   if(SIM) AWAY_BROKE=body; else { modal("💀 You went broke",body,[["Start over","gold"]]); build(); } }
 function solvency(){
   for(const k in S.pos){ const p=S.pos[k]; if(p.s&&ask(k)>=2*p.se) cover(k,p.s,"⚠️ Margin call:"); }
   const liq=liquid();
   if(inDebt()&&S.debtDue&&NOW>=S.debtDue){ for(const k in S.pos){ const p=S.pos[k]; if(p.l){ S.cash+=p.l*bid(k); p.l=0; p.lc=0; } if(p.s) cover(k,p.s,"Forced cover:"); }
     if(inDebt()) return broke(`You couldn't pay off ${money(-S.cash)} of debt in time`); }
+  if(!SIM&&inDebt()&&S.debtDue&&S.dmt!==S.debtDue){ S.dmt=S.debtDue; const t=pick(["Saw the letter come in. You're not going broke, are you? I know you'll figure it out.","Honey, are you in debt?? I can't bail you out this time. You've got this.","The bank called the house. Pay that off before tomorrow, okay? I believe in you."]); toast("📱 Mom: "+t); sfx('text'); life("📱 Mom: "+t); }
   if(!inDebt()) S.debtDue=0;
   if(liq>S.liqPeak) S.liqPeak=liq;
   if(!inDebt()&&S.liqPeak>=25&&liq<Math.max(1,S.liqPeak*.02)) broke(`Your investments got wiped out (${money(S.liqPeak)} → ${money(liq)})`); }
@@ -3218,7 +3219,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="129";
+const APPV="130";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

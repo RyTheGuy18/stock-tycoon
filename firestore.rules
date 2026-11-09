@@ -6,7 +6,11 @@ service cloud.firestore {
     function me(uid) { return signedIn() && request.auth.uid == uid; }
 
     // Your private save. Only you can read or write it.
-    match /saves/{uid} { allow read, write: if me(uid); }
+    // Saves from outdated app versions (no sync version "sv" 2+) are refused, so an old device can't overwrite your progress.
+    match /saves/{uid} {
+      allow read, delete: if me(uid);
+      allow create, update: if me(uid) && request.resource.data.get('sv', 0) >= 2;
+    }
 
     // Public player cards, market flow and tips: any signed-in player reads, only the owner writes.
     match /profiles/{uid} { allow read: if signedIn(); allow write: if me(uid) && request.resource.size() < 60000; }

@@ -2057,7 +2057,9 @@ main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||
 // (laptop wakes up, phone had played since), the report still covers your whole time away from this screen.
 // WB holds one welcome-back for 30 s so a cloud save that lands a moment later just corrects the same report.
 let SEEN=(()=>{ try{ return JSON.parse(localStorage.getItem("st.seen")||"null"); }catch(_){ return null; } })(), WB=null;
-const snap=()=>({t:S.lastT,nw:netWorth(),j:S.st.jobPay||0,b:S.st.bills||0,bp:S.st.botPay||0,rt:S.st.realized||0,rs:resetT(S)});
+const snap=()=>(S.look={t:S.lastT,nw:netWorth(),j:S.st.jobPay||0,b:S.st.bills||0,bp:S.st.botPay||0,rt:S.st.realized||0,rs:resetT(S)});
+// newest of: what this device last showed you, and the last time you looked on any device (S.look rides along in the save)
+const lookBase=b=>{ const L=S.look; return L&&L.rs===resetT(S)&&(!b||L.t>b.t)?L:b; };
 function seen(){ if(document.hidden) return; if(WB){ if(Date.now()<WB.until) return; WB=null; SEEN=snap(); return; }
   if(SEEN&&SEEN.rs===resetT(S)&&S.lastT-SEEN.t>=90) return welcome(); SEEN=snap(); }
 function catchUp(){ const away=nowSec()-S.lastT, rs=resetT(S);
@@ -2066,8 +2068,8 @@ function catchUp(){ const away=nowSec()-S.lastT, rs=resetT(S);
   BOTSKIP=0; SIM=true; AWAY=[]; AWAY_BROKE=null; advance(nowSec()); SIM=false;
   if(AWAY_BROKE){ WB=null; SEEN=snap(); return modal("💀 You went broke while you were away",AWAY_BROKE,[["Start over","gold"]]); }
   welcome(); }
-function welcome(){ if(document.hidden||!SEEN) return; const live=WB&&Date.now()<WB.until, b=live?WB.base:SEEN, away=S.lastT-b.t;
-  if(away<90) return; if(live&&WB.shut) return; if(!live) WB={base:b,until:Date.now()+30000};
+function welcome(){ if(document.hidden||!SEEN) return; const live=WB&&Date.now()<WB.until, b=lookBase(live?WB.base:SEEN), away=S.lastT-b.t;
+  if(live) WB.base=b; if(away<90){ if(live&&!WB.shut&&/Welcome back/.test(($("modal").querySelector("h2")||{}).textContent||"")){ WB.shut=1; closeModal(); toast("🔄 You were playing on your other device, so nothing was earned while away"); } return; } if(live&&WB.shut) return; if(!live) WB={base:b,until:Date.now()+30000};
   const c=x=>Math.round(x*100)/100, dn=netWorth()-b.nw, rt=c(S.st.realized-b.rt), jp=c((S.st.jobPay||0)-b.j), bp=c((S.st.botPay||0)-b.bp), bl=c((S.st.bills||0)-b.b), w=WB;
   modal("Welcome back",`<p>You were away <b>${dur(away)}</b>${away>offCap()?` (only the last ${dur(offCap())} counted)`:""}.</p><p>${rt?`📈 Trades closed while away: <b class="${rt>=0?"up":"dn"}">${sg(rt)}</b><br>`:""}${BOTSKIP?`🤖 Your bots sat out ${BOTSKIP} trade${BOTSKIP>1?"s":""} because you had a trade of your own open.<br>`:""}${jp>0?`💼 Jobs: <b class="up">+${money(jp)}</b><br>`:""}${bp?`🪙 PNNY bots: <b class="${bp>=0?"up":"dn"}">${sg(bp)}</b><br>`:""}${bl>0?`🧾 Bills: <b class="dn">-${money(bl)}</b><br>`:""}Net worth: <b class="${dn>=0?"up":"dn"}">${sg(dn)}</b></p>`,[["OK","gold",()=>{ w.shut=1; }]]); }
 function save(){ S.savedAt=Date.now(); meKeep(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S)); if(SEEN) localStorage.setItem("st.seen",JSON.stringify(SEEN));}catch(_){} }
@@ -2112,10 +2114,17 @@ const DEV=(()=>{ try{ let d=localStorage.getItem("st.dev"); if(!d){ d=Math.rando
 // ACT = this device has a change the cloud doesn't have yet. It's remembered across app restarts ("st.pend"), so a
 // change made right before closing the app (deposit, trade) still goes up next time instead of being overwritten.
 let SYNC=0, lastTap=0, tapT=null, unwatch=null, ACT=(()=>{ try{ return localStorage.getItem("st.pend")==="1"; }catch(_){ return false; } })();
-const setPend=v=>{ try{ v?localStorage.setItem("st.pend","1"):localStorage.removeItem("st.pend"); }catch(_){} };
+const setPend=v=>{ try{ if(v){ localStorage.setItem("st.pend","1"); if(!localStorage.getItem("st.pendAt")) localStorage.setItem("st.pendAt",String(Date.now())); } else { localStorage.removeItem("st.pend"); localStorage.removeItem("st.pendAt"); } }catch(_){} };
+// when this device's unsent action happened. If another device saved AFTER it, that newer save wins (newest play wins,
+// never "most money"): an old device that comes back online can't push its stale save over your real progress.
+const pendAt=()=>{ try{ return +localStorage.getItem("st.pendAt")||Date.now(); }catch(_){ return Date.now(); } };
+// SV: save-sync version. Saves written by app versions before this check (no sv) or with a lower sv are outdated and
+// never replace a save from this version; this device pushes its own save back over them.
+const SV=2, SVT=Date.UTC(2026,10,9,2,0); // untagged saves written after 8pm Central Nov 8 2026 come from outdated app versions
+const outdated=d=>!!d&&(d.sv||0)<SV&&(d.savedAt||0)>SVT;
 let BASE=(()=>{ try{ return +localStorage.getItem("st.rev")||0; }catch(_){ return 0; } })();
 const setBase=r=>{ BASE=r; try{ localStorage.setItem("st.rev",String(r)); }catch(_){} };
-function act(){ ACT=true; setPend(1); setTimeout(save,0); lastTap=Date.now(); clearTimeout(tapT); tapT=setTimeout(csave,1000); }
+function act(){ if(!ACT){ try{ localStorage.removeItem("st.pendAt"); }catch(_){} } ACT=true; setPend(1); setTimeout(save,0); lastTap=Date.now(); clearTimeout(tapT); tapT=setTimeout(csave,1000); }
 document.addEventListener("pointerdown",e=>{ if(e.target.closest&&e.target.closest("button,input,select,textarea,label,[data-x],[data-kn],[data-pre]")) act(); },true);
 document.addEventListener("keydown",e=>{ if(e.key==="Enter") act(); },true);
 document.addEventListener("click",()=>{ if(ACT) setTimeout(save,0); }); // after the tap has done its thing (bubble phase), save it on this device right away
@@ -2123,8 +2132,9 @@ const cloudRev=d=>d?(d.rev||0):0;
 function adoptCloud(d){ if(!d||typeof d.save!=="string"||d.dev===DEV) return false;
   const r=cloudRev(d); if(r?r<=BASE:(d.savedAt||0)<=SYNC) return false;
   let cs; try{ cs=JSON.parse(d.save); }catch(_){ return false; }
+  if(outdated(d)&&cref){ if(r) setBase(r); backup(S,"kept over a save from an outdated app version"); ACT=true; setPend(1); csave(true); toast("🛡️ Kept your progress. An outdated version of the app on another device tried to overwrite it."); return false; }
   if(regress(cs,S)){ if(r) setBase(r); backup(S,"kept over an older save"); ACT=true; setPend(1); csave(true); toast("🛡️ Kept your progress. Your other device had an older save, so this one replaced it."); return false; }
-  if(ACT&&!regress(S,cs)){ csave(); return false; } // we have a fresh action of our own: push it instead of throwing it away
+  if(ACT&&!regress(S,cs)&&pendAt()>(d.savedAt||0)){ csave(); return false; } // we have a fresh action of our own, newer than that save: push it
   backup(S,"before syncing from another device"); ACT=false; setPend(0);
   const own=S.owner, vw=viewPrefs(), mine=S; S=mergeMono(Object.assign(fresh(),cs),mine); S.owner=own; Object.assign(S,vw); meRestore(); SYNC=d.savedAt||0; clast=d.save; if(r) setBase(r);
   NOW=nowSec(); catchUp(); delistCheck(); try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));}catch(_){} build(); hdr&&hdr(); return true; }
@@ -2133,11 +2143,12 @@ async function cpull(){ if(!cref) return; try{ const sn=await cref.get(); if(sn.
 // force: push even without a tap (used once at sign-in when this device's save is the one to keep)
 async function csave(force){ if(!cref) return; if(!ACT&&!force) return; if(cbusy){ clearTimeout(tapT); tapT=setTimeout(csave,800); return; }
   save(); const j=JSON.stringify(S), had=ACT; cbusy=true; ACT=false;
-  try{ const doc={save:j,savedAt:S.savedAt,dev:DEV};
+  const pa=pendAt(); try{ const doc={save:j,savedAt:S.savedAt,dev:DEV,sv:SV,av:APPV};
     const r=cref.tx?await cref.tx(cur=>{ let cs=null; try{ cs=cur&&cur.save?JSON.parse(cur.save):null; }catch(_){}
-        if(regress(S,cs)) throw {code:"regress",cur}; if(cs&&cloudRev(cur)>BASE&&cur.dev!==DEV){ mergeMono(S,cs); doc.save=JSON.stringify(S); } return Math.max(cloudRev(cur),BASE)+1; },doc):(await cref.set(Object.assign(doc,{rev:BASE+1})),BASE+1);
+        if(regress(S,cs)) throw {code:"regress",cur}; if(!force&&cs&&cloudRev(cur)>BASE&&cur.dev!==DEV&&!outdated(cur)&&(cur.savedAt||0)>pa) throw {code:"newer",cur}; if(cs&&cloudRev(cur)>BASE&&cur.dev!==DEV){ mergeMono(S,cs); doc.save=JSON.stringify(S); } return Math.max(cloudRev(cur),BASE)+1; },doc):(await cref.set(Object.assign(doc,{rev:BASE+1})),BASE+1);
     setBase(r); clast=j; SYNC=S.savedAt; if(!ACT) setPend(0); }
-  catch(e){ if(e&&e.code==="regress"){ cbusy=false; ACT=false; setPend(0); const c=e.cur; backup(S,"replaced by your account's better save"); BASE=0; SYNC=0; adoptCloud(Object.assign({},c,{dev:"_"})); toast("🔄 Loaded your account's save (this device had an older one)"); return; }
+  catch(e){ if(e&&e.code==="newer"){ cbusy=false; ACT=false; setPend(0); BASE=0; SYNC=0; adoptCloud(Object.assign({},e.cur,{dev:"_"})); toast("🔄 Synced from your other device (it has newer play)"); return; }
+    if(e&&e.code==="regress"){ cbusy=false; ACT=false; setPend(0); const c=e.cur; backup(S,"replaced by your account's better save"); BASE=0; SYNC=0; adoptCloud(Object.assign({},c,{dev:"_"})); toast("🔄 Loaded your account's save (this device had an older one)"); return; }
     ACT=ACT||had; if(["invalid_argument","revoked","quota_exceeded","not_granted"].includes(e&&e.code)) cref=null; }
   cbusy=false; }
 let lastSave=0;
@@ -2309,7 +2320,8 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
         const wiped=(S.wipedAt||0)>(d.savedAt||0);
         // same account on this device: the newer save wins (by rev, then by time). A guest save being signed in: more progress wins.
         const mine=S.owner===u.uid, r=cloudRev(d), newer=r?(r>BASE||(r===BASE&&d.dev!==DEV&&(d.savedAt||0)>(S.savedAt||0))):(d.savedAt||0)>(S.savedAt||0);
-        let take; if(!cs) take=false; else if(regress(S,cs)) take=true; else if(regress(cs,S)) take=false; else if(wiped) take=false; else take=mine?newer&&!ACT:progress(cs)>progress(S);
+        const old=outdated(d)&&mine; let take; if(!cs) take=false; else if(old) take=false; else if(regress(S,cs)) take=true; else if(regress(cs,S)) take=false; else if(wiped) take=false; else take=mine?newer&&!(ACT&&pendAt()>(d.savedAt||0)):progress(cs)>progress(S);
+        if(old) pushMine=true;
         if(cs&&!take&&regress(cs,S)) pushMine=true;
         if(take){ backup(S,"before loading your account's save"); ACT=false; setPend(0); }
         SYNC=d.savedAt||0; if(r) setBase(Math.max(BASE,r));
@@ -3171,7 +3183,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="124";
+const APPV="125";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

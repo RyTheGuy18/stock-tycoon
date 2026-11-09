@@ -51,4 +51,5 @@ net worth after time away. Upgrade prices (`PUPC`) = about 24 h of the extra $/d
 - `SPEC` gives each stock one specialty: pattern moves × (`ep`, tells included, shapes scale `net` and their R keypoints),
   daily routines × (`rit`, BREW), morning open × (`open`, OILX) or a minimum pace (`pace`, AIQ). Applied through `makeEp` (wraps
   `makeEp0`), `sched` ee and `mu`. Prices before H10 checked byte-identical. Test with `H10*3600` in the harness T0 lines.
-- `PNCAP` ($500): manual PNNY trades can't be bigger than this (`capQ`, `overCap`). Bots are not capped yet.
+- v128: `CAPS` = max $ per trade for every stock (PNNY $500 ... AIQ $2M, CHIP none), for you and every bot (`stCap`, `capQ`,
+  `overCap`). Penny Scalper Lv 3-5 fades fake breakouts on 2 / 4 / all other stocks. `PUPC` re-priced from `BOTLV(3)` with H10.

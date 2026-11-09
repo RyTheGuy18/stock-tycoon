@@ -416,9 +416,12 @@ const persOf=(d,h)=>h>=H6&&PERS[d.s]||null;
 // ---- specialties (from H10 = 1am Central Nov 9 2026; prices before that are unchanged) ----
 // Each stock is the best place for one kind of play, so unlocking it means something. k = short label, d = what it means,
 // ep = pattern moves × (tells included), rit = daily routines ×, open = morning open ×, pace = how busy (min).
-const H10=Math.floor(Date.UTC(2026,10,9,7)/3600000), PNCAP=500;
+const H10=Math.floor(Date.UTC(2026,10,9,7)/3600000);
+// Max $ per trade (you and your bots): small companies can't take big money, so as you get richer you move up to bigger stocks.
+// Each cap is about 2.5x the last; CHIP, the last stock, has no cap.
+const CAPS={PNNY:500,BRGR:1500,BREW:4000,FLYR:10000,GAME:25000,MEDX:60000,OILX:150000,EVCO:350000,ORBT:800000,AIQ:2e6}, PNCAP=CAPS.PNNY, stCap=sym=>CAPS[sym]||Infinity;
 const SPEC={
- PNNY:{k:"Cheap and wild",d:`Moves the most and costs pennies, but it's a tiny company: you can only put ${"$"}${PNCAP} into it at a time.`},
+ PNNY:{k:"Cheap and wild",d:`Moves the most and costs pennies, but it's a tiny company, so trades are small.`},
  BRGR:{k:"Earnings jumps",d:"Its earnings beats jump 60% more than other stocks'.",ep:{beat:1.6}},
  BREW:{k:"Clockwork routines",d:"Its daily routines move 60% more than other stocks'.",rit:1.6},
  FLYR:{k:"Bad-news drops",d:"Investigation news hits it 60% harder than other stocks.",ep:{deadcat:1.6}},
@@ -1082,6 +1085,7 @@ const BILLS=[["📱 Phone bill",12,25,0],["🎁 Friend's birthday",10,30,0],["�
 
 // ---------- helpers ----------
 const $=id=>document.getElementById(id), U=["","K","M","B","T"];
+const money0=n=>"$"+Math.round(n).toLocaleString("en-US");
 function money(n){ if(!isFinite(n))n=0; const g=n<0; n=Math.abs(n); let o; if(n<1000)o=n.toFixed(2); else{let i=0;while(n>=1000&&i<4){n/=1000;i++;} o=(n<10?n.toFixed(2):n<100?n.toFixed(1):n.toFixed(0))+U[i];} return (g?"-$":"$")+o; }
 const sg=n=>(n>=0?"+":"")+money(n);
 const px=p=>p<1?"$"+p.toFixed(4):p<10?"$"+p.toFixed(3):p<1000?"$"+p.toFixed(2):money(p);
@@ -1117,8 +1121,8 @@ const sp=sym=>pxi(BYSYM[sym].i,NOW);
 // Big orders fill a little worse than the chart (market impact). Tiny orders: basically nothing.
 const slip=(sym,usd)=>{ const d=BYSYM[sym]; return .4*d.vol*Math.sqrt(60)*Math.tanh(Math.max(0,usd)/LIQ(d)); };
 const fillBuy=(sym,q)=>{ const a=ask(sym); return a*Math.exp(slip(sym,q*a)); }, fillSell=(sym,q)=>{ const b=bid(sym); return b*Math.exp(-slip(sym,q*b)); };
-// PNNY is a tiny company: you can only put PNCAP into one trade (bots trade on their own, see pennyBots)
-const capQ=sym=>sym==="PNNY"?Math.max(1,Math.floor(PNCAP/ask(sym))):Infinity, overCap=(sym,q)=>sym==="PNNY"&&q>capQ(sym);
+// every stock but CHIP has a max $ per trade (CAPS); bots follow it too
+const capQ=sym=>isFinite(stCap(sym))?Math.max(1,Math.floor(stCap(sym)/ask(sym))):Infinity, overCap=(sym,q)=>q>capQ(sym);
 function maxQty(sym){ let q=Math.min(capQ(sym),Math.floor(Math.max(0,S.cash)/ask(sym)/(1+STX()))); while(q>1&&q*fillBuy(sym,q)*(1+STX())>S.cash) q=Math.floor(q*.995); return q; }
 const bid=sym=>sp(sym)*(1-BYSYM[sym].spr*sprMult()/2), ask=sym=>sp(sym)*(1+BYSYM[sym].spr*sprMult()/2);
 const P=sym=>S.pos[sym]||(S.pos[sym]={l:0,lc:0,s:0,se:0});
@@ -1162,7 +1166,7 @@ function rec(sym,side,q,en,ex,pl){ S.hist.unshift({sym,side,q,en,ex,pl,pct:(side
 function trade(act,q){
   const sym=S.sel, p=P(sym); q=Math.floor(q);
   if((act==="buy"||act==="short")&&(p.l||p.s)) return toast("You already have a trade open in "+sym+". Close it first.");
-  if((act==="buy"||act==="short")&&overCap(sym,q)) return toast(`Penny Pete's is too small for big money: ${money(PNCAP)} max per trade (${capQ(sym)} shares right now). Unlocked stocks take much bigger bets.`);
+  if((act==="buy"||act==="short")&&overCap(sym,q)) return toast(`${BYSYM[sym].n} is too small for that much money: ${money0(stCap(sym))} max per trade (${capQ(sym)} shares right now). Bigger companies take bigger bets.`);
   if(act==="buy"||act==="short") p.bot=null;
   if(act==="buy"){ const a=fillBuy(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*a*(1+STX())>S.cash+1e-9) return toast("Not enough cash for "+q+" share"+(q>1?"s":"")+" plus sales tax");
     p.lc=(p.lc*p.l+q*a)/(p.l+q); p.l+=q; S.cash-=q*a; const tx=salesTax(q*a); flowPush(sym,1,q*a); autoStops(sym); mark(sym,"B",sp(sym)); toast(`Bought ${q} ${sym} at ${px(a)} (${money(q*a)} + ${money(tx)} sales tax)`); }
@@ -1206,7 +1210,7 @@ function autoStops(sym){ const p=P(sym), o=ORD(sym);
   if(p.s){ if(aOn("asl")) o.ssl=p.se*(1+aV("asl")/100); if(aOn("atp")) o.stp=p.se*(1-aV("atp")/100); } }
 // Bots sit out while you have a trade of your own open (bots' own trades don't count)
 let BOTSKIP=0; const myOpen=()=>Object.values(S.pos).some(p=>p&&(p.l||p.s)&&!p.bot);
-function botOpen(sym,dir,tag){ const p=P(sym); if(p.l||p.s||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } let q=Math.floor(Math.max(0,S.cash)*aV(tag)/100/sp(sym)/(1+slip(sym,S.cash*aV(tag)/100))/(1+STX())); if(q<1) return; const pr=dir>0?fillBuy(sym,q):fillSell(sym,q);
+function botOpen(sym,dir,tag){ const p=P(sym); if(p.l||p.s||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } let q=Math.floor(Math.max(0,S.cash)*aV(tag)/100/sp(sym)/(1+slip(sym,S.cash*aV(tag)/100))/(1+STX())); q=Math.min(q,capQ(sym)); if(q<1) return; const pr=dir>0?fillBuy(sym,q):fillSell(sym,q);
   if(dir>0){ p.lc=pr; p.l=q; mark(sym,"B",pr); } else { p.se=pr; p.s=q; mark(sym,"X",pr); } S.cash-=q*pr; salesTax(q*pr); flowPush(sym,dir,q*pr); p.bot=tag; autoStops(sym); resetPeak(); life(`🤖 ${tag==="rit"?"Routine":"Open"} bot ${dir>0?"bought":"shorted"} ${q} ${sym} at ${px(pr)}`); }
 // bot earnings log for the Automations dashboard: per day (midnight Central) and per bot
 const dayN=()=>Math.floor((NOW/3600-6)/24);
@@ -1227,8 +1231,8 @@ const vbVal=v=>{ const pr=price(v.i||0,NOW); return v.dir>0?v.q*pr:Math.max(0,v.
 const PBASE=[100,500,2500,12000,60000], PMUL={pscalp:1,pflush:.75,ppump:.4,pswing:.2,pnews:10}, PMXP={pscalp:50,pflush:25,ppump:50,pswing:20,pnews:100};
 const PLV=PBASE.map(cap=>({cap})), PNB=["pscalp","pflush","pswing","ppump","pnews"];
 // how many extra stocks (besides PNNY) each level trades, for the bots that spread out
-const PSTK={pflush:[0,0,2,4,99],pswing:[0,1,2,4,99]};
-const PEXTRA={pscalp:{2:"+ fades PNNY's fake breakouts (~30 more trades a day)"},
+const PSTK={pflush:[0,0,2,4,99],pswing:[0,1,2,4,99],pscalp:[0,0,2,4,99]};
+const PEXTRA={pscalp:{2:"+ fades PNNY's fake breakouts (~30 more trades a day)",3:"+ fake breakouts on 2 more stocks",4:"+ 4 more stocks",5:"+ every stock you've unlocked"},
   pflush:{2:"+ shorts the dip itself (:00 to :02)",3:"+ 2 more stocks",4:"+ 4 more stocks",5:"+ every stock you've unlocked"},
   pswing:{2:"+ 1 more stock",3:"+ 2 more stocks",4:"+ 4 more stocks",5:"+ every stock you've unlocked"},
   ppump:{3:"+ ORBT's pumps too (once you unlock ORBT)"},
@@ -1237,7 +1241,9 @@ const PEXTRA={pscalp:{2:"+ fades PNNY's fake breakouts (~30 more trades a day)"}
 // Measured with the offline sim (v8.4), each bot alone, every stock unlocked, $/day at the max bet, Lv 1-5:
 // Scalper 289/2.8K/13.9K/67K/334K, Flush 133/1.3K/11.6K/76K/554K, Breakout 317/2.2K/14K/93K/651K,
 // Pump 484/2.5K/18.7K/90K/452K, News 1.3K/6.4K/48K/231K/1.16M.
-const PUPC={pscalp:[2500,11000,53000,265000],pflush:[1100,10000,64000,480000],ppump:[2000,16000,72000,360000],pswing:[1800,12000,79000,560000],pnews:[5000,42000,185000,925000]};
+// v8.7 (per-stock trade caps, H10 market), 3-day sim: Scalper 243/2.4K/7.3K/48K/285K, Flush 142/1.3K/7.4K/48K/318K,
+// Breakout 329/2.2K/14.8K/67K/464K, Pump 498/2.5K/16.2K/54K/245K, News 1.3K/4.7K/31K/94K/320K
+const PUPC={pscalp:[2500,5000,40000,240000],pflush:[1100,6000,40000,270000],ppump:[2000,14000,38000,190000],pswing:[1800,12500,52000,400000],pnews:[3500,26000,63000,225000]};
 const pLv=id=>A(id).lv||1, pCapL=(id,l)=>Math.round(PBASE[l-1]*(PMUL[id]||1)), pCap=id=>pCapL(id,pLv(id)), pMx=id=>PMXP[id]||100, pUpC=id=>{ const l=pLv(id); return l>=5?0:PUPC[id][l-1]; };
 // the unlocked stocks a spreading bot trades besides PNNY: the jumpiest first (bigger moves)
 let XSK=null; const xStocks=n=>{ if(!n) return []; const m=Math.floor(NOW/60); if(!XSK||XSK.m!==m) XSK={m,l:STOCKS.filter(d=>!d.gone&&!d.lv&&unlocked(d)).sort((a,b)=>b.vol-a.vol)}; return XSK.l.slice(0,n); };
@@ -1250,7 +1256,7 @@ function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; if(!S.botV2){ S.botV2=1
   if(S.auto.openb) openbMig();
   const h=Math.floor(NOW/3600), k=NOW-h*3600, sod=((NOW%86400)+86400)%86400, d=STOCKS[0];
   // key = one trade slot (a bot can hold one trade per play); id = the bot; i = the stock; mx = longest it may stay open
-  const open=(key,id,dir,i,mx)=>{ i=i||0; if(!SIM||!aOn(id)||S.vb[key]||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } const pr=price(i,NOW), amt=Math.min(Math.max(0,S.cash)*Math.min(aV(id),pMx(id))/100,pCap(id)), q=amt/pr; if(amt<.05) return; /* bot bets are virtual, so fractional shares are fine (a $5 player can still bet 10%) */ S.cash-=q*pr; resetPeak(); return S.vb[key]={dir,q,en:pr,id,i,at:NOW,mx}; };
+  const open=(key,id,dir,i,mx)=>{ i=i||0; if(!SIM||!aOn(id)||S.vb[key]||inDebt()) return; if(myOpen()){ BOTSKIP++; return; } const pr=price(i,NOW), amt=Math.min(Math.max(0,S.cash)*Math.min(aV(id),pMx(id))/100,pCap(id),stCap(STOCKS[i].s)), q=amt/pr; if(amt<.05) return; /* bot bets are virtual, so fractional shares are fine (a $5 player can still bet 10%) */ S.cash-=q*pr; resetPeak(); return S.vb[key]={dir,q,en:pr,id,i,at:NOW,mx}; };
   const close=key=>{ const v=S.vb[key]; if(!v) return; delete S.vb[key]; const back=vbVal(v), pl=back-v.q*v.en; S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; botLog(v.id||key,pl); resetPeak(); };
   for(const key in S.vb){ const v=S.vb[key]; if(vbVal(v)<=v.q*v.en*.8) close(key); }   // never more than 20% wrong
   const lv=id=>aOn(id)?pLv(id):0;
@@ -1266,7 +1272,7 @@ function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; if(!S.botV2){ S.botV2=1
   // Pattern bots (Breakout Rider, Pump Sniper) and the company-news half of the News bot read each stock's schedule
   const sw=lv("pswing"), pu=lv("ppump"), nb=lv("pnews"), sc=lv("pscalp");
   const scan=[]; if(sw||pu||sc>=2||nb) scan.push(d);
-  const more=new Set(); if(sw) xStocks(PSTK.pswing[sw-1]).forEach(x=>more.add(x)); if(pu>=3){ const o=BYSYM.ORBT; if(o&&!o.gone&&unlocked(o)) more.add(o); } if(nb) STOCKS.forEach(x=>{ if(!x.gone&&!x.lv&&unlocked(x)) more.add(x); });
+  const more=new Set(); if(sw) xStocks(PSTK.pswing[sw-1]).forEach(x=>more.add(x)); if(pu>=3){ const o=BYSYM.ORBT; if(o&&!o.gone&&unlocked(o)) more.add(o); } if(nb) STOCKS.forEach(x=>{ if(!x.gone&&!x.lv&&unlocked(x)) more.add(x); }); const scSet=new Set(sc>=3?xStocks(PSTK.pscalp[sc-1]):[]); scSet.forEach(x=>more.add(x));
   more.forEach(x=>scan.push(x));
   const swSet=new Set([d].concat(sw?xStocks(PSTK.pswing[sw-1]):[]));
   for(const x of scan){ const i=x.i, t=x.lv?"":":"+x.s;
@@ -1274,7 +1280,7 @@ function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; if(!S.botV2){ S.botV2=1
       if(e.ty==="pump"&&pu&&(x.lv||(pu>=3&&x.s==="ORBT"))){ if(k===o+60) open("ppump"+t,"ppump",-1,i); else if(k===o+300) close("ppump"+t);
         if(e.sOff){ if(k===s+5) open("ppump:t"+t,"ppump",1,i); else if(k===s+170) close("ppump:t"+t); } }
       if(e.ty==="breakout"&&sw&&swSet.has(x)){ const a=e.sOff?o+30:s+90; if(k===a) open("pswing"+t,"pswing",1,i); else if(k===a+180) close("pswing"+t); }
-      if(e.ty==="fakeout"&&x.lv&&sc>=2){ if(k===s+40) open("pscalp:f","pscalp",-1); else if(k===s+190) close("pscalp:f"); }
+      if(e.ty==="fakeout"&&sc>=2&&(x.lv||scSet.has(x))){ if(k===s+40) open("pscalp:f"+t,"pscalp",-1,i); else if(k===s+190) close("pscalp:f"+t); }
       if(nb){ // News bot: the company headlines that come with a tell
         if(e.ty==="beat"&&e.sOff){ if(k===s+5) open("pnews:c"+t,"pnews",1,i); else if(k===o+300) close("pnews:c"+t); }
         if(e.ty==="deadcat"&&e.sOff){ if(k===s+5) open("pnews:c"+t,"pnews",-1,i); else if(k===o+300) close("pnews:c"+t); }
@@ -1543,7 +1549,7 @@ function day1(sym){ const m=Math.floor(NOW/60), c=D1[sym]; if(c&&c.m===m) return
 const d1html=sym=>{ const v=day1(sym), up=v>=0; return `<span class="${up?"up":"dn"} d1"><svg viewBox="0 0 10 10" width="9" height="9"><path d="${up?"M5 1.5 9.2 8.5H.8Z":"M5 8.5 .8 1.5h8.4Z"}" fill="currentColor"/></svg>${Math.abs(v)}%</span>`; };
 function upd(){
   if(!$("qp")) return; const sym=S.sel, d=BYSYM[sym], p=P(sym), pr=sp(sym), c=chg(sym);
-  $("qn").textContent=sym+" · "+d.n+(SECN[sym]?" · "+SECN[sym]:""); { const k=$("qk"), z=SPEC[sym]; if(k&&k.dataset.s!==sym){ k.dataset.s=sym; k.innerHTML=z?`<b style="color:var(--gold)">Known for: ${z.k}.</b> ${z.d}`:""; } } $("qp").textContent=px(pr);
+  $("qn").textContent=sym+" · "+d.n+(SECN[sym]?" · "+SECN[sym]:""); { const k=$("qk"), z=SPEC[sym]; if(k&&k.dataset.s!==sym){ k.dataset.s=sym; k.innerHTML=(z?`<b style="color:var(--gold)">Known for: ${z.k}.</b> ${z.d} `:"")+(isFinite(stCap(sym))?`Max per trade: <b>${money0(stCap(sym))}</b>.`:`<b>No limit</b> on trade size.`); } } $("qp").textContent=px(pr);
   { const q=$("qc"), hh=" "+d1html(sym); if(q.dataset.h!==hh){ q.dataset.h=hh; q.innerHTML=hh; } }
   STOCKS.forEach(x=>{ const e=$("c-"+x.s); if(e){ e.textContent=px(sp(x.s)); e.className=day1(x.s)>=0?"up":"dn"; const f=$("cd-"+x.s), hh=d1html(x.s); if(f&&f.dataset.h!==hh){ f.dataset.h=hh; f.innerHTML=hh; } } });
   document.querySelectorAll(".tf button").forEach(b=>b.classList.toggle("on",+b.dataset.tf===S.tf));
@@ -1554,7 +1560,7 @@ function upd(){
   if(h&&!P(sym).bot&&["rit","pscalp","pflush","ppump","pswing","pnews"].some(aOn)) h+=`<div class="t" style="margin-top:6px">🤖 Your bots sit out while you have a trade open.</div>`; else if(h&&P(sym).bot) h+=`<div class="t" style="margin-top:6px">🤖 A bot opened this trade and will close it.</div>`;
   if(PHONE()&&(p.l||p.s)) h=(()=>{ const g=p.l?p.l*(bid(sym)-p.lc):Math.max(p.s*(p.se-ask(sym)),-p.s*p.se), n=netPL(sym); return taxTrap(g,n)?netLine(g,n):""; })()+ordBtns(p.l?"l":"s")+(P(sym).bot?`<div class="t" style="margin-top:4px">🤖 A bot opened this trade and will close it.</div>`:["rit","pscalp","pflush","ppump","pswing","pnews"].some(aOn)?`<div class="t" style="margin-top:4px">🤖 Your bots sit out while you have a trade open.</div>`:"");
   $("pos").innerHTML=h||(PHONE()?"":`<div class="t">No position in ${sym}. Small orders fill at the chart price; big ones move it a little.</div>`); $("pos").style.display=h||!PHONE()?"":"none";
-  const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+" + "+money(S.qty*a*STX())+" tax"+(overCap(sym,S.qty)?` · PNNY max is ${money(PNCAP)} (${capQ(sym)} sh)`:sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
+  const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+" + "+money(S.qty*a*STX())+" tax"+(overCap(sym,S.qty)?` · ${sym} max is ${money0(stCap(sym))} (${capQ(sym)} sh)`:sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
   const q=s=>main.querySelector(s);
   const open=p.l>0||p.s>0; { const qr=q(".qty"); if(qr) qr.style.display=PHONE()&&open?"none":""; } q("[data-a=buy]").disabled=open||inDebt()||overCap(sym,S.qty)||S.qty*fillBuy(sym,S.qty)*(1+STX())>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||overCap(sym,S.qty)||S.qty*fillSell(sym,S.qty)*(1+STX())>S.cash+1e-9;
   const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; const cn=open?netPL(sym):0, ctr=taxTrap(cpl,cn); cb.className="btn "+(open?(ctr?"taxw":cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?(ctr?`CLOSE<small>after tax ${sg(cn)}</small>`:`CLOSE<small>${sg(cpl)}</small>`):"CLOSE";
@@ -3207,7 +3213,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="127";
+const APPV="128";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

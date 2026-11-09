@@ -412,7 +412,24 @@ const PERS={
  CHIP:{f:.5,calm:1.3,w:{breakout:1.8,bflag:2,sflag:2,fakeout:.5}},   // momentum: breakouts and flags that follow through
  AIQ:{f:.6,w:{squeeze:2,rumor:2,breakout:1.5}}};                     // AI hype: busiest of all
 const H6=Math.floor(Date.UTC(2026,10,6,22)/3600000);
-const persOf=(d,h)=>h>=H6&&PERS[d.s]||null; STOCKS[0].sdh=STOCKS[0].vol*2; STOCKS[0].ar=.5; STOCKS[0].lv=1;
+const persOf=(d,h)=>h>=H6&&PERS[d.s]||null;
+// ---- specialties (from H10 = 1am Central Nov 9 2026; prices before that are unchanged) ----
+// Each stock is the best place for one kind of play, so unlocking it means something. k = short label, d = what it means,
+// ep = pattern moves × (tells included), rit = daily routines ×, open = morning open ×, pace = how busy (min).
+const H10=Math.floor(Date.UTC(2026,10,9,7)/3600000), PNCAP=500;
+const SPEC={
+ PNNY:{k:"Cheap and wild",d:`Moves the most and costs pennies, but it's a tiny company: you can only put ${"$"}${PNCAP} into it at a time.`},
+ BRGR:{k:"Earnings jumps",d:"Its earnings beats jump 60% more than other stocks'.",ep:{beat:1.6}},
+ BREW:{k:"Clockwork routines",d:"Its daily routines move 60% more than other stocks'.",rit:1.6},
+ FLYR:{k:"Bad-news drops",d:"Investigation news hits it 60% harder than other stocks.",ep:{deadcat:1.6}},
+ GAME:{k:"Buyout rumors",d:"Buyout rumors move it 60% more than other stocks.",ep:{rumor:1.6}},
+ MEDX:{k:"Big news days",d:"Earnings beats and investigations both hit it 40% harder.",ep:{beat:1.4,deadcat:1.4}},
+ OILX:{k:"Morning open",d:"Its morning open moves 60% more than other stocks'.",open:1.6},
+ EVCO:{k:"Short squeezes",d:"Short squeezes run 60% farther and breakouts 30% farther.",ep:{squeeze:1.6,breakout:1.3}},
+ ORBT:{k:"Biggest pumps",d:"Its pumps (and the dumps after) are 60% bigger.",ep:{pump:1.6}},
+ AIQ:{k:"Busiest chart",d:"More patterns an hour than any other stock.",pace:1.4},
+ CHIP:{k:"Breakouts and flags",d:"Breakouts and flags run 40% farther.",ep:{breakout:1.4,bflag:1.4,sflag:1.4}}};
+const specOf=(d,h)=>h>=H10&&SPEC[d.s]||null, spX=(d,h,k)=>{ const z=specOf(d,h); return z&&z[k]||1; }; STOCKS[0].sdh=STOCKS[0].vol*2; STOCKS[0].ar=.5; STOCKS[0].lv=1;
 // ---- time-of-day behavior ----
 // morning open (14:00 UTC): +1 follows its 24h trend, -1 reverses it, 0 = no special open (PNNY)
 const OPEN_H=14, REV=["SODA","WAVE","AURM","MEGA"]; let RK=1.65, OK=1.9;
@@ -572,7 +589,10 @@ function nTk(e){ if(e.lv==="big"||e.lv==="co") return [e.s]; const L=STOCKS.filt
 
 // ---------- episodes: the learnable patterns ----------
 // phase [ticks, drift (×vol unless abs), volume×, abs?]
-function makeEp(d,r,h,shapeOK,force){ const nw=h>=H1; // from H1 on, collapses and squeezes are rare (about once every 2 weeks per stock instead of every 2 days)
+function makeEp(d,r,h,shapeOK,force){ const e=makeEp0(d,r,h,shapeOK,force), z=specOf(d,h), m=z&&z.ep&&z.ep[e.ty]; if(!m) return e;
+  if(e.shape) return Object.assign({},e,{net:e.net*m,kp:e.kp.map(k=>{ const c=k.slice(); if(c[1]!=="B") c[2]*=m; return c; })});
+  return Object.assign({},e,{ph:e.ph.map(p=>p[3]?p:[p[0],p[1]*m].concat(p.slice(2)))}); }
+function makeEp0(d,r,h,shapeOK,force){ const nw=h>=H1; // from H1 on, collapses and squeezes are rare (about once every 2 weeks per stock instead of every 2 days)
   const w=[["breakout",3],["fakeout",3],["beat",1.4],["rumor",1.4],["deadcat",1.8],["collapse",nw?.03:.22],["squeeze",nw?.035:.25]];
   if(d.vol<.0017) w.push(["capit",2]); if(d.pump) w.push(["pump",2.2]);
   if(h>=H3&&shapeOK) w.push(["dtop",1.1],["dbot",1.1],["atri",.9],["dtri",.9],["bflag",1.1],["sflag",1.1]);
@@ -623,7 +643,7 @@ function sched(i,h){ const key=i+":"+h; let s=SC.get(key); if(s) return s;
     if(h>=H9){ // from H9: patterns back to back with short random gaps (about 8 tradeable signals an hour on average). Each stock
       // has its own pace (PACE: 0.65x-1.35x), so some are busier than others. Never on top of the flush, the morning open,
       // PNNY's midnight crash or a daily routine.
-      const dh=((h%24)+24)%24, pace=PACE(d), G=Math.max(15,50/(pace*pace)*(.45/pf)), GAP=()=>100+Math.floor(G*(.3+1.4*r())); // at least 100 s between patterns so a trade's hold isn't hit by the next one
+      const dh=((h%24)+24)%24, pace=Math.max(PACE(d),spX(d,h,"pace")>1?spX(d,h,"pace"):0), G=Math.max(15,50/(pace*pace)*(.45/pf)), GAP=()=>100+Math.floor(G*(.3+1.4*r())); // at least 100 s between patterns so a trade's hold isn't hit by the next one
       const busy=e=>{ const a=e.st, b=e.st+epLen(e)+60; return (h%3===0&&a<420)||(d.od&&dh===OPEN_H&&a<780)||(d.lv&&dh===5&&b>3150)||(d.rit&&d.rit.some(R=>R.h===dh&&b>R.m-60&&a<R.m+2*R.L+60)); };
       let t=Math.floor(r()*G), shp=false, fdone=!fN;
       while(t<3500){
@@ -635,7 +655,7 @@ function sched(i,h){ const key=i+":"+h; let s=SC.get(key); if(s) return s;
   const mr=RNG("m:"+h); let cr=mr()<1/60?1+Math.floor(mr()*3400):null; if(cr!=null&&h>=H2) cr=Math.max(cr,150);
   let ee=0, eeP=0; for(const e of eps){ if(e.shape){ ee+=e.net*d.vol*Math.sqrt(60); continue; } const fk=h>=H9&&!e.ph.some(p=>p[3])?.15:1; for(const p of e.ph){ const m=p[0]*(p[3]?p[1]:p[1]*d.vol); ee+=m*fk; if(p[3]&&h>=H1) eeP+=.78*m; } } // part of a collapse/squeeze sticks
   if(cr!=null){ const cb=d.beta*(d.idx&&h>=H7?IXC:1); ee+=Math.log(.82)*cb+(h>=H2?Math.log(.995)*cb:0); }
-  if(d.od&&((h%24)+24)%24===OPEN_H) ee+=openSign(i,h)*d.oD;
+  if(d.od&&((h%24)+24)%24===OPEN_H) ee+=openSign(i,h)*d.oD*spX(d,h,"open");
   s={eps,cr,ee,eeP}; SC.set(key,s); if(SC.size>3000) SC.delete(SC.keys().next().value); return s; }
 // hourly anchors (log-price), mean-reverting around a long-run trend
 const AN=SER.map(()=>[0]), AE=SER.map(()=>[]); const CALM=.22; // from H1 on, hour-to-hour drift is calmer so normal days move a few %, and news/moods stand out
@@ -734,8 +754,8 @@ function chunk(i,h){ const key=i+":"+h; let c=CH.get(key); if(c) return c;
   // "3-hour flush": at the top of every UTC hour divisible by 3, stocks dip then fully recover
   if(!d.idx&&h%3===0){ const a=Math.log(1-Math.min(.5,flushD(d)*(h>=H9?1.6:1)))/120; /* from H9 a deeper dip so it stands out in the busier hours */ for(let t=1;t<=120;t++){ mu[t]+=a; vm[t]*=2; } for(let t=121;t<=300;t++) mu[t]-=a*120/180; if(h>=H4) for(let t=1;t<=300;t++) sm[t]*=SQ; }
   const dh=((h%24)+24)%24;
-  if(d.rit) for(const R of d.rit) if(R.h===dh){ const a=R.dir*R.D/R.L; for(let k=1;k<=R.L;k++){ mu[R.m+k]+=a; mu[R.m+R.L+k]-=a; vm[R.m+k]*=1.6; vm[R.m+R.L+k]*=1.6; if(h>=H4){ sm[R.m+k]*=SQ; sm[R.m+R.L+k]*=SQ; } } }
-  if(d.od&&dh===OPEN_H){ const a=openSign(i,h)*d.oD/600; for(let t=1;t<=600;t++){ mu[t]+=a; vm[t]*=3; if(h>=H4) sm[t]*=SQ; } }
+  if(d.rit) for(const R of d.rit) if(R.h===dh){ const a=R.dir*R.D*spX(d,h,"rit")/R.L; for(let k=1;k<=R.L;k++){ mu[R.m+k]+=a; mu[R.m+R.L+k]-=a; vm[R.m+k]*=1.6; vm[R.m+R.L+k]*=1.6; if(h>=H4){ sm[R.m+k]*=SQ; sm[R.m+R.L+k]*=SQ; } } }
+  if(d.od&&dh===OPEN_H){ const a=openSign(i,h)*d.oD*spX(d,h,"open")/600; for(let t=1;t<=600;t++){ mu[t]+=a; vm[t]*=3; if(h>=H4) sm[t]*=SQ; } }
   if(d.lv&&h>=H4&&dh===5){ const a=Math.log(1-pnDay(pnnyDay(h)).f)/300; for(let t=HN-299;t<=HN;t++){ mu[t]+=a; vm[t]*=4; } } // PNNY midnight crash (11:55pm-midnight Central)
   for(const m of minorNews(i,h)) for(let k=1;k<=20;k++){ mu[m.at+k]+=m.a/20; vm[m.at+k]*=2.2; }
   const cb=d.beta*(d.idx&&h>=H7?IXC:1);
@@ -964,10 +984,10 @@ const pc=D=>((Math.exp(D)-1)*100).toFixed(1);
 // stock-specific lessons: locked until you've unlocked the stock; priced by how expensive the stock is
 const SK=[]; STOCKS.forEach(d=>{ let k=0; const cost=()=>Math.max(5,Math.round((d.p*6+d.un*.4)*(1+.5*k++))), names={};
   if(d.od) SK.push({id:d.s+"_open",sym:d.s,n:`${d.s} at the morning open`,c:cost(),t:`How ${d.s} moves when the market wakes up.`,
-    d:`At <b>${lt(OPEN_H)}</b> your time, ${d.s} makes its biggest move of the day: about <b>${pc(d.oD)}%</b> in 10 minutes. It <b>${d.od>0?"follows":"reverses"}</b> its 24-hour trend.<br><br>Right at ${lt(OPEN_H)}, check the <b>24h</b> change next to the price. If it's <b>green, ${d.od>0?"buy":"short"}</b>. If it's <b>red, ${d.od>0?"short":"buy"}</b>. Close at <b>${lt(OPEN_H,600)}</b>. Won about 90% in testing.`});
+    d:`At <b>${lt(OPEN_H)}</b> your time, ${d.s} makes its biggest move of the day: about <b>${pc(d.oD*((SPEC[d.s]||{}).open||1))}%</b> in 10 minutes. It <b>${d.od>0?"follows":"reverses"}</b> its 24-hour trend.<br><br>Right at ${lt(OPEN_H)}, check the <b>24h</b> change next to the price. If it's <b>green, ${d.od>0?"buy":"short"}</b>. If it's <b>red, ${d.od>0?"short":"buy"}</b>. Close at <b>${lt(OPEN_H,600)}</b>. Won about 90% in testing.`});
   d.rit.forEach((R,j)=>{ const up=R.dir>0, base=`${d.s}'s ${tod(R.h)} ${up?"pop":"dip"}`; names[base]=(names[base]||0)+1; const nm=names[base]>1?base+" #"+names[base]:base;
     SK.push({id:d.s+"_r"+j,sym:d.s,n:nm,c:cost(),t:`A move ${d.s} makes at the same time every day.`,
-    d:`Every day at <b>${lt(R.h,R.m)}</b> your time, ${d.s} <b>${up?"climbs":"drops"} about ${pc(R.D)}%</b> over ${R.L/60} minutes, then ${up?"drops":"climbs"} right back over the next ${R.L/60}.<br><br><b>${up?"Buy":"Short"}</b> at ${lt(R.h,R.m)} and close at ${lt(R.h,R.m+R.L)}. Then <b>${up?"short":"buy"}</b> and close at ${lt(R.h,R.m+2*R.L)}. Each half won about 95% in testing.`}); }); });
+    d:`Every day at <b>${lt(R.h,R.m)}</b> your time, ${d.s} <b>${up?"climbs":"drops"} about ${pc(R.D*((SPEC[d.s]||{}).rit||1))}%</b> over ${R.L/60} minutes, then ${up?"drops":"climbs"} right back over the next ${R.L/60}.<br><br><b>${up?"Buy":"Short"}</b> at ${lt(R.h,R.m)} and close at ${lt(R.h,R.m+R.L)}. Then <b>${up?"short":"buy"}</b> and close at ${lt(R.h,R.m+2*R.L)}. Each half won about 95% in testing.`}); }); });
 // longer-timeframe lessons (10m–1D charts): bought in order, permanent
 const JUMPY=["SOLR","ORBT","CHIP","ROBO","SKYD","RAMX","EVCO","AIQ"], snapPct=d=>Math.round((Math.exp(2*d.vol*Math.sqrt(1800))-1)*100);
 const LONG=[
@@ -1097,7 +1117,9 @@ const sp=sym=>pxi(BYSYM[sym].i,NOW);
 // Big orders fill a little worse than the chart (market impact). Tiny orders: basically nothing.
 const slip=(sym,usd)=>{ const d=BYSYM[sym]; return .4*d.vol*Math.sqrt(60)*Math.tanh(Math.max(0,usd)/LIQ(d)); };
 const fillBuy=(sym,q)=>{ const a=ask(sym); return a*Math.exp(slip(sym,q*a)); }, fillSell=(sym,q)=>{ const b=bid(sym); return b*Math.exp(-slip(sym,q*b)); };
-function maxQty(sym){ let q=Math.floor(Math.max(0,S.cash)/ask(sym)/(1+STX())); while(q>1&&q*fillBuy(sym,q)*(1+STX())>S.cash) q=Math.floor(q*.995); return q; }
+// PNNY is a tiny company: you can only put PNCAP into one trade (bots trade on their own, see pennyBots)
+const capQ=sym=>sym==="PNNY"?Math.max(1,Math.floor(PNCAP/ask(sym))):Infinity, overCap=(sym,q)=>sym==="PNNY"&&q>capQ(sym);
+function maxQty(sym){ let q=Math.min(capQ(sym),Math.floor(Math.max(0,S.cash)/ask(sym)/(1+STX()))); while(q>1&&q*fillBuy(sym,q)*(1+STX())>S.cash) q=Math.floor(q*.995); return q; }
 const bid=sym=>sp(sym)*(1-BYSYM[sym].spr*sprMult()/2), ask=sym=>sp(sym)*(1+BYSYM[sym].spr*sprMult()/2);
 const P=sym=>S.pos[sym]||(S.pos[sym]={l:0,lc:0,s:0,se:0});
 function posVal(){ let v=0; if(S.vb) for(const id in S.vb) v+=vbVal(S.vb[id]); for(const k in S.pos){ const p=S.pos[k]; if(p.l) v+=p.l*bid(k); if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-ask(k))); } return v; }
@@ -1140,6 +1162,7 @@ function rec(sym,side,q,en,ex,pl){ S.hist.unshift({sym,side,q,en,ex,pl,pct:(side
 function trade(act,q){
   const sym=S.sel, p=P(sym); q=Math.floor(q);
   if((act==="buy"||act==="short")&&(p.l||p.s)) return toast("You already have a trade open in "+sym+". Close it first.");
+  if((act==="buy"||act==="short")&&overCap(sym,q)) return toast(`Penny Pete's is too small for big money: ${money(PNCAP)} max per trade (${capQ(sym)} shares right now). Unlocked stocks take much bigger bets.`);
   if(act==="buy"||act==="short") p.bot=null;
   if(act==="buy"){ const a=fillBuy(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*a*(1+STX())>S.cash+1e-9) return toast("Not enough cash for "+q+" share"+(q>1?"s":"")+" plus sales tax");
     p.lc=(p.lc*p.l+q*a)/(p.l+q); p.l+=q; S.cash-=q*a; const tx=salesTax(q*a); flowPush(sym,1,q*a); autoStops(sym); mark(sym,"B",sp(sym)); toast(`Bought ${q} ${sym} at ${px(a)} (${money(q*a)} + ${money(tx)} sales tax)`); }
@@ -1479,7 +1502,7 @@ function tick(){
   for(const id in S.profs){ const s=S.profs[id]; if(s.momFix&&NOW>=s.momFix){ s.momFix=0; s.br[0]=false; } }
   runAutos(); checkOrders(); bills(); taxDay(); solvency();
   const nw=netWorth();
-  if(nw>S.bestNW){ const b=new Set(STOCKS.filter(unlocked).map(d=>d.s)); S.bestNW=nw; const nu=STOCKS.filter(d=>unlocked(d)&&!b.has(d.s)); if(nu.length){ const d=nu[nu.length-1]; life("🔓 Unlocked "+d.s); toast("🔓 You can now trade "+d.n,"good"); sfx('achieve'); } }
+  if(nw>S.bestNW){ const b=new Set(STOCKS.filter(unlocked).map(d=>d.s)); S.bestNW=nw; const nu=STOCKS.filter(d=>unlocked(d)&&!b.has(d.s)); if(nu.length){ const d=nu[nu.length-1]; life("🔓 Unlocked "+d.s); toast("🔓 You can now trade "+d.n+(SPEC[d.s]?". Known for: "+SPEC[d.s].k.toLowerCase()+". "+SPEC[d.s].d:""),"good"); sfx('achieve'); } }
   if(!S.momDone&&S.bestNW>=15){ S.momDone=true; S.paper=null; if(!SIM) modal("Mom has something to say",`<div class="mom">"You've got real money now. No more practice rounds from me. You're on your own, kiddo."</div>`,[["Thanks, Mom","gold"]]); life("👩 Mom ended the practice rounds"); }
   if(S.fu>0&&(!S.fh.length||NOW-S.fh[S.fh.length-1][0]>=600)){ S.fh.push([NOW,fundVal()]); if(S.fh.length>300) S.fh.shift(); }
 }
@@ -1497,7 +1520,7 @@ const fold=(id,t,body)=>`<details class="fold" id="fd-${id}" ${(FOLD[id]??!PHONE
 document.addEventListener("toggle",e=>{ const d=e.target; if(d.classList&&d.classList.contains("fold")) FOLD[d.id.slice(3)]=d.open; },true);
 function buildTrade(){
   main.dataset.h=main.innerHTML=`<div class="mk"><div class="mk-l"><div id="chips"></div>
-  <div class="q"><div><span class="t" id="qn"></span><div class="row"><span id="qp" class="m"></span><span id="qc" class="m" style="font-size:12.5px"></span></div></div>
+  <div class="q"><div><span class="t" id="qn"></span><div class="t" id="qk" style="font-size:11.5px;margin-top:1px"></div><div class="row"><span id="qp" class="m"></span><span id="qc" class="m" style="font-size:12.5px"></span></div></div>
   </div><div class="tf">${TFS.map(([s,l])=>`<button data-tf="${s}">${l}</button>`).join("")}</div>
   <div class="chw"><canvas id="chart"></canvas><button id="zlive" style="display:none">↻ Live</button><div id="ctools"><button id="ldraw" title="Draw a line">✏️<span> Line</span></button><button id="lclear" title="Clear lines">🗑</button></div></div><div id="news"></div></div>
   <div class="mk-r"><div class="pad"><div id="pos" class="card"></div>
@@ -1520,7 +1543,7 @@ function day1(sym){ const m=Math.floor(NOW/60), c=D1[sym]; if(c&&c.m===m) return
 const d1html=sym=>{ const v=day1(sym), up=v>=0; return `<span class="${up?"up":"dn"} d1"><svg viewBox="0 0 10 10" width="9" height="9"><path d="${up?"M5 1.5 9.2 8.5H.8Z":"M5 8.5 .8 1.5h8.4Z"}" fill="currentColor"/></svg>${Math.abs(v)}%</span>`; };
 function upd(){
   if(!$("qp")) return; const sym=S.sel, d=BYSYM[sym], p=P(sym), pr=sp(sym), c=chg(sym);
-  $("qn").textContent=sym+" · "+d.n+(SECN[sym]?" · "+SECN[sym]:""); $("qp").textContent=px(pr);
+  $("qn").textContent=sym+" · "+d.n+(SECN[sym]?" · "+SECN[sym]:""); { const k=$("qk"), z=SPEC[sym]; if(k&&k.dataset.s!==sym){ k.dataset.s=sym; k.innerHTML=z?`<b style="color:var(--gold)">Known for: ${z.k}.</b> ${z.d}`:""; } } $("qp").textContent=px(pr);
   { const q=$("qc"), hh=" "+d1html(sym); if(q.dataset.h!==hh){ q.dataset.h=hh; q.innerHTML=hh; } }
   STOCKS.forEach(x=>{ const e=$("c-"+x.s); if(e){ e.textContent=px(sp(x.s)); e.className=day1(x.s)>=0?"up":"dn"; const f=$("cd-"+x.s), hh=d1html(x.s); if(f&&f.dataset.h!==hh){ f.dataset.h=hh; f.innerHTML=hh; } } });
   document.querySelectorAll(".tf button").forEach(b=>b.classList.toggle("on",+b.dataset.tf===S.tf));
@@ -1531,9 +1554,9 @@ function upd(){
   if(h&&!P(sym).bot&&["rit","pscalp","pflush","ppump","pswing","pnews"].some(aOn)) h+=`<div class="t" style="margin-top:6px">🤖 Your bots sit out while you have a trade open.</div>`; else if(h&&P(sym).bot) h+=`<div class="t" style="margin-top:6px">🤖 A bot opened this trade and will close it.</div>`;
   if(PHONE()&&(p.l||p.s)) h=(()=>{ const g=p.l?p.l*(bid(sym)-p.lc):Math.max(p.s*(p.se-ask(sym)),-p.s*p.se), n=netPL(sym); return taxTrap(g,n)?netLine(g,n):""; })()+ordBtns(p.l?"l":"s")+(P(sym).bot?`<div class="t" style="margin-top:4px">🤖 A bot opened this trade and will close it.</div>`:["rit","pscalp","pflush","ppump","pswing","pnews"].some(aOn)?`<div class="t" style="margin-top:4px">🤖 Your bots sit out while you have a trade open.</div>`:"");
   $("pos").innerHTML=h||(PHONE()?"":`<div class="t">No position in ${sym}. Small orders fill at the chart price; big ones move it a little.</div>`); $("pos").style.display=h||!PHONE()?"":"none";
-  const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+" + "+money(S.qty*a*STX())+" tax"+(sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
+  const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+" + "+money(S.qty*a*STX())+" tax"+(overCap(sym,S.qty)?` · PNNY max is ${money(PNCAP)} (${capQ(sym)} sh)`:sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
   const q=s=>main.querySelector(s);
-  const open=p.l>0||p.s>0; { const qr=q(".qty"); if(qr) qr.style.display=PHONE()&&open?"none":""; } q("[data-a=buy]").disabled=open||inDebt()||S.qty*fillBuy(sym,S.qty)*(1+STX())>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||S.qty*fillSell(sym,S.qty)*(1+STX())>S.cash+1e-9;
+  const open=p.l>0||p.s>0; { const qr=q(".qty"); if(qr) qr.style.display=PHONE()&&open?"none":""; } q("[data-a=buy]").disabled=open||inDebt()||overCap(sym,S.qty)||S.qty*fillBuy(sym,S.qty)*(1+STX())>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||overCap(sym,S.qty)||S.qty*fillSell(sym,S.qty)*(1+STX())>S.cash+1e-9;
   const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; const cn=open?netPL(sym):0, ctr=taxTrap(cpl,cn); cb.className="btn "+(open?(ctr?"taxw":cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?(ctr?`CLOSE<small>after tax ${sg(cn)}</small>`:`CLOSE<small>${sg(cpl)}</small>`):"CLOSE";
   preCard(open); jobCard(); momCard(); tipCard(); compCard(); draw();
   if(NOW%5===0){ fundCard(); taxCard(); } }
@@ -3184,7 +3207,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="126";
+const APPV="127";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

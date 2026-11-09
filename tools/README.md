@@ -46,3 +46,9 @@ The Settings → App updater compares them; if only sw.js changes, the app keeps
 `bot-harness.js`: `BOTLV(days)` measures each trading bot alone at every level at its max bet; `AWAY(cash,hours,bots)` averages
 net worth after time away. Upgrade prices (`PUPC`) = about 24 h of the extra $/day a level adds at its max bet. Max bet per level =
 `PBASE` x `PMUL[bot]`; the slider's top (`PMXP`) is low for the frequent bots and 100% for the News bot.
+
+## v8.6 specialties (H10 = Nov 9 2026 07:00 UTC, 1am Central)
+- `SPEC` gives each stock one specialty: pattern moves × (`ep`, tells included, shapes scale `net` and their R keypoints),
+  daily routines × (`rit`, BREW), morning open × (`open`, OILX) or a minimum pace (`pace`, AIQ). Applied through `makeEp` (wraps
+  `makeEp0`), `sched` ee and `mu`. Prices before H10 checked byte-identical. Test with `H10*3600` in the harness T0 lines.
+- `PNCAP` ($500): manual PNNY trades can't be bigger than this (`capQ`, `overCap`). Bots are not capped yet.

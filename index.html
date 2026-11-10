@@ -1123,7 +1123,7 @@ const slip=(sym,usd)=>{ const d=BYSYM[sym]; return .4*d.vol*Math.sqrt(60)*Math.t
 const fillBuy=(sym,q)=>{ const a=ask(sym); return a*Math.exp(slip(sym,q*a)); }, fillSell=(sym,q)=>{ const b=bid(sym); return b*Math.exp(-slip(sym,q*b)); };
 // every stock but CHIP has a max $ per trade (CAPS); bots follow it too
 const capQ=sym=>isFinite(stCap(sym))?Math.max(1,Math.floor(stCap(sym)/ask(sym))):Infinity, overCap=(sym,q)=>q>capQ(sym);
-function maxQty(sym){ let q=Math.min(capQ(sym),Math.floor(Math.max(0,S.cash)/ask(sym)/(1+STX()))); while(q>1&&q*fillBuy(sym,q)*(1+STX())>S.cash) q=Math.floor(q*.995); return q; }
+function maxQty(sym){ const bp=buyPow(); let q=Math.min(capQ(sym),Math.floor(Math.max(0,bp)/ask(sym)/(1+STX()))); while(q>1&&q*fillBuy(sym,q)*(1+STX())>bp) q=Math.floor(q*.995); return q; }
 const bid=sym=>sp(sym)*(1-BYSYM[sym].spr*sprMult()/2), ask=sym=>sp(sym)*(1+BYSYM[sym].spr*sprMult()/2);
 const P=sym=>S.pos[sym]||(S.pos[sym]={l:0,lc:0,s:0,se:0});
 function posVal(){ let v=0; if(S.vb) for(const id in S.vb){ const b=S.vb[id]; v+=b.d?Math.max(0,vbVal(b)-b.q*b.en):vbVal(b); } for(const k in S.pos){ const p=S.pos[k]; if(p.l) v+=p.l*bid(k); if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-ask(k))); } return v; }
@@ -1147,7 +1147,13 @@ const liquid=()=>S.cash+posVal(), netWorth=()=>liquid()+fundVal();
 // Stocks you had already unlocked under the old numbers stay unlocked (S.unl).
 const NEED={BRGR:75,BREW:250,FLYR:800,GAME:2250,MEDX:5500,OILX:12000,EVCO:22500,ORBT:40000,AIQ:65000,CHIP:100000}; // big early jumps (~×3) easing to ~×1.5 at the top
 STOCKS.forEach(d=>{ d.need=NEED[d.s]!=null?NEED[d.s]:d.un; });
-const inDebt=()=>S.cash<-.005, unlocked=d=>!d.gone&&(S.bestNW>=d.need||!!(S.unl&&S.unl[d.s]));
+const inDebt=()=>S.cash<-.005;
+// v8.9 credit card: in debt you can keep trading on credit. Limit = what you owed when you took the card (at least $5), so you can lose at most that much more before the 24 h runs out
+const ccOn=()=>inDebt()&&!!S.cc&&S.cc.due===S.debtDue, buyPow=()=>ccOn()?S.cash+S.cc.d0+S.cc.L:S.cash, ccLeft=()=>Math.max(0,buyPow());
+function ccOffer(){ if(!inDebt()||ccOn()) return; const L=Math.max(5,Math.ceil(-S.cash));
+  modal("💳 Here's a credit card",`<p>You owe <b>${money(-S.cash)}</b>. The bank will front you <b>${money(L)}</b> to keep trading.</p><p>Win and you pay off the debt. Lose and you owe even more, and you still have <b>${dur(S.debtDue-NOW)}</b> before you go broke.</p><p class="dn"><b>So are you gambling, or do you know what you're doing?</b></p>`,
+    [["I know what I'm doing","gold",()=>{ S.cc={due:S.debtDue,d0:-S.cash,L}; life(`💳 Took a ${money(L)} credit card`); toast(`💳 ${money(L)} of credit. Make it count.`); build(); }],["No thanks","ghost",()=>{ S.ccNo=S.debtDue; }]]); }
+const unlocked=d=>!d.gone&&(S.bestNW>=d.need||!!(S.unl&&S.unl[d.s]));
 const prof=()=>S.prof?PB[S.prof]:null;
 function pst(id){ id=id||S.prof; return S.profs[id]||(S.profs[id]={own:0,br:{},fuel:0,momFix:0,rep:0,up:{},ul:{},ulMig:1}); }
 function tier(id){ const s=pst(id); for(let t=s.own;t>=0;t--) if(!s.br[t]) return t; return -1; }
@@ -1168,10 +1174,10 @@ function trade(act,q){
   if((act==="buy"||act==="short")&&(p.l||p.s)) return toast("You already have a trade open in "+sym+". Close it first.");
   if((act==="buy"||act==="short")&&overCap(sym,q)) return toast(`${BYSYM[sym].n} is too small for that much money: ${money0(stCap(sym))} max per trade (${capQ(sym)} shares right now). Bigger companies take bigger bets.`);
   if(act==="buy"||act==="short") p.bot=null;
-  if(act==="buy"){ const a=fillBuy(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*a*(1+STX())>S.cash+1e-9) return toast("Not enough cash for "+q+" share"+(q>1?"s":"")+" plus sales tax");
+  if(act==="buy"){ const a=fillBuy(sym,q); if(inDebt()&&!ccOn()) return ccOffer(); if(q<1||q*a*(1+STX())>buyPow()+1e-9) return toast((ccOn()?"Not enough credit for ":"Not enough cash for ")+q+" share"+(q>1?"s":"")+" plus sales tax");
     p.lc=(p.lc*p.l+q*a)/(p.l+q); p.l+=q; S.cash-=q*a; const tx=salesTax(q*a); flowPush(sym,1,q*a); autoStops(sym); mark(sym,"B",sp(sym)); toast(`Bought ${q} ${sym} at ${px(a)} (${money(q*a)} + ${money(tx)} sales tax)`); }
   if(act==="sell") sellLong(sym,Math.min(q,p.l));
-  if(act==="short"){ const b=fillSell(sym,q); if(inDebt()) return toast("Pay off your debt first"); if(q<1||q*b*(1+STX())>S.cash+1e-9) return toast("Not enough cash to back "+q+" share"+(q>1?"s":"")+" plus sales tax");
+  if(act==="short"){ const b=fillSell(sym,q); if(inDebt()&&!ccOn()) return ccOffer(); if(q<1||q*b*(1+STX())>buyPow()+1e-9) return toast((ccOn()?"Not enough credit to back ":"Not enough cash to back ")+q+" share"+(q>1?"s":"")+" plus sales tax");
     p.se=(p.se*p.s+q*b)/(p.s+q); p.s+=q; S.cash-=q*b; const tx=salesTax(q*b); flowPush(sym,-1,q*b); autoStops(sym); mark(sym,"X",sp(sym)); toast(`Shorted ${q} ${sym} at ${px(b)} (${money(q*b)} held as collateral, ${money(tx)} sales tax)`); }
   if(act==="cover"){ cover(sym,Math.min(q,p.s)); }
   if((act==="buy"||act==="short")&&(p.l||p.s)){ preStops(sym); sfx(act==="short"?'short':'open'); tipTag(sym,act==="buy"?1:-1); }
@@ -1502,6 +1508,7 @@ function solvency(){
   if(inDebt()&&S.debtDue&&NOW>=S.debtDue){ for(const k in S.pos){ const p=S.pos[k]; if(p.l){ S.cash+=p.l*bid(k); p.l=0; p.lc=0; } if(p.s) cover(k,p.s,"Forced cover:"); }
     if(inDebt()) return broke(`You couldn't pay off ${money(-S.cash)} of debt in time`); }
   if(!SIM&&inDebt()&&S.debtDue&&S.dmt!==S.debtDue){ S.dmt=S.debtDue; const t=pick(["Saw the letter come in. You're not going broke, are you? I know you'll figure it out.","Honey, are you in debt?? I can't bail you out this time. You've got this.","The bank called the house. Pay that off before tomorrow, okay? I believe in you."]); toast("📱 Mom: "+t); sfx('text'); life("📱 Mom: "+t); }
+  if(!SIM&&inDebt()&&S.debtDue&&!ccOn()&&S.ccNo!==S.debtDue&&S.ccA!==S.debtDue&&$("modal").classList.contains("hide")){ S.ccA=S.debtDue; ccOffer(); }
   if(!inDebt()) S.debtDue=0;
   if(liq>S.liqPeak) S.liqPeak=liq;
   if(!inDebt()&&S.liqPeak>=25&&liq<Math.max(1,S.liqPeak*.02)) broke(`Your investments got wiped out (${money(S.liqPeak)} → ${money(liq)})`); }
@@ -1568,7 +1575,7 @@ function upd(){
   $("pos").innerHTML=h||(PHONE()?"":`<div class="t">No position in ${sym}. Small orders fill at the chart price; big ones move it a little.</div>`); $("pos").style.display=h||!PHONE()?"":"none";
   const a=ask(sym); S.qty=Math.max(1,S.qty); $("qv").textContent=S.qty+" share"+(S.qty>1?"s":""); { const sl=slip(sym,S.qty*a); $("qcst").textContent=money(S.qty*a)+" + "+money(S.qty*a*STX())+" tax"+(overCap(sym,S.qty)?` · ${sym} max is ${money0(stCap(sym))} (${capQ(sym)} sh)`:sl>.001?` · big order: fills ~${(sl*100).toFixed(1)}% worse`:""); }
   const q=s=>main.querySelector(s);
-  const open=p.l>0||p.s>0; { const qr=q(".qty"); if(qr) qr.style.display=PHONE()&&open?"none":""; } q("[data-a=buy]").disabled=open||inDebt()||overCap(sym,S.qty)||S.qty*fillBuy(sym,S.qty)*(1+STX())>S.cash+1e-9; q("[data-a=short]").disabled=open||inDebt()||overCap(sym,S.qty)||S.qty*fillSell(sym,S.qty)*(1+STX())>S.cash+1e-9;
+  const open=p.l>0||p.s>0; { const qr=q(".qty"); if(qr) qr.style.display=PHONE()&&open?"none":""; } const ccw=inDebt()&&!ccOn(); /* in debt without the card: buttons stay tappable and open the offer */ q("[data-a=buy]").disabled=open||overCap(sym,S.qty)||(!ccw&&S.qty*fillBuy(sym,S.qty)*(1+STX())>buyPow()+1e-9); q("[data-a=short]").disabled=open||overCap(sym,S.qty)||(!ccw&&S.qty*fillSell(sym,S.qty)*(1+STX())>buyPow()+1e-9);
   const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; const cn=open?netPL(sym):0, ctr=taxTrap(cpl,cn); cb.className="btn "+(open?(ctr?"taxw":cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?(ctr?`CLOSE<small>after tax ${sg(cn)}</small>`:`CLOSE<small>${sg(cpl)}</small>`):"CLOSE";
   preCard(open); jobCard(); momCard(); tipCard(); compCard(); draw();
   if(NOW%5===0){ fundCard(); taxCard(); } }
@@ -2012,7 +2019,7 @@ addEventListener("resize",()=>{ try{fitHdr();}catch(e){} });
 function hdr(){ applyCos(); const c=$("cash"); c.textContent=money(S.cash); c.className="m hv"+(inDebt()?" neg":""); $("fund").textContent=money(fundVal()); $("nw").textContent=money(netWorth()); fitHdr();
   const home=S.ms.house?"🏡 Dream house":S.ms.condo?"🏙 Your condo":S.ms.apt?"🏢 Your apartment":"🏠 Mom's basement", p=prof();
   $("home").textContent=home+(p?" · "+p.i+" "+p.n:"")+(S.st.broke?" · broke "+S.st.broke+"×":"");
-  const db=$("debt"); db.style.display=inDebt()?"block":"none"; if(inDebt()) db.innerHTML=`⚠️ You owe <b>${money(-S.cash)}</b>. Pay it within <b>${dur(S.debtDue-NOW)}</b> or you go broke. Your stocks get sold first.`;
+  const db=$("debt"); db.style.display=inDebt()?"block":"none"; if(inDebt()){ const pv=posVal(); db.innerHTML=`⚠️ You owe <b>${money(-S.cash)}</b>${pv>=.01?` (your stocks are worth ${money(pv)})`:""}. Pay it within <b>${dur(S.debtDue-NOW)}</b> or you go broke. Your stocks get sold first.`+(ccOn()?` 💳 Credit left: <b>${money(ccLeft())}</b>`:` <u data-cc style="cursor:pointer">💳 Credit card</u>`); db.onclick=e=>{ if(e.target.closest("[data-cc]")) ccOffer(); }; }
   main.querySelectorAll("[data-cost]").forEach(x=>x.disabled=S.cash<+x.dataset.cost); }
 
 // ---------- modals ----------
@@ -3219,7 +3226,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="130";
+const APPV="131";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

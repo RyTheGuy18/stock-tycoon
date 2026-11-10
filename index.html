@@ -843,7 +843,7 @@ function volAt(i,t){ const h=Math.floor(t/HN); return chunk(i,h).V[t-h*HN]*evVol
 // Chart timeframes: [candle seconds, label]
 const TFS=[[10,"10s"],[60,"1m"],[300,"5m"],[600,"10m"]];
 // v8.14: line views are time ranges, like Robinhood: [label, range seconds, seconds per point]
-const CRNG=[["1D",86400,600],["1W",604800,3600],["1M",2592000,14400]], rngOf=l=>CRNG.find(r=>r[0]===l);
+const CRNG=[["1h",3600,30],["1D",86400,600],["1W",604800,3600],["1M",2592000,14400]], rngOf=l=>CRNG.find(r=>r[0]===l);
 function tfFix(){ if(S.rng&&!rngOf(S.rng)) S.rng=null; if(!S.rng&&S.tf>=3600){ S.rng=S.tf>=86400?"1M":"1W"; } if(S.rng) S.tf=rngOf(S.rng)[2]; else if(!TFS.some(t=>t[0]===S.tf)) S.tf=S.tf===1800?600:10; } /* 30m was removed in v137: it opens on 10m */
 // Finished candles never change, so they're cached. Hour summaries feed the 1h and 1D charts.
 const CC=new Map(), HSUM=new Map(); let BUDGET=Infinity;
@@ -1765,7 +1765,7 @@ function draw(){
     for(const x of fl){ const i=Math.floor((x.at-first)/tf); if(i<0||i>=data.length) continue; const xx=X(i), col=x.lv==="mkt"?"#ea3943":x.lv==="ind"?"#f5b301":x.lv==="big"?"#a855f7":"#4aa3ff";
       c.beginPath(); c.moveTo(xx,bot-18); c.lineTo(xx,bot-4); c.lineWidth=1.5; c.strokeStyle=col; c.stroke(); c.fillStyle=col; c.fillRect(xx,bot-18,8,6); } }
   if(loading){ c.fillStyle=TH().lab; c.font="11px JetBrains Mono"; c.fillText("Loading older candles…",6,top+6); if(!DRAW_T) DRAW_T=setTimeout(()=>{ DRAW_T=0; if(tab==="trade") draw(); },60); }
-  c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; c.fillText(RG?({"1D":"Last 24 hours","1W":"Last 7 days","1M":"Last 30 days"})[RG[0]]+(ZOFF?" (scrolled back)":""):spanLbl(tf,data.length),6,bot+4);
+  c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; c.fillText(RG?({"1h":"Last hour","1D":"Last 24 hours","1W":"Last 7 days","1M":"Last 30 days"})[RG[0]]+(ZOFF?" (scrolled back)":""):spanLbl(tf,data.length),6,bot+4);
   { const zl=$("zlive"); if(zl) zl.style.display=(ZOFF||Math.abs(ZC-7)>.01||YZ!==1)?"":"none"; const lc=$("lclear"); if(lc) lc.style.display=myLines(sym).length?"":"none"; }
   if(ZOFF){ c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; return; }
   const y=Y(now), lk=data[data.length-1], col=lk[3]>=lk[0]?CPAL().up:CPAL().dn; c.fillStyle=col; c.fillRect(0,y,pw,1); c.fillRect(pw+1,y-9,aw-2,18);
@@ -3256,7 +3256,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="137";
+const APPV="138";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

@@ -53,3 +53,8 @@ net worth after time away. Upgrade prices (`PUPC`) = about 24 h of the extra $/d
   `makeEp0`), `sched` ee and `mu`. Prices before H10 checked byte-identical. Test with `H10*3600` in the harness T0 lines.
 - v128: `CAPS` = max $ per trade for every stock (PNNY $500 ... AIQ $2M, CHIP none), for you and every bot (`stCap`, `capQ`,
   `overCap`). Penny Scalper Lv 3-5 fades fake breakouts on 2 / 4 / all other stocks. `PUPC` re-priced from `BOTLV(3)` with H10.
+
+## Smoke test (run before every release)
+`node tools/smoke-test.js` loads the game offline in headless Chrome and checks: buy/sell, jobs, bots overnight (earn, but $5 stays
+under $100 over 12 h), war-year income tax ≤ 50% of earnings, debt (24 h timer, credit card, payoff not taxed, broke after 24 h) and
+save serialization. It exits 1 if anything fails.

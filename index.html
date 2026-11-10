@@ -1264,8 +1264,8 @@ function pennyBots(){ if(!S.auto) return; S.vb=S.vb||{}; if(!S.botV2){ S.botV2=1
   // key = one trade slot (a bot can hold one trade per play); id = the bot; i = the stock; mx = longest it may stay open
   const open=(key,id,dir,i,mx)=>{ i=i||0; if(!SIM||!aOn(id)||S.vb[key]) return; if(myOpen()){ BOTSKIP++; return; }
     /* v8.7: in debt the bots keep working to pay it off. They bet as if you had cash equal to what you owe (at least $5); the bet isn't taken from cash, and a losing trade costs $0, so they can only shrink the debt */
-    const dbt=inDebt(), low=!dbt&&S.cash<5, base=dbt?Math.max(5,-S.cash):low?5:S.cash; /* v8.8: under $5 cash the bots bet as if you had $5 (same free bet as in debt), so they can't stall at $0 */
-    const pr=price(i,NOW), amt=Math.min(base*Math.min(aV(id),pMx(id))/100,pCap(id),stCap(STOCKS[i].s)), q=amt/pr; if(amt<.05) return; /* bot bets are virtual, so fractional shares are fine (a $5 player can still bet 10%) */
+    const dbt=inDebt(), low=!dbt&&S.cash<5, base=dbt?Math.max(5,-S.cash):low?5:Math.min(S.cash,Math.max(5,OFFB)); /* v8.8: under $5 cash the bots bet as if you had $5 (same free bet as in debt), so they can't stall at $0 */
+    const aw=NOW-OFFT, fade=aw<4*3600?1:aw<8*3600?.5:.25; /* full bets the first 4 h away, half until 8 h, a quarter after */ const pr=price(i,NOW), amt=Math.min(base*Math.min(aV(id),pMx(id))/100,pCap(id),stCap(STOCKS[i].s))*fade, q=amt/pr; if(amt<.05) return; /* bot bets are virtual, so fractional shares are fine (a $5 player can still bet 10%) */
     if(dbt||low) return S.vb[key]={dir,q,en:pr,id,i,at:NOW,mx,d:1};
     S.cash-=q*pr; resetPeak(); return S.vb[key]={dir,q,en:pr,id,i,at:NOW,mx}; };
   const close=key=>{ const v=S.vb[key]; if(!v) return; delete S.vb[key]; const back=vbVal(v); let pl=back-v.q*v.en; if(v.d){ pl=Math.max(0,pl); S.cash+=pl; } else S.cash+=back; txGain(pl); S.st.botPay=(S.st.botPay||0)+pl; botLog(v.id||key,pl); resetPeak(); };
@@ -1431,9 +1431,9 @@ function bills(){ const e=earned();
 // ---------- taxes ----------
 // In this game a "year" is one real week. Tax day is every Monday at midnight (your time).
 // Sales tax: a small cut on every stock you buy or sell. Tax day bills: income tax (real US brackets on
-// this week's job pay + trading profits) and property tax on homes you own; in war years both are ×3.
-const SALES_BASE=.005, WAR_X=3;
-// a war year (about 1 week in 6) triples income tax and property tax on tax day; sales tax is never affected
+// this week's job pay + trading profits) and property tax on homes you own; in war years both are ×1.5.
+const SALES_BASE=.005, WAR_X=1.5, IT_MAX=.5;
+// a war year (about 1 week in 6) raises income tax and property tax by half on tax day (v8.11, was ×3); income tax is never more than half of what you earned; sales tax is never affected
 const STX=()=>SALES_BASE;
 const BRACKETS=[[11925,.10],[48475,.12],[103350,.22],[197300,.24],[250525,.32],[626350,.35],[Infinity,.37]]; // 2025 single filer
 const HOMES=[["apt",4000,"Apartment"],["condo",100000,"Condo"],["cabin",1.2e6,"Lake cabin"],["house",3e6,"Dream house"],["island",1e8,"Private island"]];
@@ -1451,19 +1451,19 @@ function netPL(sym){ const p=P(sym); if(p.l){ const b=bid(sym); return p.l*(b-p.
 const taxTrap=(g,n)=>g>0&&n<0; // "profit" that is really a loss once taxes are paid
 function salesTax(amt){ const t=Math.round(amt*STX()*100)/100; if(t<=0) return 0; S.cash-=t; TX().sales+=t; S.st.taxes=(S.st.taxes||0)+t; return t; }
 function incomeTax(x){ let t=0, lo=0; for(const [hi,r] of BRACKETS){ if(x<=lo) break; t+=(Math.min(x,hi)-lo)*r; lo=hi; } return t; }
-function taxBill(tx,war){ const base=Math.max(0,tx.inc+Math.max(0,tx.gain)), acct=S.ms.acct?.85:1, wx=war?WAR_X:1, it=incomeTax(base)*acct*wx;
+function taxBill(tx,war){ const base=Math.max(0,tx.inc+Math.max(0,tx.gain)), acct=S.ms.acct?.85:1, wx=war?WAR_X:1, it=Math.min(incomeTax(base)*acct*wx,base*IT_MAX);
   const homes=HOMES.filter(h=>S.ms[h[0]]), pt=homes.reduce((a,h)=>a+h[1]*.01,0)*acct*wx, wt=0;
   return {base,it,pt,wt,homes,war,acct:acct<1,total:Math.round((it+pt+wt)*100)/100}; }
 function taxDay(){ const tx=TX(), w=taxWk(NOW); if(w===tx.w) return;
   const b=taxBill(tx,warYear(tx.w)); S.tx={w,inc:0,gain:0,sales:0};
-  if(warYear(w)&&!SIM){ toast("⚔️ War year! Income and property taxes are ×3 on this tax day","bad"); }
+  if(warYear(w)&&!SIM){ toast("⚔️ War year! Income and property taxes are ×1.5 on this tax day","bad"); }
   if(b.total<=0) return;
   const before=S.cash; bill("🧾 Taxes",b.total); S.st.taxes=(S.st.taxes||0)+b.total; S.taxShow={b:Math.round(before*100)/100,a:Math.round(S.cash*100)/100,tot:b.total};
   const row=(l,v)=>`<div class="li"><span>${l}</span><b class="m dn">-${money(v)}</b></div>`;
   S.taxPend=`<p>It's tax day. Here's the bill for the week ("year") that just ended.</p>`+
     (b.it>0?row(`Income tax on ${money(b.base)} earned`,b.it):"")+
     (b.pt>0?row(`Property tax: ${b.homes.map(h=>h[2]).join(", ")}`,b.pt):"")+
-    (b.war?`<p class="t" style="margin:6px 0">⚔️ It was a war year, so income and property tax were ×3.</p>`:"")+
+    (b.war?`<p class="t" style="margin:6px 0">⚔️ It was a war year, so income and property tax were ×1.5.</p>`:"")+
     `<div class="li"><b>Total</b><b class="m dn">-${money(b.total)}</b></div>`+
     (b.acct?`<p class="t">Your accountant saved you 15%.</p>`:"")+(inDebt()?`<p class="dn">You can't cover it all. Pay off the debt within 24 hours or you go broke.</p>`:""); }
 // ---------- TAXES DUE: the first time you open the app after tax day ----------
@@ -1495,7 +1495,7 @@ function taxCard(){ const el=$("taxc"); if(!el) return; const tx=TX(), w=tx.w, b
   { const fs=$("fs-tax"); if(fs) fs.innerHTML=`in ${dur(left)} · <b class="dn">≈ -${money(b.total)}</b>`; }
   el.innerHTML=`<div class="row"><div class="g"><div class="b">🧾 Tax day in ${dur(left)}${warYear(w)?' <span class="pill bad">⚔️ War year</span>':''}</div>
    <div class="t">Earned this year: ${money(b.base)} · sales tax paid: ${money(tx.sales)}${tx.free>=.01?` · debt paid off tax-free: ${money(tx.free)}`:""}</div></div><b class="m dn">≈ -${money(b.total)}</b></div>
-   <div class="t" style="margin-top:4px">Income tax ${money(b.it)}${b.pt?` · property ${money(b.pt)}`:""}${b.war?` · <b class="dn">⚔️ war year: income & property tax ×3</b>`:""} · ${(STX()*100).toFixed(1)}% sales tax on every stock buy and sell</div>`; }
+   <div class="t" style="margin-top:4px">Income tax ${money(b.it)}${b.pt?` · property ${money(b.pt)}`:""}${b.war?` · <b class="dn">⚔️ war year: income & property tax ×1.5</b>`:""} · ${(STX()*100).toFixed(1)}% sales tax on every stock buy and sell</div>`; }
 function broke(why){
   for(const k in S.pos) S.pos[k]={l:0,lc:0,s:0,se:0};
   S.cash=0; S.job=null; S.debtDue=0; S.liqPeak=0; S.st.broke++; AF().bk=1;
@@ -1516,7 +1516,7 @@ function solvency(){
   if(!inDebt()&&S.liqPeak>=25&&liq<Math.max(1,S.liqPeak*.02)) broke(`Your investments got wiped out (${money(S.liqPeak)} → ${money(liq)})`); }
 
 // ---------- one second ----------
-let SIM=false, AWAY=[], AWAY_BROKE=null;
+let SIM=false, AWAY=[], AWAY_BROKE=null, OFFB=0, OFFT=0;
 function tick(){
   S.st.played++;
   if(S.job&&NOW>=S.job.end) finishJob();
@@ -1528,6 +1528,7 @@ function tick(){
   if(S.fu>0&&(!S.fh.length||NOW-S.fh[S.fh.length-1][0]>=600)){ S.fh.push([NOW,fundVal()]); if(S.fh.length>300) S.fh.shift(); }
 }
 function advance(to){ // process every second from lastT+1 to `to`
+  if(SIM){ OFFB=Math.max(0,S.cash); OFFT=S.lastT; } /* v8.11: bots size their bets from the cash you had when you left, so they don't compound all night */
   const from=S.lastT; if(to<=from) return 0; const start=Math.max(from+1,to-offCap()+1);
   for(let t=start;t<=to;t++){ NOW=t; tick(); } S.lastT=to; NOW=to; return to-from; }
 
@@ -2550,12 +2551,14 @@ const compCur=()=>{ const c=S.comp; return c&&c.w===wkIdx(NOW)?c:null; };
 function compVal(c){ let v=c.cash; for(const k in c.pos){ const p=c.pos[k]; if(!BYSYM[k]) continue; const pr=sp(k); if(p.l) v+=p.l*pr; if(p.s) v+=Math.max(0,p.s*p.se+p.s*(p.se-pr)); } return v; }
 function compJoin(){ if(!DB) return toast('Sign in to join'); if(compCur()) return; if(!isReg(wkIdx(NOW))) return toast("You didn't register for this week. Register for next week in Friends → Compete"); if(S.comp&&!S.comp.done&&S.comp.w<wkIdx(NOW)) compSettle();
   S.comp={w:wkIdx(NOW),cash:COMP_START,pos:{},tr:0,joined:NOW}; save(); compPub(true); sfx('unlock'); toast("🏆 Your competition has started! Pick a stock and trade your $1,000",'good'); CB.list=null; build(); }
+// v8.11: competition trades are capped too: the stock's normal max per trade, and never more than $10,000 (10× the starting $1,000)
+const COMP_MAX=10000, compCap=sym=>Math.min(stCap(sym),COMP_MAX);
 function compTrade(act){ const c=compCur(); if(!c) return; const sym=compSym(), pr=sp(sym), p=c.pos[sym]||(c.pos[sym]={l:0,lc:0,s:0,se:0});
   if(act==='close'){ let pl;
     if(p.l){ pl=p.l*(pr-p.lc); c.cash+=p.l*pr; toast(`🏆 Sold ${p.l} ${sym}: ${sg(pl)}`,pl>=0?'good':'bad'); p.l=0; p.lc=0; }
     else if(p.s){ pl=Math.max(p.s*(p.se-pr),-p.s*p.se); c.cash+=p.s*p.se+pl; toast(`🏆 Covered ${p.s} ${sym}: ${sg(pl)}`,pl>=0?'good':'bad'); p.s=0; p.se=0; }
     else return; winFx(pl); }
-  else { if(p.l||p.s) return toast('Close your competition trade first'); const q=Math.max(1,S.cq||1); if(q*pr>c.cash+1e-9) return toast('Not enough competition cash');
+  else { if(p.l||p.s) return toast('Close your competition trade first'); const q=Math.max(1,S.cq||1); if(q*pr>c.cash+1e-9) return toast('Not enough competition cash'); if(q>1&&q*pr>compCap(sym)+1e-9) return toast(`Max ${money(compCap(sym))} per competition trade in ${sym}`);
     c.cash-=q*pr; if(act==='buy'){ p.l=q; p.lc=pr; } else { p.s=q; p.se=pr; } c.tr++; sfx(act==='buy'?'open':'short'); toast(`🏆 ${act==='buy'?'Bought':'Shorted'} ${q} ${sym} at ${px(pr)} (competition)`); }
   save(); compPub(true); compCard(true); }
 function compTick(){ if(!$('compw')) return; compCard(); STOCKS.forEach(d=>{ const e=$('cc-'+d.s); if(e) e.textContent=px(sp(d.s)); }); }
@@ -2567,7 +2570,7 @@ function compCard(force){ const el=$('compw'); if(!el) return; if(!DB){ el.inner
   const v=compVal(c), r=(v/COMP_START-1)*100, pr=sp(sym);
   $('cpv').innerHTML=`${money(v)} <span class='${r>=0?'up':'dn'}' style='font-size:12px'>${r>=0?'+':''}${r.toFixed(1)}%</span>`; $('cpt').textContent=`Cash ${money(c.cash)} · ends in ${dur(wkStart(c.w+1)-NOW)}`;
   if(open){ const pl=p.l?p.l*(pr-p.lc):Math.max(p.s*(p.se-pr),-p.s*p.se); $('cpp').innerHTML=`${p.l?'<i class="cdot" style="background:var(--up)"></i>'+p.l+' sh bought at '+px(p.lc):'<i class="cdot" style="background:var(--pur)"></i>'+p.s+' sh shorted at '+px(p.se)} · <b class='${pl>=0?'up':'dn'}'>${sg(pl)}</b>`; }
-  else { S.cq=Math.max(1,S.cq||1); $('cpp').textContent=`No competition trade in ${sym}.`; $('cpq').textContent=S.cq+' share'+(S.cq>1?'s':''); $('cpqc').textContent=money(S.cq*pr); } }
+  else { S.cq=Math.max(1,S.cq||1); $('cpp').textContent=`No competition trade in ${sym}.`; $('cpq').textContent=S.cq+' share'+(S.cq>1?'s':''); $('cpqc').textContent=money(S.cq*pr)+' · max '+money(compCap(sym))+' a trade'; } }
 async function compPub(force){ const c=compCur(); if(!DB||!UID||!c) return; if(!force&&NOW-CPL<60) return; CPL=NOW; const m=myCard(), v=Math.round(compVal(c)*100)/100;
   try{ await DB.doc('comps/'+c.w+'/entries/'+UID).set({name:m.name.slice(0,20),uname:UNAME,av:m.av,value:v,tr:c.tr,at:Date.now()});
     if(CB.w===c.w&&CB.list){ const me=CB.list.find(x=>x.id===UID); if(me) me.value=v; else CB.list=null; } }catch(_){} }
@@ -2609,7 +2612,7 @@ main.addEventListener('click',e=>{ const t=e.target;
   if(t.closest('[data-cj]')) return compJoin();
   const rg=t.closest('[data-creg]'); if(rg) return compReg(rg.dataset.creg==='1');
   const ct=t.closest('[data-ct]'); if(ct) return compTrade(ct.dataset.ct);
-  const cq=t.closest('[data-cq]'); if(cq){ const c=compCur(); if(!c) return; const pr=sp(compSym()), v=cq.dataset.cq; S.cq=v==='max'?Math.max(1,Math.floor(c.cash/pr)):Math.max(1,(S.cq||1)+(+v)); return compCard(); }
+  const cq=t.closest('[data-cq]'); if(cq){ const c=compCur(); if(!c) return; const pr=sp(compSym()), v=cq.dataset.cq; S.cq=v==='max'?Math.max(1,Math.floor(Math.min(c.cash,compCap(compSym()))/pr)):Math.max(1,(S.cq||1)+(+v)); return compCard(); }
   const cs=t.closest('[data-csym]'); if(cs){ S.csel=cs.dataset.csym; S.cq=1; return buildFriends(); }
   const cv=t.closest('[data-cv]'); if(cv){ CB.view=cv.dataset.cv; buildFriends(); } });
 
@@ -2634,7 +2637,7 @@ const TUT=[
  ["#chart","Stop loss and take profit","Once you're in a trade, tap <b>Stop loss</b> or <b>Take profit</b> on your position card, then <b>tap the chart</b> where you want it. Drag the handle on the right edge to move it. When the price gets there, your trade closes by itself, even while you're away.","trade"],
  ["#job","Your hustle","Jobs pay the bills while you learn the market. Pick one, and it keeps running even when the app is closed. Learn better jobs in the job list as you build reputation.","trade"],
  ["#momw","Practice with Mom","No money yet? Practice on Mom's dime. Close a practice trade in profit and she pays you for it, until you've got $15.","trade"],
- ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which triples your income tax and property tax that week. Can't pay? It turns into debt, and you have 24 hours.","trade"],
+ ["#taxc","Taxes","Here, one week is one year. <b>Every Monday at midnight is tax day</b>: income tax on what you earned, plus property tax once you own a home. Every stock buy and sell also pays a <b>0.5% sales tax</b>. About 1 week in 6 is a <b>war year</b>, which raises your income tax and property tax by half that week. Can't pay? It turns into debt, and you have 24 hours.","trade"],
  ["#newsb","News","The newspaper button gets a red dot when there's news: market-wide stories, industry news and news about your stocks. Many big moves have a warning headline first, so check it often. The bell next to it is for friend requests and messages.","trade"],
  ['[data-tab="store"]',"The Store","Better gear for your job, and lessons that teach you the patterns the market repeats. That's where the real money is.","trade"],
  ['[data-tab="auto"]',"Automations","Later on, you can buy bots that trade for you while the app is closed (as long as you don't have a trade of your own open), and tools that keep your jobs running.","trade"],
@@ -3228,7 +3231,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="132";
+const APPV="133";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

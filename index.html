@@ -1689,7 +1689,10 @@ function draw(){
   const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,HF);
   const sym=S.sel, d=BYSYM[sym], p=P(sym), tf=S.tf, aw=56, pw=W-aw, vh=H*.15, top=12, bot=H-vh-12, cw=ZC, n=Math.max(5,Math.floor(pw/cw)), endT=ZOFF?NOW-ZOFF*tf:NOW;
   BUDGET=performance.now()+35; const data=candles(d.i,tf,n,endT), first=data[0][5], loading=data.some(k=>k[0]===null); BUDGET=Infinity;
-  let lo=Infinity,hi=-Infinity,vm=0; data.forEach(k=>{ if(k[0]===null) return; lo=Math.min(lo,k[2]);hi=Math.max(hi,k[1]);vm=Math.max(vm,k[4]);});
+  let lo=Infinity,hi=-Infinity,vm=0; // v8.13: 1h and 1D are a plain line (the big picture); 10m and 30m scale to the candle bodies and fade the wicks, so PNNY's spikes don't squash the chart
+  const LMODE=tf>=3600, BMODE=tf>=600&&tf<3600; WFADE=BMODE;
+  data.forEach(k=>{ if(k[0]===null) return; if(LMODE){ lo=Math.min(lo,k[3]); hi=Math.max(hi,k[3]); } else if(BMODE){ lo=Math.min(lo,k[0],k[3]); hi=Math.max(hi,k[0],k[3]); } else { lo=Math.min(lo,k[2]);hi=Math.max(hi,k[1]); } vm=Math.max(vm,k[4]);});
+  if(BMODE&&hi>lo){ const pb=(hi-lo)*.15; lo-=pb; hi+=pb; }
   // lines sit at the chart price where you break even (fill price adjusted for the spread),
   // so "live price above the green line" = profit, exactly matching the P/L tag
   const hs=d.spr*sprMult()/2, beL=p.l?p.lc/(1-hs):0, beS=p.s?p.se/(1+hs):0, ln=[];
@@ -1707,7 +1710,7 @@ function draw(){
   const cl=y=>Math.max(0,Math.min(H-vh-4,y));
   if(p.l){ const y1=cl(Y(beL)),y2=cl(Y(now)); c.fillStyle=now>=beL?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
   if(p.s){ const y1=cl(Y(beS)),y2=cl(Y(now)); c.fillStyle=now<=beS?"rgba(22,199,132,.13)":"rgba(234,57,67,.15)"; c.fillRect(0,Math.min(y1,y2),pw,Math.abs(y2-y1)); }
-  ZCW=cw; drawCandles(c,data,X,Y,H,vh,vm);
+  ZCW=cw; drawCandles(c,data,X,Y,H,vh,vm,LMODE?'area':null);
   // time along the bottom: a few evenly spaced labels on round local times, no grid lines
   { const span=tf*data.length, want=Math.max(3,Math.floor(pw/68)), tz=-new Date().getTimezoneOffset()*60;
     const STEPS=[10,30,60,120,300,600,900,1800,3600,7200,10800,21600,43200,86400,172800,604800,1209600,2592000];
@@ -1729,7 +1732,10 @@ function draw(){
   if(LINE&&LINE.a){ const x=tX(LINE.a[0]), y=Y(LINE.a[1]); c.fillStyle="#f5b301"; c.beginPath(); c.arc(x,y,4.5,0,7); c.fill(); }
   // hover / tap readout: the top half of a candle shows its high, the bottom half its low
   if(HOV&&(HOV.until==null||Date.now()<HOV.until)){ const j=Math.floor(HOV.x/cw), k=data[j];
-    const hw=Math.max(2,ZCW*.36)+.5; if(k&&k[0]!==null&&HOV.x<pw&&Math.abs(HOV.x-X(j))<=hw&&HOV.y>=Y(k[1])-3&&HOV.y<=Y(k[2])+3){ const x=X(j), yh=Y(k[1]), yl=Y(k[2]), top=HOV.y<(yh+yl)/2, v=top?k[1]:k[2], y=top?yh:yl;
+    if(LMODE&&k&&k[0]!==null&&HOV.x<pw){ const x=X(j), y=Y(k[3]); c.strokeStyle="rgba(255,255,255,.35)"; c.beginPath(); c.moveTo(x,top); c.lineTo(x,bot); c.stroke(); c.fillStyle="#fff"; c.beginPath(); c.arc(x,y,3.5,0,7); c.fill();
+      const dt=new Date(k[5]*1000), tx=px(k[3])+" · "+(tf>=86400?dt.toLocaleDateString([],{month:"short",day:"numeric"}):dt.toLocaleString([],{month:"short",day:"numeric",hour:"numeric"})); c.font="bold 11px JetBrains Mono"; const w=c.measureText(tx).width+10, bx=Math.min(Math.max(2,x-w/2),pw-w-2), by=Math.max(2,y-26);
+      c.fillStyle="rgba(5,8,11,.92)"; c.fillRect(bx,by,w,18); c.strokeStyle="rgba(255,255,255,.5)"; c.strokeRect(bx,by,w,18); c.fillStyle="#fff"; c.fillText(tx,bx+5,by+9); }
+    const hw=Math.max(2,ZCW*.36)+.5; if(!LMODE&&k&&k[0]!==null&&HOV.x<pw&&Math.abs(HOV.x-X(j))<=hw&&HOV.y>=Y(k[1])-3&&HOV.y<=Y(k[2])+3){ const x=X(j), yh=Y(k[1]), yl=Y(k[2]), top=HOV.y<(yh+yl)/2, v=top?k[1]:k[2], y=top?yh:yl;
       c.strokeStyle="rgba(255,255,255,.6)"; c.strokeRect(x-Math.max(2,cw*.45),yh-2,Math.max(4,cw*.9),yl-yh+4);
       const tx=(top?"High ":"Low ")+px(v); c.font="bold 11px JetBrains Mono"; const w=c.measureText(tx).width+10, bx=Math.min(Math.max(2,x-w/2),pw-w-2), by=top?Math.max(2,y-24):Math.min(H-20,y+6);
       c.fillStyle="rgba(5,8,11,.92)"; c.fillRect(bx,by,w,18); c.strokeStyle=top?"#16c784":"#ea3943"; c.strokeRect(bx,by,w,18); c.fillStyle="#fff"; c.fillText(tx,bx+5,by+9); } }
@@ -3036,16 +3042,22 @@ function lineAlerts(){ const sym=S.sel, ls=myLines(sym); if(!ls.length) return; 
     if(ln.side&&side!==ln.side){ ln.hot=Date.now(); toast(`📏 ${sym} crossed your line at ${px(v)} (${side>0?"up":"down"})`); sfx('alert'); }
     else if(near&&!(ln.tch>NOW-60)){ ln.tch=NOW; ln.hot=Date.now(); toast(`📏 ${sym} is touching your line at ${px(v)}`); }
     ln.side=side; }); }
-function drawCandles(c,data,X,Y,H,vh,vm){ const cp=CPAL(), st=cosGet('candle').id, bg=TH().bg, bw=Math.max(1,ZCW*.72), hb=bw/2;
+let WFADE=false;
+function drawCandles(c,data,X,Y,H,vh,vm,force){ const cp=CPAL(), st=force||cosGet('candle').id, bg=TH().bg, bw=Math.max(1,ZCW*.72), hb=bw/2;
   data.forEach((k,i)=>{ if(k[0]===null) return; const h=vm?k[4]/vm*vh:0; c.fillStyle=(k[3]>=k[0]?cp.up:cp.dn)+'4d'; c.fillRect(X(i)-hb,H-h,bw,h); });
   // candles stay above the volume bars, even when zoomed in tall
   c.save(); c.beginPath(); c.rect(0,0,1e5,H-vh-4); c.clip(); drawBodies(c,data,X,Y,st,cp,bw,hb); c.restore(); }
 function drawBodies(c,data,X,Y,st,cp,bw,hb){ const bg=TH().bg;
+  if(st==='area'){ const pts=[]; data.forEach((k,i)=>{ if(k[0]!==null) pts.push([X(i),Y(k[3]),k[3]]); }); if(pts.length<2) return;
+    const col=pts[pts.length-1][2]>=pts[0][2]?cp.up:cp.dn, yb=1e4; c.beginPath(); pts.forEach(([x,y],j)=>j?c.lineTo(x,y):c.moveTo(x,y));
+    c.save(); c.lineTo(pts[pts.length-1][0],yb); c.lineTo(pts[0][0],yb); c.closePath(); c.globalAlpha=.12; c.fillStyle=col; c.fill(); c.restore();
+    c.beginPath(); pts.forEach(([x,y],j)=>j?c.lineTo(x,y):c.moveTo(x,y)); c.strokeStyle=col; c.lineWidth=2; c.lineJoin='round'; c.stroke(); c.lineWidth=1;
+    const [lx,ly]=pts[pts.length-1]; c.fillStyle=col; c.beginPath(); c.arc(lx,ly,3,0,7); c.fill(); return; }
   if(st==='line'){ let s=false,f=null,l=null; c.beginPath(); data.forEach((k,i)=>{ if(k[0]===null) return; if(f===null) f=k[3]; l=k[3]; const y=Y(k[3]); if(s) c.lineTo(X(i),y); else { c.moveTo(X(i),y); s=true; } });
     c.strokeStyle=l>=f?cp.up:cp.dn; c.lineWidth=1.8; c.stroke(); c.lineWidth=1; return; }
   data.forEach((k,i)=>{ if(k[0]===null) return; const up=k[3]>=k[0], col=up?cp.up:cp.dn, x=X(i); c.fillStyle=col;
     if(st==='ohlc'){ c.fillRect(x-.75,Y(k[1]),1.5,Math.max(1,Y(k[2])-Y(k[1]))); c.fillRect(x-hb,Y(k[0])-.75,hb,1.5); c.fillRect(x,Y(k[3])-.75,hb,1.5); return; }
-    c.fillRect(x-.5,Y(k[1]),1,Math.max(1,Y(k[2])-Y(k[1]))); const y1=Y(Math.max(k[0],k[3])), bh=Math.max(1,Y(Math.min(k[0],k[3]))-y1);
+    if(WFADE) c.globalAlpha=.28; c.fillRect(x-.5,Y(k[1]),1,Math.max(1,Y(k[2])-Y(k[1]))); c.globalAlpha=1; const y1=Y(Math.max(k[0],k[3])), bh=Math.max(1,Y(Math.min(k[0],k[3]))-y1);
     if(st==='hollow'&&up&&bh>2&&bw>2){ c.fillStyle=bg; c.fillRect(x-hb,y1,bw,bh); c.strokeStyle=col; c.lineWidth=1; c.strokeRect(x-hb+.5,y1+.5,bw-1,bh-1); } else c.fillRect(x-hb,y1,bw,bh); }); }
 function svgC(st,u,d){ if(st==='line') return `<svg viewBox='0 0 40 28' width='40' height='28'><polyline points='2,20 10,14 17,18 25,8 32,12 38,5' fill='none' stroke='${u}' stroke-width='2'/></svg>`;
   const cs=[[8,u,6,22,10,17],[20,d,4,25,9,20],[32,u,3,18,6,14]];
@@ -3241,7 +3253,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="134";
+const APPV="135";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

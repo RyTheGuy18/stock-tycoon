@@ -2291,10 +2291,20 @@ function doingNow(){ if(compCur()) return "In the weekly comp"; const o=STOCKS.f
 const ONLINE=180000; // seen in the last 3 minutes = online
 async function pubProfile(){ if(!DB||!UID) return; const m=myCard();
   const doc={name:m.name.slice(0,20),av:m.av,img:okImg(m.img)?m.img:"",tag:(m.tag||"").slice(0,40),col:m.col||0,code:myCode(),nw:Math.round(netWorth()*100)/100,best:Math.round(S.bestNW),pl:Math.round(S.st.realized*100)/100,home:homeName(),
-    stories:MS.filter(x=>S.ms[x.id]).length,lessons:Object.keys(S.know||{}).length,broke:S.st.broke,prof:S.prof?PB[S.prof].n:"",title:cosGet("title").id,bd:cosGet("border").id,uname:UNAME,tro:S.st.tro||null,ach:Object.keys(S.ach||{}).length,ab:achTop(),doing:doingNow(),at:Date.now()};
+    stories:MS.filter(x=>S.ms[x.id]).length,lessons:Object.keys(S.know||{}).length,broke:S.st.broke,prof:S.prof?PB[S.prof].n:"",title:cosGet("title").id,bd:cosGet("border").id,uname:UNAME,tro:S.st.tro||null,ach:Object.keys(S.ach||{}).length,ab:achTop(),doing:doingNow(),appv:String(Math.max(+APPV,+CAV||0)),at:Date.now()};
   const j=JSON.stringify(Object.assign({},doc,{at:0})); if(j===FR.last&&Date.now()-(FR.pubAt||0)<120000) return;
   try{ await DB.doc("profiles/"+UID).set(doc); FR.last=j; FR.pubAt=Date.now(); }catch(_){} }
-setInterval(()=>{ if(!document.hidden&&UID) pubProfile(); },60000);
+setInterval(()=>{ if(!document.hidden&&UID){ pubProfile(); acctVer(); } },60000);
+// v8.12: one device updating updates every device on the account. The updating device writes the new version to the account's
+// profile (appv); the others read it every minute and when opened, then download and install it on their own (game saved first).
+var CAV=0, AUTOUPD=false;
+async function acctVer(){ if(!DB||!UID||AUTOUPD) return; try{ const sn=await DB.doc("profiles/"+UID).get(); const v=sn.exists?+(sn.data().appv||0):0; if(v>(+CAV||0)) CAV=v; if(v>+APPV) autoUpdate(String(v)); }catch(_){} }
+async function autoUpdate(v){ if(AUTOUPD) return; AUTOUPD=true; toast(`⬆️ Your other device updated to version ${v}. Updating this one…`);
+  if(!(navigator.serviceWorker&&navigator.serviceWorker.controller)){ save(); if(ACT) await csave(); return setTimeout(()=>location.reload(),1500); } // no service worker (plain browser tab): a reload gets the new version
+  await checkUpdate(false); const t0=Date.now();
+  const wait=async()=>{ await swState(); if(UPD.ready&&+UPD.ver>=+v) return applyUpdate(); if(Date.now()-t0<120000) setTimeout(wait,3000); else { AUTOUPD=false; toast("Couldn't download the update yet. It'll try again in a minute"); } };
+  setTimeout(wait,2000); }
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) setTimeout(acctVer,1500); });
 // keep friends' profiles fresh (online status, what they're doing, net worth) while the Friends tab is open
 async function frFresh(force){ const N=window.NET; if(!N||!UID||FR.fbusy) return; FS.pAt=FS.pAt||{}; const ids=FS.list.filter(f=>f.status==='accepted').map(f=>f.other).filter(id=>force||Date.now()-(FS.pAt[id]||0)>45000);
   if(!ids.length) return; FR.fbusy=1; await Promise.allSettled(ids.map(async id=>{ const p=await N.getProfile(id); if(p){ FS.prof[id]=p; FS.pAt[id]=Date.now(); } })); FR.fbusy=0;
@@ -2376,7 +2386,7 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
       else pushMine=true;
       
       const was=S.owner; S.owner=u.uid; delistCheck(); const m=myCard(); if(/^Trader\d+$/.test(m.name||"")||(was&&was!==u.uid)) m.name=u.username;
-      save(); DB=N.db; UID=u.uid; cref=ref; clast="";
+      save(); DB=N.db; UID=u.uid; cref=ref; clast=""; setTimeout(acctVer,4000);
       cloudSt="Signed in as @"+u.username+" · progress saves to your account";
       if(!NETON){ NETON=true; setInterval(pubProfile,300000); setInterval(flowSync,15000); setInterval(tipSync,15000); }
       pubProfile(); flowSync(); tipSync(); csave(pushMine||ACT); watchSave(ref); socialStart(N,u.uid); compSettle(); build(); pushSave();
@@ -3231,7 +3241,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="133";
+const APPV="134";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }
@@ -3257,7 +3267,7 @@ async function checkUpdate(manual){ const r=await swReg();
   if(v===APPV) return toast(`✅ You're on the newest version (${APPV})`,"good");
   toast(`⬆️ Version ${v} found. Downloading…`);
   const t0=Date.now(); const wait=async()=>{ await swState(); if(UPD.ready) return; if(Date.now()-t0<25000) setTimeout(wait,1500); else toast("Still downloading. Check again in a minute"); }; setTimeout(wait,1500); }
-async function applyUpdate(){ save(); if(ACT) await csave(); appBadge(0); toast("Updating…"); await swAsk({type:"accept"}); setTimeout(()=>location.reload(),300); }
+async function applyUpdate(){ save(); if(ACT) await csave(); if(UPD.ver&&+UPD.ver>(+CAV||0)){ CAV=+UPD.ver; try{ await pubProfile(); }catch(_){} } /* tell the account's other devices */ appBadge(0); toast("Updating…"); await swAsk({type:"accept"}); setTimeout(()=>location.reload(),300); }
 if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("controllerchange",()=>setTimeout(swState,500));
 swState(); setInterval(()=>checkUpdate(),600000); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkUpdate(); });
 </script><script>(function(){ const de=document.documentElement;

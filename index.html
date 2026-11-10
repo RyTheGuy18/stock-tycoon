@@ -841,10 +841,10 @@ function evVol(i,t){ const l=evList(i,Math.floor(t/HN)); let m=nwVol(i,t); for(c
 function price(i,t){ const h=Math.floor(t/HN), p=chunk(i,h).P[t-h*HN], o=evo(i,t); return o?p*Math.exp(o):p; }
 function volAt(i,t){ const h=Math.floor(t/HN); return chunk(i,h).V[t-h*HN]*evVol(i,t); }
 // Chart timeframes: [candle seconds, label]
-const TFS=[[10,"10s"],[60,"1m"],[300,"5m"],[600,"10m"],[1800,"30m"]];
+const TFS=[[10,"10s"],[60,"1m"],[300,"5m"],[600,"10m"]];
 // v8.14: line views are time ranges, like Robinhood: [label, range seconds, seconds per point]
 const CRNG=[["1D",86400,600],["1W",604800,3600],["1M",2592000,14400]], rngOf=l=>CRNG.find(r=>r[0]===l);
-function tfFix(){ if(S.rng&&!rngOf(S.rng)) S.rng=null; if(!S.rng&&S.tf>=3600){ S.rng=S.tf>=86400?"1M":"1W"; } if(S.rng) S.tf=rngOf(S.rng)[2]; else if(!TFS.some(t=>t[0]===S.tf)) S.tf=10; }
+function tfFix(){ if(S.rng&&!rngOf(S.rng)) S.rng=null; if(!S.rng&&S.tf>=3600){ S.rng=S.tf>=86400?"1M":"1W"; } if(S.rng) S.tf=rngOf(S.rng)[2]; else if(!TFS.some(t=>t[0]===S.tf)) S.tf=S.tf===1800?600:10; } /* 30m was removed in v137: it opens on 10m */
 // Finished candles never change, so they're cached. Hour summaries feed the 1h and 1D charts.
 const CC=new Map(), HSUM=new Map(); let BUDGET=Infinity;
 function hsum(i,h){ const key=i+":"+h; let s=HSUM.get(key); if(s) return s; if(performance.now()>BUDGET) return null;
@@ -3256,7 +3256,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="136";
+const APPV="137";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

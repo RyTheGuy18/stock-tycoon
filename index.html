@@ -841,7 +841,10 @@ function evVol(i,t){ const l=evList(i,Math.floor(t/HN)); let m=nwVol(i,t); for(c
 function price(i,t){ const h=Math.floor(t/HN), p=chunk(i,h).P[t-h*HN], o=evo(i,t); return o?p*Math.exp(o):p; }
 function volAt(i,t){ const h=Math.floor(t/HN); return chunk(i,h).V[t-h*HN]*evVol(i,t); }
 // Chart timeframes: [candle seconds, label]
-const TFS=[[10,"10s"],[60,"1m"],[300,"5m"],[600,"10m"],[1800,"30m"],[3600,"1h"],[86400,"1D"]];
+const TFS=[[10,"10s"],[60,"1m"],[300,"5m"],[600,"10m"],[1800,"30m"]];
+// v8.14: line views are time ranges, like Robinhood: [label, range seconds, seconds per point]
+const CRNG=[["1D",86400,600],["1W",604800,3600],["1M",2592000,14400]], rngOf=l=>CRNG.find(r=>r[0]===l);
+function tfFix(){ if(S.rng&&!rngOf(S.rng)) S.rng=null; if(!S.rng&&S.tf>=3600){ S.rng=S.tf>=86400?"1M":"1W"; } if(S.rng) S.tf=rngOf(S.rng)[2]; else if(!TFS.some(t=>t[0]===S.tf)) S.tf=10; }
 // Finished candles never change, so they're cached. Hour summaries feed the 1h and 1D charts.
 const CC=new Map(), HSUM=new Map(); let BUDGET=Infinity;
 function hsum(i,h){ const key=i+":"+h; let s=HSUM.get(key); if(s) return s; if(performance.now()>BUDGET) return null;
@@ -1543,7 +1546,7 @@ document.addEventListener("toggle",e=>{ const d=e.target; if(d.classList&&d.clas
 function buildTrade(){
   main.dataset.h=main.innerHTML=`<div class="mk"><div class="mk-l"><div id="chips"></div>
   <div class="q"><div><span class="t" id="qn"></span><div class="t" id="qk" style="font-size:11.5px;margin-top:1px"></div><div class="row"><span id="qp" class="m"></span><span id="qc" class="m" style="font-size:12.5px"></span></div></div>
-  </div><div class="tf">${TFS.map(([s,l])=>`<button data-tf="${s}">${l}</button>`).join("")}</div>
+  </div><div class="tf">${TFS.map(([s,l])=>`<button data-tf="${s}">${l}</button>`).join("")}${CRNG.map(([l])=>`<button data-rg="${l}">${l}</button>`).join("")}</div>
   <div class="chw"><canvas id="chart"></canvas><button id="zlive" style="display:none">↻ Live</button><div id="ctools"><button id="ldraw" title="Draw a line">✏️<span> Line</span></button><button id="lclear" title="Clear lines">🗑</button></div></div><div id="news"></div></div>
   <div class="mk-r"><div class="pad"><div id="pos" class="card"></div>
   <div class="qty"><button data-q="-1">−</button><div class="mid"><b id="qv"></b><span id="qcst"></span></div><button data-q="1">+</button><button data-q="max">MAX</button></div>
@@ -1568,7 +1571,7 @@ function upd(){
   $("qn").textContent=sym+" · "+d.n+(SECN[sym]?" · "+SECN[sym]:""); { const k=$("qk"), z=SPEC[sym]; if(k&&k.dataset.s!==sym){ k.dataset.s=sym; k.innerHTML=(z?`<b style="color:var(--gold)">Known for: ${z.k}.</b> ${z.d} `:"")+(isFinite(stCap(sym))?`Max per trade: <b>${money0(stCap(sym))}</b>.`:`<b>No limit</b> on trade size.`); } } $("qp").textContent=px(pr);
   { const q=$("qc"), hh=" "+d1html(sym); if(q.dataset.h!==hh){ q.dataset.h=hh; q.innerHTML=hh; } }
   STOCKS.forEach(x=>{ const e=$("c-"+x.s); if(e){ e.textContent=px(sp(x.s)); e.className=day1(x.s)>=0?"up":"dn"; const f=$("cd-"+x.s), hh=d1html(x.s); if(f&&f.dataset.h!==hh){ f.dataset.h=hh; f.innerHTML=hh; } } });
-  document.querySelectorAll(".tf button").forEach(b=>b.classList.toggle("on",+b.dataset.tf===S.tf));
+  document.querySelectorAll(".tf button").forEach(b=>b.classList.toggle("on",b.dataset.rg?b.dataset.rg===S.rng:(!S.rng&&+b.dataset.tf===S.tf)));
   const nw=nItems(NOW-7200,NOW).filter(x=>x.s===S.sel||x.lv==="mkt"||(x.lv==="ind"&&INDOF[S.sel]===x.ev.ik)); { const ne=$("news"); ne.textContent=nw[0]?"📰 "+nw[0].t+" · "+dur(NOW-nw[0].at)+" ago":"📰 No news for "+S.sel+" in the last 2 hours"; if(!ne.dataset.nw){ ne.dataset.nw=1; ne.style.cursor="pointer"; ne.onclick=()=>nxOpen(nw[0]&&nw[0].lv==="mkt"?"top":"mine"); } }
   let h="";
   if(p.l){ const b=bid(sym), pl=p.l*(b-p.lc); h+=`<div class="row"><div class="g t">🟢 <b style="color:var(--text)">${p.l} sh</b> bought at ${px(p.lc)} · worth ${money(p.l*sp(sym))}</div><b class="m ${pl>=0?"up":"dn"}">${sg(pl)} (${((b/p.lc-1)*100).toFixed(2)}%)</b></div>`+netLine(pl,netPL(sym))+ordBtns("l"); }
@@ -1687,10 +1690,10 @@ function draw(){
   const cv=$("chart"); if(!cv) return; const dpr=devicePixelRatio||1, W=cv.clientWidth, HF=cv.clientHeight, AX=15, H=HF-AX; if(!W) return;
   if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(HF*dpr)){ cv.width=Math.round(W*dpr); cv.height=Math.round(HF*dpr); }
   const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,HF);
-  const sym=S.sel, d=BYSYM[sym], p=P(sym), tf=S.tf, aw=56, pw=W-aw, vh=H*.15, top=12, bot=H-vh-12, cw=ZC, n=Math.max(5,Math.floor(pw/cw)), endT=ZOFF?NOW-ZOFF*tf:NOW;
+  tfFix(); const RG=S.rng?rngOf(S.rng):null; const sym=S.sel, d=BYSYM[sym], p=P(sym), tf=S.tf, aw=56, pw=W-aw, vh=H*.15, top=12, bot=H-vh-12, n=RG?Math.round(RG[1]/RG[2])+1:Math.max(5,Math.floor(pw/ZC)), cw=RG?pw/n:ZC, endT=ZOFF?NOW-ZOFF*tf:NOW;
   BUDGET=performance.now()+35; const data=candles(d.i,tf,n,endT), first=data[0][5], loading=data.some(k=>k[0]===null); BUDGET=Infinity;
   let lo=Infinity,hi=-Infinity,vm=0; // v8.13: 1h and 1D are a plain line (the big picture); 10m and 30m scale to the candle bodies and fade the wicks, so PNNY's spikes don't squash the chart
-  const LMODE=tf>=3600, BMODE=tf>=600&&tf<3600; WFADE=BMODE;
+  const LMODE=!!RG, BMODE=!RG&&tf>=600; WFADE=BMODE;
   data.forEach(k=>{ if(k[0]===null) return; if(LMODE){ lo=Math.min(lo,k[3]); hi=Math.max(hi,k[3]); } else if(BMODE){ lo=Math.min(lo,k[0],k[3]); hi=Math.max(hi,k[0],k[3]); } else { lo=Math.min(lo,k[2]);hi=Math.max(hi,k[1]); } vm=Math.max(vm,k[4]);});
   if(BMODE&&hi>lo){ const pb=(hi-lo)*.15; lo-=pb; hi+=pb; }
   // lines sit at the chart price where you break even (fill price adjusted for the spread),
@@ -1733,7 +1736,7 @@ function draw(){
   // hover / tap readout: the top half of a candle shows its high, the bottom half its low
   if(HOV&&(HOV.until==null||Date.now()<HOV.until)){ const j=Math.floor(HOV.x/cw), k=data[j];
     if(LMODE&&k&&k[0]!==null&&HOV.x<pw){ const x=X(j), y=Y(k[3]); c.strokeStyle="rgba(255,255,255,.35)"; c.beginPath(); c.moveTo(x,top); c.lineTo(x,bot); c.stroke(); c.fillStyle="#fff"; c.beginPath(); c.arc(x,y,3.5,0,7); c.fill();
-      const dt=new Date(k[5]*1000), tx=px(k[3])+" · "+(tf>=86400?dt.toLocaleDateString([],{month:"short",day:"numeric"}):dt.toLocaleString([],{month:"short",day:"numeric",hour:"numeric"})); c.font="bold 11px JetBrains Mono"; const w=c.measureText(tx).width+10, bx=Math.min(Math.max(2,x-w/2),pw-w-2), by=Math.max(2,y-26);
+      const dt=new Date(k[5]*1000), tx=px(k[3])+" · "+(tf<3600?dt.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):dt.toLocaleString([],{month:"short",day:"numeric",hour:"numeric"})); c.font="bold 11px JetBrains Mono"; const w=c.measureText(tx).width+10, bx=Math.min(Math.max(2,x-w/2),pw-w-2), by=Math.max(2,y-26);
       c.fillStyle="rgba(5,8,11,.92)"; c.fillRect(bx,by,w,18); c.strokeStyle="rgba(255,255,255,.5)"; c.strokeRect(bx,by,w,18); c.fillStyle="#fff"; c.fillText(tx,bx+5,by+9); }
     const hw=Math.max(2,ZCW*.36)+.5; if(!LMODE&&k&&k[0]!==null&&HOV.x<pw&&Math.abs(HOV.x-X(j))<=hw&&HOV.y>=Y(k[1])-3&&HOV.y<=Y(k[2])+3){ const x=X(j), yh=Y(k[1]), yl=Y(k[2]), top=HOV.y<(yh+yl)/2, v=top?k[1]:k[2], y=top?yh:yl;
       c.strokeStyle="rgba(255,255,255,.6)"; c.strokeRect(x-Math.max(2,cw*.45),yh-2,Math.max(4,cw*.9),yl-yh+4);
@@ -1750,7 +1753,7 @@ function draw(){
       if(!l[3]){ c.fillStyle=l[1]; c.fillRect(pw+1,y-9,aw-2,18); c.fillStyle="#05080b"; c.fillText(px(l[0]).slice(1),pw+4,y); } }
     else { const w=c.measureText(l[2]).width+8; c.fillStyle=l[1]; c.fillRect(3,y-8,w,16); c.fillStyle="#05080b"; c.fillText(l[2],7,y); }
     if(l[3]){ c.fillStyle=l[1]; c.beginPath(); c.roundRect?c.roundRect(pw-22,y-11,22+aw-4,22,6):c.rect(pw-22,y-11,22+aw-4,22); c.fill(); c.fillStyle="#05080b"; for(const dy of [-4,0,4]) c.fillRect(pw-16,y+dy-.75,10,1.5); c.fillText(px(l[0]).slice(1),pw+2,y); } });
-  const mks=S.mk[sym]||[], newest=mks.reduce((a,m)=>!a||m.t>a.t?m:a,null);
+  const mks=LMODE?[]:(S.mk[sym]||[]), newest=mks.reduce((a,m)=>!a||m.t>a.t?m:a,null);
   mks.forEach(m=>{ const i=Math.floor((m.t-first)/tf); if(i<0||i>=data.length) return; const x=X(i), y=Y(m.p), dn=m.k==="B"||m.k==="C";
     const col=m.k==="B"?"#16c784":m.k==="X"?"#a855f7":m.pl>=0?"#16c784":"#ea3943"; c.fillStyle=col; c.beginPath();
     if(dn){c.moveTo(x,y+3);c.lineTo(x-6,y+13);c.lineTo(x+6,y+13);}else{c.moveTo(x,y-3);c.lineTo(x-6,y-13);c.lineTo(x+6,y-13);} c.fill();
@@ -1758,11 +1761,11 @@ function draw(){
     const tx=m.k==="B"?"BUY":m.k==="X"?"SHORT":(m.k==="S"?"SOLD ":"COVER ")+sg(m.pl); c.font="bold 9.5px JetBrains Mono"; const tw=c.measureText(tx).width+6, ty=dn?y+22:y-22, xx=Math.min(Math.max(2,x-tw/2),pw-tw);
     c.fillStyle="rgba(5,8,11,.85)"; c.fillRect(xx,ty-7,tw,14); c.fillStyle=col; c.fillText(tx,xx+3,ty); });
   // news flags: a small marker where a story about this stock, its industry or the whole market came out (last 3 days)
-  { const t1=first+data.length*tf, fl=chartNews(sym,Math.max(first,NOW-3*86400),Math.min(t1,NOW)); c.font="bold 9px JetBrains Mono";
+  { const t1=first+data.length*tf, fl=LMODE?[]:chartNews(sym,Math.max(first,NOW-3*86400),Math.min(t1,NOW)); c.font="bold 9px JetBrains Mono";
     for(const x of fl){ const i=Math.floor((x.at-first)/tf); if(i<0||i>=data.length) continue; const xx=X(i), col=x.lv==="mkt"?"#ea3943":x.lv==="ind"?"#f5b301":x.lv==="big"?"#a855f7":"#4aa3ff";
       c.beginPath(); c.moveTo(xx,bot-18); c.lineTo(xx,bot-4); c.lineWidth=1.5; c.strokeStyle=col; c.stroke(); c.fillStyle=col; c.fillRect(xx,bot-18,8,6); } }
   if(loading){ c.fillStyle=TH().lab; c.font="11px JetBrains Mono"; c.fillText("Loading older candles…",6,top+6); if(!DRAW_T) DRAW_T=setTimeout(()=>{ DRAW_T=0; if(tab==="trade") draw(); },60); }
-  c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; c.fillText(spanLbl(tf,data.length),6,bot+4);
+  c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; c.fillText(RG?({"1D":"Last 24 hours","1W":"Last 7 days","1M":"Last 30 days"})[RG[0]]+(ZOFF?" (scrolled back)":""):spanLbl(tf,data.length),6,bot+4);
   { const zl=$("zlive"); if(zl) zl.style.display=(ZOFF||Math.abs(ZC-7)>.01||YZ!==1)?"":"none"; const lc=$("lclear"); if(lc) lc.style.display=myLines(sym).length?"":"none"; }
   if(ZOFF){ c.fillStyle=TH().lab; c.font="10px JetBrains Mono"; c.textAlign="left"; return; }
   const y=Y(now), lk=data[data.length-1], col=lk[3]>=lk[0]?CPAL().up:CPAL().dn; c.fillStyle=col; c.fillRect(0,y,pw,1); c.fillRect(pw+1,y-9,aw-2,18);
@@ -2071,7 +2074,7 @@ $("nav").onclick=e=>{ const b=e.target.closest("button"); if(b) setTab(b.dataset
 main.addEventListener("click",e=>{ const el=e.target.closest("button"); if(!el||el.disabled) return; const d=el.dataset, sym=S.sel;
   if(d.sym){ S.sel=d.sym; ZOFF=0; ARM=null; chips(); upd(); fundCard(); return; }
   if(d.lk) return toast("Unlocks when your net worth reaches "+money(+d.lk));
-  if(d.tf){ S.tf=+d.tf; ZOFF=0; upd(); return; }
+  if(d.tf){ S.tf=+d.tf; S.rng=null; ZOFF=0; upd(); return; } if(d.rg){ S.rng=d.rg; tfFix(); ZOFF=0; upd(); return; }
   if(d.q){ const p=P(sym); S.qty=d.q==="max"?Math.max(1,maxQty(sym),p.l,p.s):Math.max(1,S.qty+(+d.q)); upd(); return; }
   if(d.a==="close"){ const p=P(sym); if(p.l) sellLong(sym,p.l); else if(p.s) cover(sym,p.s); resetPeak(); return build(true); }
   if(d.a) return trade(d.a,S.qty);
@@ -2155,7 +2158,7 @@ function mergeMono(dst,src){ try{ if(!dst||!src||dst===src) return dst; if(reset
   }catch(_){} return dst; }
 // ---------- live sync between your devices ----------
 // chart choices (timeframe, selected stock, share count) stay on each device
-const viewPrefs=()=>({tf:S.tf,sel:S.sel,qty:S.qty,cq:S.cq,csel:S.csel,frg:S.frg});
+const viewPrefs=()=>({tf:S.tf,rng:S.rng,sel:S.sel,qty:S.qty,cq:S.cq,csel:S.csel,frg:S.frg});
 // Each device has an id. Every cloud save carries a revision number (rev) that goes up by one per push.
 // A device only pushes after you actually DO something (tap a button, move a stop/target line): just looking,
 // scrolling or leaving the app open never pushes, because everything else (prices, jobs, bots, bills) is worked out
@@ -3253,7 +3256,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="135";
+const APPV="136";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

@@ -1441,7 +1441,9 @@ const taxWk=t=>Math.floor((t-new Date(t*1000).getTimezoneOffset()*60-345600)/604
 const taxDayAt=w=>{ const g=w*604800+345600+604800; return g+new Date(g*1000).getTimezoneOffset()*60; }        // next Monday 00:00 local
 const warYear=w=>RNG("war"+w)()<1/6;                                                                         // about 1 week in 6
 function TX(){ const w=taxWk(NOW); if(!S.tx||S.tx.w==null) S.tx={w,inc:0,gain:0,sales:0}; return S.tx; }
-const txInc=a=>{ TX().inc+=a; }, txGain=a=>{ TX().gain+=a; };
+// v8.10: money that pays off debt isn't taxed. Every caller has already added the money to cash, so the debt it paid is how far below $0 cash was before it
+const txFree=a=>{ if(!(a>0)) return 0; const f=Math.min(a,Math.max(0,-(S.cash-a))); if(f>0) TX().free=(TX().free||0)+f; return f; };
+const txInc=a=>{ TX().inc+=a-txFree(a); }, txGain=a=>{ TX().gain+=a-txFree(a); };
 // after-tax result of an open trade: profit minus the sales tax paid to open it and the tax you'd pay to close it now
 const tx2=v=>Math.round(v*STX()*100)/100;
 const netLine=(g,n)=>taxTrap(g,n)?`<div class="taxw-t">⚠️ Taxes eat this profit. After tax you'd <b>lose ${money(-n)}</b></div>`:`<div class="t" style="font-size:11.5px;margin-top:2px;text-align:right">after tax ${sg(n)}</div>`;
@@ -1492,7 +1494,7 @@ function taxAlarm(h,ts){ h=h.replace(/<p class="dn">[\s\S]*?<\/p>/,""); const el
 function taxCard(){ const el=$("taxc"); if(!el) return; const tx=TX(), w=tx.w, b=taxBill(tx,warYear(w)), left=taxDayAt(w)-NOW;
   { const fs=$("fs-tax"); if(fs) fs.innerHTML=`in ${dur(left)} · <b class="dn">≈ -${money(b.total)}</b>`; }
   el.innerHTML=`<div class="row"><div class="g"><div class="b">🧾 Tax day in ${dur(left)}${warYear(w)?' <span class="pill bad">⚔️ War year</span>':''}</div>
-   <div class="t">Earned this year: ${money(b.base)} · sales tax paid: ${money(tx.sales)}</div></div><b class="m dn">≈ -${money(b.total)}</b></div>
+   <div class="t">Earned this year: ${money(b.base)} · sales tax paid: ${money(tx.sales)}${tx.free>=.01?` · debt paid off tax-free: ${money(tx.free)}`:""}</div></div><b class="m dn">≈ -${money(b.total)}</b></div>
    <div class="t" style="margin-top:4px">Income tax ${money(b.it)}${b.pt?` · property ${money(b.pt)}`:""}${b.war?` · <b class="dn">⚔️ war year: income & property tax ×3</b>`:""} · ${(STX()*100).toFixed(1)}% sales tax on every stock buy and sell</div>`; }
 function broke(why){
   for(const k in S.pos) S.pos[k]={l:0,lc:0,s:0,se:0};
@@ -3226,7 +3228,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="131";
+const APPV="132";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }

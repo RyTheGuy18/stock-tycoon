@@ -844,7 +844,8 @@ function volAt(i,t){ const h=Math.floor(t/HN); return chunk(i,h).V[t-h*HN]*evVol
 const TFS=[[10,"10s"],[60,"1m"],[300,"5m"]];
 // v8.14: line views are time ranges, like Robinhood: [label, range seconds, seconds per point]
 const CRNG=[["1h",3600,30],["1D",86400,600],["1W",604800,3600],["1M",2592000,14400]], rngOf=l=>CRNG.find(r=>r[0]===l);
-function tfFix(){ if(S.rng&&!rngOf(S.rng)) S.rng=null; if(!S.rng&&S.tf>=3600){ S.rng=S.tf>=86400?"1M":"1W"; } if(S.rng) S.tf=rngOf(S.rng)[2]; else if(!TFS.some(t=>t[0]===S.tf)) S.tf=S.tf>=600?300:10; } /* 30m (v137) and 10m (v139) were removed: they open on 5m */
+function tipClean(){ for(const k of ['tipOut','tipIn','tipUsed','tipCr','tipPaid']) delete S[k]; for(const k in S.pos) if(S.pos[k]) delete S.pos[k].tip; }
+function tfFix(){ if(S.tipOut||S.tipIn||S.tipCr) tipClean(); if(S.rng&&!rngOf(S.rng)) S.rng=null; if(!S.rng&&S.tf>=3600){ S.rng=S.tf>=86400?"1M":"1W"; } if(S.rng) S.tf=rngOf(S.rng)[2]; else if(!TFS.some(t=>t[0]===S.tf)) S.tf=S.tf>=600?300:10; } /* 30m (v137) and 10m (v139) were removed: they open on 5m */
 // Finished candles never change, so they're cached. Hour summaries feed the 1h and 1D charts.
 const CC=new Map(), HSUM=new Map(); let BUDGET=Infinity;
 function hsum(i,h){ const key=i+":"+h; let s=HSUM.get(key); if(s) return s; if(performance.now()>BUDGET) return null;
@@ -1018,7 +1019,6 @@ const ACH=[
  {id:"sh",g:"🐻",n:"Bear mode",d:"Win a short",u:()=>(S.st.shortWins||0)>=1},
  {id:"oops",g:"🙃",n:"Bought the rumor",d:"Lose money buying a stock during a rumor",u:()=>!!AF().oops},
  {id:"broke",g:"🪦",n:"Rock bottom",d:"Go broke",u:()=>S.st.broke>=1},
- {id:"tip",g:"💡",n:"Tipster",d:"Send 10 tips to friends",u:()=>(S.st.tipsSent||0)>=10},
  {id:"comp",g:"🏁",n:"Competitor",d:"Join a weekly competition",u:()=>!!S.comp},
  {id:"rmr",g:"🕵️",n:"Saw through it",d:"Win a short during a rumor",u:()=>!!AF().rmr},
  {id:"w25",g:"🎯",n:"Sharpshooter",d:"Win 25 trades",u:()=>S.st.wins>=25},
@@ -1027,7 +1027,6 @@ const ACH=[
  {id:"car",g:"🚗",n:"Wheels",d:"Buy a car",u:()=>!!S.ms.car},
  {id:"pump",g:"🎈",n:"Pump rider",d:"Win a trade during a pump and dump",u:()=>!!AF().pump},
  {id:"crash",g:"🌪️",n:"Crash survivor",d:"Win a trade that was open during a market crash",u:()=>!!AF().crash},
- {id:"tipw",g:"🎁",n:"Good call",d:"A friend wins a trade on your tip",u:()=>(S.st.tipWins||0)>=1},
  {id:"back",g:"🔄",n:"Comeback kid",d:"Go broke, then get back to $1,000 net worth",u:()=>!!AF().back},
  {id:"x2",g:"🚀",n:"Doubled up",d:"Make +100% on one trade",u:()=>!!AF().x2},
  {id:"big",g:"💰",n:"Big score",d:"Make $1,000 on one trade",u:()=>S.st.best>=1000},
@@ -1183,7 +1182,7 @@ function trade(act,q){
   if(act==="short"){ const b=fillSell(sym,q); if(inDebt()&&!ccOn()) return ccOffer(); if(q<1||q*b*(1+STX())>buyPow()+1e-9) return toast((ccOn()?"Not enough credit to back ":"Not enough cash to back ")+q+" share"+(q>1?"s":"")+" plus sales tax");
     p.se=(p.se*p.s+q*b)/(p.s+q); p.s+=q; S.cash-=q*b; const tx=salesTax(q*b); flowPush(sym,-1,q*b); autoStops(sym); mark(sym,"X",sp(sym)); toast(`Shorted ${q} ${sym} at ${px(b)} (${money(q*b)} held as collateral, ${money(tx)} sales tax)`); }
   if(act==="cover"){ cover(sym,Math.min(q,p.s)); }
-  if((act==="buy"||act==="short")&&(p.l||p.s)){ preStops(sym); sfx(act==="short"?'short':'open'); tipTag(sym,act==="buy"?1:-1); }
+  if((act==="buy"||act==="short")&&(p.l||p.s)){ preStops(sym); sfx(act==="short"?'short':'open'); }
   resetPeak(); chips(); build(true);
 }
 // line icons for stop loss and take profit
@@ -1195,7 +1194,7 @@ function ordBtns(side){ const o=ORD(S.sel), k1=side+"sl", k2=side+"tp", b=(k,lab
   const tip=ARM?"Tap the chart where you want it.":PHONE()?"":"Pick one, then tap the chart to place it. Drag the handle on the right to move it.";
   return `${tip?`<div class="t" style="margin-top:4px">${tip}</div>`:""}<div class="g2" style="margin:${tip?6:0}px 0 4px">${b(k1,"Stop loss",IC.sl,"sell")}${b(k2,"Take profit",IC.tp,"buy")}</div>`; }
 function sellLong(sym,q,why){ const p=P(sym); if(q<1) return; const b=fillSell(sym,q), pl=q*(b-p.lc), en=p.lc; S.cash+=q*b; const tx=salesTax(q*b); flowPush(sym,-1,q*b); p.l-=q; if(!p.l) p.lc=0;
-  rec(sym,"L",q,en,b,pl); mark(sym,"S",sp(sym),pl); const net=pl-tx2(q*en)-tx; if(taxTrap(pl,net)) sfx('loss'); else winFx(pl); tipCredit(sym,pl); toast(taxTrap(pl,net)?`${why||"Sold"} ${q} ${sym}: PROFIT ${sg(pl)}, but after taxes you LOST ${money(-net)}`:`${why||"Sold"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0&&!taxTrap(pl,net)?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`); chips(); }
+  rec(sym,"L",q,en,b,pl); mark(sym,"S",sp(sym),pl); const net=pl-tx2(q*en)-tx; if(taxTrap(pl,net)) sfx('loss'); else winFx(pl); toast(taxTrap(pl,net)?`${why||"Sold"} ${q} ${sym}: PROFIT ${sg(pl)}, but after taxes you LOST ${money(-net)}`:`${why||"Sold"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0&&!taxTrap(pl,net)?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`); chips(); }
 // ---------- automations (lost if you go broke) ----------
 const AUTOS=[
  {id:"asl",cat:"Trading",n:"Default stop loss",c:50,d:"Puts a stop loss on every new trade.",set:[1,20,1,5,"% from entry"]},
@@ -1390,7 +1389,7 @@ function setOrder(arg){ const [key,v]=arg.split(":"), o=ORD(S.sel), now=sp(S.sel
   if(up?val<=now:val>=now) return toast(`That price needs to be ${up?"above":"below"} ${px(now)}`);
   o[key]=val; closeModal(); toast(`${stop?"Stop loss":"Take profit"} set at ${px(val)}`); build(true); }
 function cover(sym,q,why){ const p=P(sym); if(q<1) return; const a=fillBuy(sym,q), col=q*p.se, pl=Math.max(q*(p.se-a),-col), en=p.se; flowPush(sym,1,q*a);
-  S.cash+=col+pl; const tx=salesTax(q*a); p.s-=q; if(!p.s) p.se=0; rec(sym,"S",q,en,a,pl); mark(sym,"C",sp(sym),pl); const net=pl-tx2(q*en)-tx; if(taxTrap(pl,net)) sfx('loss'); else winFx(pl); tipCredit(sym,pl);
+  S.cash+=col+pl; const tx=salesTax(q*a); p.s-=q; if(!p.s) p.se=0; rec(sym,"S",q,en,a,pl); mark(sym,"C",sp(sym),pl); const net=pl-tx2(q*en)-tx; if(taxTrap(pl,net)) sfx('loss'); else winFx(pl);
   toast(taxTrap(pl,net)?`${why||"Covered"} ${q} ${sym}: PROFIT ${sg(pl)}, but after taxes you LOST ${money(-net)}`:`${why||"Covered"} ${q} ${sym}: ${pl>=0?"PROFIT":"LOSS"} ${sg(pl)} · sales tax -${money(tx)}`,pl>=0&&!taxTrap(pl,net)?"good":"bad"); if(why) life(`${why} ${sym}: ${sg(pl)}`);  chips(); }
 
 // ---------- mom's practice trades ----------
@@ -1551,7 +1550,6 @@ function buildTrade(){
   <div class="mk-r"><div class="pad"><div id="pos" class="card"></div>
   <div class="qty"><button data-q="-1">−</button><div class="mid"><b id="qv"></b><span id="qcst"></span></div><button data-q="1">+</button><button data-q="max">MAX</button></div>
     <div class="g4" id="acts" style="grid-template-columns:1fr 1fr 1.3fr"><button class="btn buy" data-a="buy">BUY</button><button class="btn short" data-a="short">SHORT</button><button class="btn ghost" data-a="close">CLOSE</button></div>
-  <div id="tipw"></div>
   <div id="momw"><h3>Mom's practice round</h3><div id="momc" class="card"></div></div>
   <div class="sec2"><h3>Your hustle</h3><div id="job" class="card"></div>
   ${fold("tax","🧾 Taxes",'<div id="taxc" class="card"></div>')}
@@ -1583,7 +1581,7 @@ function upd(){
   const q=s=>main.querySelector(s);
   const open=p.l>0||p.s>0; { const qr=q(".qty"); if(qr) qr.style.display=PHONE()&&open?"none":""; } const ccw=inDebt()&&!ccOn(); /* in debt without the card: buttons stay tappable and open the offer */ q("[data-a=buy]").disabled=open||overCap(sym,S.qty)||(!ccw&&S.qty*fillBuy(sym,S.qty)*(1+STX())>buyPow()+1e-9); q("[data-a=short]").disabled=open||overCap(sym,S.qty)||(!ccw&&S.qty*fillSell(sym,S.qty)*(1+STX())>buyPow()+1e-9);
   const cb=q("[data-a=close]"), cpl=p.l?p.l*(sp(sym)-p.lc):p.s?Math.max(p.s*(p.se-sp(sym)),-p.s*p.se):0; cb.disabled=!open; const cn=open?netPL(sym):0, ctr=taxTrap(cpl,cn); cb.className="btn "+(open?(ctr?"taxw":cpl>=0?"buy":"sell"):"ghost"); cb.innerHTML=open?(ctr?`CLOSE<small>after tax ${sg(cn)}</small>`:`CLOSE<small>${sg(cpl)}</small>`):"CLOSE";
-  preCard(open); jobCard(); momCard(); tipCard(); compCard(); draw();
+  preCard(open); jobCard(); momCard(); compCard(); draw();
   if(NOW%5===0){ fundCard(); taxCard(); } }
 // ---- stop loss / take profit chosen before you trade: tap to cycle, applied the moment a trade opens
 const PRE_SL=[0,2,5,10,20], PRE_TP=[0,2,5,10,20,50];
@@ -2397,8 +2395,8 @@ async function cinit(){ const N=await netReady(); if(!N){ cloudSt="Offline mode:
       const was=S.owner; S.owner=u.uid; delistCheck(); const m=myCard(); if(/^Trader\d+$/.test(m.name||"")||(was&&was!==u.uid)) m.name=u.username;
       save(); DB=N.db; UID=u.uid; cref=ref; clast=""; setTimeout(acctVer,4000);
       cloudSt="Signed in as @"+u.username+" · progress saves to your account";
-      if(!NETON){ NETON=true; setInterval(pubProfile,300000); setInterval(flowSync,15000); setInterval(tipSync,15000); }
-      pubProfile(); flowSync(); tipSync(); csave(pushMine||ACT); watchSave(ref); socialStart(N,u.uid); compSettle(); build(); pushSave();
+      if(!NETON){ NETON=true; setInterval(pubProfile,300000); setInterval(flowSync,15000); }
+      pubProfile(); flowSync(); csave(pushMine||ACT); watchSave(ref); socialStart(N,u.uid); compSettle(); build(); pushSave();
       if(!S.prof&&$("modal").classList.contains("hide")&&!$("intro")) intro();
     }catch(e){ console.warn(e); toast("Couldn't reach the server. Playing offline."); } }); }
 function showAuth(){ if($('auth')||!window.NET) return; const el=document.createElement('div'); el.id='auth'; document.body.appendChild(el); let mode='in', un='';
@@ -2515,8 +2513,7 @@ function socialHTML(){ const uid=UID, pn=f=>Object.assign({},(FR.list||[]).find(
     return r; }).join('')+`</div>`;
   if(!acc.length) h+=`<div class='t' style='margin:-4px 3px 10px'>No friends yet. Add one below with their username.</div>`;
   h+=`<h3>Add a friend</h3><div class='addf'><input id='funame' class='inp' maxlength='17' placeholder='Their username' autocapitalize='none' autocorrect='off' spellcheck='false'><button class='btn buy sm' data-freq='1'>Add</button></div>
-    <div class='t' style='margin:6px 3px 0'>You're <b style='color:var(--text)'>@${UNAME}</b>. Share it so friends can add you.${out.length?` Waiting on ${out.map(f=>`${esc(pn(f).name)} (<button class='t' style='text-decoration:underline;padding:0' data-frem='${f.id}'>cancel</button>)`).join(', ')}.`:''}</div>
-    <div class='t' style='margin:10px 3px 0'>${ILI('bulb',14)}Tips: sent ${S.st.tipsSent||0} · paid off ${S.st.tipWins||0} · earned <b style='color:var(--text)'>${money(S.st.tipPay||0)}</b>. Send them from the Market tab.</div>`;
+    <div class='t' style='margin:6px 3px 0'>You're <b style='color:var(--text)'>@${UNAME}</b>. Share it so friends can add you.${out.length?` Waiting on ${out.map(f=>`${esc(pn(f).name)} (<button class='t' style='text-decoration:underline;padding:0' data-frem='${f.id}'>cancel</button>)`).join(', ')}.`:''}</div>`;
   return h; }
 function openChat(pid){ const N=window.NET, f=FS.list.find(x=>x.id===pid); if(!N||!f) return; closeChat(true); FS.chat=pid; const p=Object.assign({},FS.prof[f.other]||{});
   const el=document.createElement('div'); el.id='chat';
@@ -2660,7 +2657,7 @@ const TUT=[
  ["#newsb","News","The newspaper button gets a red dot when there's news: market-wide stories, industry news and news about your stocks. Many big moves have a warning headline first, so check it often. The bell next to it is for friend requests and messages.","trade"],
  ['[data-tab="store"]',"The Store","Better gear for your job, and lessons that teach you the patterns the market repeats. That's where the real money is.","trade"],
  ['[data-tab="auto"]',"Automations","Later on, you can buy bots that trade for you while the app is closed (as long as you don't have a trade of your own open), and tools that keep your jobs running.","trade"],
- ['[data-tab="friends"]',"Friends","Add friends by username, chat, and send them tips on a stock. Their trades show up on your chart. Join the <b>weekly competition</b> with $1,000 of competition money. Your real cash is never touched.","trade"],
+ ['[data-tab="friends"]',"Friends","Add friends by username and chat. Their trades show up on your chart. Join the <b>weekly competition</b> with $1,000 of competition money. Your real cash is never touched.","trade"],
  ['[data-tab="me"]',"Your story","Everything you're working toward: a car, your own place, and one day, paying Mom back.","trade"],
  ["","One free tip","Dad's notebook had this on the first page: <b>volume moves before price.</b> Before a big jump, a stock goes quiet first: tiny candles, short volume bars. Then on the 10s chart you see <b>3 candles in a row, each with a taller volume bar than the last</b> (the last one at least 2½× normal), while the candles stay small and the price stays flat. That's buyers loading up <b>before</b> the move. <b>Buy right then and sell 3 minutes later.</b> It works about 94 times in 100. Good luck.","trade"]];
 let TUTK=-1, tutIv=null;
@@ -2748,7 +2745,7 @@ function placeTutWide(el,tg,scroll){ const tip=el.querySelector(".tip"), ring=el
 })();
 // what a refresh does: pull your save from the cloud, re-sync friends/leaderboard/competition, redraw the tab
 async function refreshAll(){ const t0=Date.now();
-  await Promise.allSettled([cpull(), typeof pubProfile==="function"?pubProfile():0, typeof flowSync==="function"?flowSync():0, typeof tipSync==="function"?tipSync():0]);
+  await Promise.allSettled([cpull(), typeof pubProfile==="function"?pubProfile():0, typeof flowSync==="function"?flowSync():0]);
   if(typeof FR!=="undefined") FR.list=null; if(typeof CB!=="undefined") CB.list=null;
   build(); if(typeof checkUpdate==="function") checkUpdate();
   const w=600-(Date.now()-t0); if(w>0) await new Promise(r=>setTimeout(r,w)); }
@@ -2943,46 +2940,8 @@ main.addEventListener('click',e=>{ if(!e.target.closest('[data-pavtap]')) return
   md.querySelectorAll('[data-pimgx2]').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); closeModal(); delete myCard().img; save(); act(); pubProfile(); FR.list=null; buildMe(); toast('Photo removed'); }); });
 main.addEventListener('click',e=>{ if(e.target.closest('[data-pcrop]')&&LASTIMG) return cropPhoto(LASTIMG); if(!e.target.closest('[data-pimgx]')) return; delete myCard().img; save(); act(); pubProfile(); FR.list=null; buildMe(); toast('Photo removed'); });
 
-// ---------- Tip-offs: tip all your friends on a stock. If one of them trades it within 5 min and wins, the game pays you 10% of their profit as a bonus ----------
-// Each player writes only tips/<their id>: {to:[friend codes], tips:[[id,t,stock,dir]], cr:[[tipId,tipperCode,profit,t]]}. The tipper reads the credits and pays themselves.
-let tipDirty=false, tipBusy=false;
+// (v8.15: friend tip-offs removed)
 const esc=s=>String(s||'').replace(/[<>&"']/g,'').slice(0,20);
-function tipCard(){ const el=$('tipw'); if(!el) return; if(!DB){ el.innerHTML=''; return; }
-  const sym=S.sel, fr=(S.friends||[]).length, used=S.tipUsed||{}, inc=(S.tipIn||[]).filter(x=>NOW-x.t<300&&!used[x.id]), p=P(sym), ml=x=>Math.max(1,Math.ceil((300-(NOW-x.t))/60));
-  const key=sym+'|'+fr+'|'+(p.tip?p.tip.id:'')+'|'+inc.map(x=>x.id+ml(x)).join(','); if(el.dataset.k===key) return; el.dataset.k=key;
-  let h=`<div class='card' style='margin-top:8px'>`;
-  if(p.tip) h+=`<div class='t' style='margin-bottom:6px'>💡 This trade is on <b style='color:var(--text)'>${p.tip.name}</b>'s tip. If it wins, they get a bonus.</div>`;
-  inc.forEach(x=>{ const s=STOCKS[x.i].s; h+=`<div class='li'><span>💡 <b>${x.name}</b>: ${s} <b class='${x.dir>0?'up':'dn'}'>${x.dir>0?'▲ up':'▼ down'}</b> <span class='t'>· ${ml(x)}m left</span></span>${s===sym?`<span class='pill'>${x.dir>0?'BUY':'SHORT'} to use it</span>`:`<button class='btn ghost sm' data-tview='${s}'>View</button>`}</div>`; });
-  h+=fr?`<div class='row' style='margin-top:${inc.length?8:0}px'><div class='g t'>💡 Tip ${fr} friend${fr>1?'s':''} on <b style='color:var(--text)'>${sym}</b></div><button class='btn buy sm' data-tipd='1'>▲ Up</button><button class='btn short sm' data-tipd='-1'>▼ Down</button></div>`:`<div class='t'>💡 Add friends in the Friends tab to send them tips.</div>`;
-  el.innerHTML=h+`</div>`; }
-function sendTip(dir){ if(!DB) return toast('Sign in to send tips'); const fr=S.friends||[]; if(!fr.length) return toast('Add a friend first');
-  const i=BYSYM[S.sel].i; S.tipOut=(S.tipOut||[]).filter(x=>NOW-x.t<172800);
-  if(S.tipOut.some(x=>x.i===i&&x.dir===dir&&NOW-x.t<30)) return toast('You just sent that tip');
-  const id=Math.random().toString(36).slice(2,10); S.tipOut.push({id,t:NOW,i,dir}); if(S.tipOut.length>60) S.tipOut.shift();
-  S.st.tipsSent=(S.st.tipsSent||0)+1; tipDirty=true; save(); tipSync(); toast(`💡 Tipped ${fr.length} friend${fr.length>1?'s':''}: ${S.sel} ${dir>0?'▲ up':'▼ down'}`,'good'); }
-function tipTag(sym,dir){ const used=S.tipUsed=S.tipUsed||{}, i=BYSYM[sym].i, tp=(S.tipIn||[]).filter(x=>x.i===i&&x.dir===dir&&NOW-x.t<=300&&!used[x.id]).pop(); if(!tp) return;
-  used[tp.id]=NOW; P(sym).tip={id:tp.id,code:tp.code,name:tp.name}; }
-function tipCredit(sym,pl){ const p=P(sym), tp=p.tip; if(!tp||p.l||p.s) return; p.tip=null; if(!(pl>0)) return;
-  S.tipCr=S.tipCr||[]; S.tipCr.push([tp.id,tp.code,Math.round(pl*100)/100,NOW]); tipDirty=true; life(`💡 Your win on ${tp.name}'s tip earned them a bonus`); }
-async function tipSync(){ if(!DB||!UID||tipBusy) return; tipBusy=true; const now=nowSec(), me=myCode();
-  try{ if(tipDirty){ tipDirty=false; const m=myCard(); S.tipCr=(S.tipCr||[]).filter(c=>now-c[3]<172800).slice(-30);
-      await DB.doc('tips/'+UID).set({at:Date.now(),name:m.name.slice(0,20),code:me,to:(S.friends||[]).slice(0,50),tips:(S.tipOut||[]).filter(x=>now-x.t<1800).slice(-10).map(x=>[x.id,x.t,x.i,x.dir]),cr:S.tipCr}); }
-    const q=await DB.collection('tips').orderBy('at','desc').limit(60).get(), mine=new Set((S.tipOut||[]).map(x=>x.id));
-    S.tipIn=(S.tipIn||[]).filter(x=>now-x.t<3600); S.tipPaid=S.tipPaid||{};
-    q.docs.forEach(doc=>{ if(doc.id===UID) return; const x=doc.data()||{}, nm=esc(x.name||'A friend')||'A friend', code=String(x.code||'').slice(0,6);
-      if(Array.isArray(x.to)&&x.to.includes(me)&&Array.isArray(x.tips)) x.tips.forEach(r=>{ if(!Array.isArray(r)) return; const id=String(r[0]).slice(0,12), t=Math.floor(+r[1]), i=+r[2], dir=+r[3];
-        if(!(now-t<300&&t<=now+60)||!Number.isInteger(i)||i<0||i>=STOCKS.length||STOCKS[i].gone||(dir!==1&&dir!==-1)||S.tipIn.some(y=>y.id===id)) return;
-        S.tipIn.push({id,code,name:nm,i,dir,t}); if(S.tipIn.length>20) S.tipIn.shift();
-        sfx('ping'); toast(`💡 ${nm} tips ${STOCKS[i].s} ${dir>0?'▲ up':'▼ down'}${unlocked(STOCKS[i])?'':' (locked for you)'}`); alog('💡',`<b>${nm}</b> tipped ${STOCKS[i].s} ${dir>0?'<span class=up>▲ up</span>':'<span class=dn>▼ down</span>'}`); });
-      if(Array.isArray(x.cr)) x.cr.forEach(c=>{ if(!Array.isArray(c)||String(c[1])!==me) return; const id=String(c[0]), pl=Math.min(1e8,+c[2]||0), key=doc.id+':'+id;
-        if(!mine.has(id)||S.tipPaid[key]||!(pl>0)) return; S.tipPaid[key]=now; const b=Math.round(pl*10)/100; S.cash+=b; S.st.tipPay=(S.st.tipPay||0)+b; S.st.tipWins=(S.st.tipWins||0)+1; resetPeak();
-        life(`💡 ${nm} won on your tip: +${money(b)} bonus`); sfx('win'); toast(`💡 ${nm} won on your tip! +${money(b)} bonus`,'good'); alog('💰',`<b>${nm}</b> won on your tip: <span class=up>+${money(b)}</span> bonus`); }); });
-    for(const k in S.tipPaid) if(now-S.tipPaid[k]>259200) delete S.tipPaid[k];
-    if(S.tipUsed) for(const k in S.tipUsed) if(now-S.tipUsed[k]>86400) delete S.tipUsed[k];
-  }catch(_){} tipBusy=false; }
-main.addEventListener('click',e=>{ const b=e.target.closest('[data-tipd],[data-tview]'); if(!b) return;
-  if(b.dataset.tipd) return sendTip(+b.dataset.tipd);
-  const d=BYSYM[b.dataset.tview]; if(d&&unlocked(d)){ S.sel=d.s; chips(); upd(); fundCard(); } else toast("You haven't unlocked that stock yet"); });
 
 // ---------- Style shop: looks you unlock by getting further (permanent, kept when you go broke) ----------
 const TBASE={bg:'#07090c',panel:'#0e1319',card:'#121922',c2:'#18212c',line:'#1f2a36',text:'#e8eef4',mut:'#77879a',grid:'#131b25',lab:'#56657a'};
@@ -3256,7 +3215,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 // APPV goes up with every release (same number as the service worker cache). New versions download in the background
 // (the service worker installs and then waits); nothing changes until you tap "Update now" in Settings → App.
 // The gear gets a dot and you get one heads-up when an update is ready.
-const APPV="139";
+const APPV="140";
 let UPD={ready:false,ver:null,told:false};
 
 async function liveVer(){ try{ const r=await fetch("index.html?v="+Date.now(),{cache:"no-store"}); if(!r.ok) return null; const m=(await r.text()).match(/const APPV="([^"]+)"/); return m?m[1]:null; }catch(_){ return null; } }
